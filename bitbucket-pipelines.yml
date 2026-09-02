@@ -6,7 +6,6 @@ pipelines:
       - step:
           name: Claude PR Review
           script:
-                      script:
             - 'curl -s -H "Authorization: Bearer $BB_ACCESS_TOKEN" "https://api.bitbucket.org/2.0/repositories/$BITBUCKET_WORKSPACE/$BITBUCKET_REPO_SLUG/pullrequests/$BITBUCKET_PR_ID/diff" -o diff.txt'
             - python3 -c "import os; k=os.environ.get('ANTHROPIC_API_KEY',''); print('len:', len(k)); print('stripped_diff:', k != k.strip())"
             - echo aW1wb3J0IGpzb24s...(your existing base64 blob, unchanged)... | base64 -d > review.py
