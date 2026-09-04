@@ -8,5 +8,4 @@ Route::get('/', function () {
 
 Route::get('/inscription', [UtilisateurController::class, 'create'])->name('utilisateurs.create');
 
-Route::post('/inscription', function () {
-});
+Route::post('/inscription', [UtilisateurController::class, 'store'])->name('utilisateurs.store');

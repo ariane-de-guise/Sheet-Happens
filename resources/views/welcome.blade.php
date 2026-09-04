@@ -5,8 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accueil</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/inscription.css') }}">
 </head>
 <body>
+
+<div class="auth-badge">
+    @auth
+        <span class="auth-status-dot dot-online"></span>
+        <div class="auth-info">
+            <span class="auth-email">{{ Auth::user()->courriel }}</span>
+            <span class="auth-id">ID: {{ Auth::id() }}</span>
+        </div>
+    @else
+        <span class="auth-status-dot dot-offline"></span>
+        <div class="auth-info">
+            <span style="color: #94a3b8;">Non connecté</span>
+            <a href="/inscription" class="auth-link">S'inscrire</a>
+        </div>
+    @endauth
+</div>
 
 <main>
     <h1>Bienvenue</h1>
