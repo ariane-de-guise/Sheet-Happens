@@ -1,0 +1,508 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Classe;
+use App\Models\Race;
+use App\Models\SousClasse;
+use App\Models\SousRace;
+use App\Services\PersonnageCreationService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class CreationPersonnageController extends Controller
+{
+    protected const SESSION_KEY = 'personnage_creation';
+    protected const TOTAL_STEPS = 6;
+
+    protected function getData(): array
+    {
+        return session(static::SESSION_KEY, [
+            'race_id' => null,
+            'sous_race_id' => null,
+            'classe_id' => null,
+            'sous_classe_id' => null,
+            'methode' => null,
+            'abilites' => [
+                'force' => 8,
+                'dexterite' => 8,
+                'constitution' => 8,
+                'intelligence' => 8,
+                'sagesse' => 8,
+                'charisme' => 8,
+            ],
+            'competences' => [],
+            'maitrise' => null,
+            'outil' => null,
+            'langues' => [],
+            'equipement' => [],
+            'nom' => '',
+            'alignement' => null,
+            'description' => '',
+        ]);
+    }
+
+    protected function saveData(array $data): void
+    {
+        $current = $this->getData();
+        session([static::SESSION_KEY => array_merge($current, $data)]);
+    }
+
+    protected function getProgress(): int
+    {
+        $data = $this->getData();
+        $step = 0;
+
+        if (!empty($data['race_id'])) $step = 1;
+        if (!empty($data['classe_id'])) $step = 2;
+        if (!empty($data['methode'])) $step = 3;
+        if ($this->abilitesComplete($data['abilites'] ?? [])) $step = 4;
+        if (!empty($data['competences'])) $step = 5;
+
+        return $step;
+    }
+
+    protected function abilitesComplete(array $abilites): bool
+    {
+        return !empty($abilites) &&
+               ($abilites['force'] ?? 0) > 0 &&
+               ($abilites['dexterite'] ?? 0) > 0 &&
+               ($abilites['constitution'] ?? 0) > 0 &&
+               ($abilites['intelligence'] ?? 0) > 0 &&
+               ($abilites['sagesse'] ?? 0) > 0 &&
+               ($abilites['charisme'] ?? 0) > 0;
+    }
+
+    public function stepRace(): View
+    {
+        $races = Race::with('sousRaces')->get();
+        $data = $this->getData();
+
+        return view('personnages.creation.race', [
+            'races' => $races,
+            'selectedRace' => $data['race_id'],
+            'selectedSousRace' => $data['sous_race_id'],
+            'currentStep' => 1,
+            'progress' => $this->getProgress(),
+        ]);
+    }
+
+    public function saveRace(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'race_id' => 'required|integer|exists:races,id',
+            'sous_race_id' => 'nullable|integer|exists:sous_races,id',
+        ]);
+
+        $current = $this->getData();
+        $newRaceId = $validated['race_id'];
+        $newSousRaceId = $validated['sous_race_id'] ?? null;
+
+        if (!empty($newSousRaceId)) {
+            $sr = SousRace::find($newSousRaceId);
+            if (!$sr || $sr->race_id !== $newRaceId) {
+                $newSousRaceId = null;
+            }
+        }
+
+        $this->saveData([
+            'race_id' => $newRaceId,
+            'sous_race_id' => $newSousRaceId,
+        ]);
+
+        return redirect()->route('creation.classe');
+    }
+
+    public function stepClasse(): View
+    {
+        $classes = Classe::with('sousClasses')->get();
+        $data = $this->getData();
+
+        if (empty($data['race_id'])) {
+            return redirect()->route('creation.race');
+        }
+
+        return view('personnages.creation.classe', [
+            'classes' => $classes,
+            'selectedClasse' => $data['classe_id'],
+            'selectedSousClasse' => $data['sous_classe_id'],
+            'currentStep' => 2,
+            'progress' => $this->getProgress(),
+        ]);
+    }
+
+    public function saveClasse(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'classe_id' => 'required|integer|exists:classes,id',
+            'sous_classe_id' => 'nullable|integer|exists:sous_classes,id',
+        ]);
+
+        $current = $this->getData();
+        $newClasseId = $validated['classe_id'];
+        $newSousClasseId = $validated['sous_classe_id'] ?? null;
+
+        if ($newClasseId !== $current['classe_id'] && !empty($newSousClasseId)) {
+            $sc = SousClasse::find($newSousClasseId);
+            if (!$sc || $sc->classe_id !== $newClasseId) {
+                $newSousClasseId = null;
+            }
+        }
+
+        $this->saveData([
+            'classe_id' => $newClasseId,
+            'sous_classe_id' => $newSousClasseId,
+        ]);
+
+        return redirect()->route('creation.methode');
+    }
+
+    public function stepMethode(): View
+    {
+        if (empty($this->getData()['classe_id'])) {
+            return redirect()->route('creation.classe');
+        }
+
+        return view('personnages.creation.methode', [
+            'currentStep' => 3,
+            'progress' => $this->getProgress(),
+        ]);
+    }
+
+    public function saveMethode(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'methode' => 'required|in:points,standard,dice',
+        ]);
+
+        $abilites = match ($validated['methode']) {
+            'points' => [
+                'force' => 8,
+                'dexterite' => 8,
+                'constitution' => 8,
+                'intelligence' => 8,
+                'sagesse' => 8,
+                'charisme' => 8,
+            ],
+            'standard' => [
+                'force' => 0,
+                'dexterite' => 0,
+                'constitution' => 0,
+                'intelligence' => 0,
+                'sagesse' => 0,
+                'charisme' => 0,
+            ],
+            'dice' => [
+                'force' => 0,
+                'dexterite' => 0,
+                'constitution' => 0,
+                'intelligence' => 0,
+                'sagesse' => 0,
+                'charisme' => 0,
+            ],
+        };
+
+        $this->saveData([
+            'methode' => $validated['methode'],
+            'abilites' => $abilites,
+        ]);
+
+        return redirect()->route('creation.caracteristiques');
+    }
+
+    public function stepCaracteristiques(): View
+    {
+        $data = $this->getData();
+
+        if (empty($data['methode'])) {
+            return redirect()->route('creation.methode');
+        }
+
+        return view('personnages.creation.caracteristiques', [
+            'methode' => $data['methode'],
+            'abilites' => $data['abilites'],
+            'currentStep' => 4,
+            'progress' => $this->getProgress(),
+        ]);
+    }
+
+    public function saveCaracteristiques(Request $request): RedirectResponse
+    {
+        $data = $this->getData();
+        $methode = $data['methode'];
+
+        $rules = [
+            'force' => 'required|integer|min:1|max:30',
+            'dexterite' => 'required|integer|min:1|max:30',
+            'constitution' => 'required|integer|min:1|max:30',
+            'intelligence' => 'required|integer|min:1|max:30',
+            'sagesse' => 'required|integer|min:1|max:30',
+            'charisme' => 'required|integer|min:1|max:30',
+        ];
+
+        if ($methode === 'points') {
+            foreach ($rules as $key => &$rule) {
+                $rule = 'required|integer|min:8|max:15';
+            }
+            unset($rule);
+        }
+
+        if ($methode === 'standard') {
+            $rules['points_disponibles'] = 'nullable|integer';
+        }
+
+        $validated = $request->validate($rules);
+
+        $abilites = [
+            'force' => $validated['force'],
+            'dexterite' => $validated['dexterite'],
+            'constitution' => $validated['constitution'],
+            'intelligence' => $validated['intelligence'],
+            'sagesse' => $validated['sagesse'],
+            'charisme' => $validated['charisme'],
+        ];
+
+        if ($methode === 'points') {
+            $costTable = [8 => 0, 9 => 1, 10 => 2, 11 => 3, 12 => 4, 13 => 6, 14 => 8, 15 => 10];
+            $totalCost = array_sum(array_map(fn($v) => $costTable[$v] ?? 0, $abilites));
+            if ($totalCost !== 27) {
+                return redirect()->back()
+                    ->with('error', 'Vous devez utiliser exactement 27 points (coût progressif : 9=1, 10=2, 11=3, 12=4, 13=6, 14=8, 15=10).');
+            }
+        }
+
+        $this->saveData(['abilites' => $abilites]);
+
+        return redirect()->route('creation.competences');
+    }
+
+    public function rollDice(Request $request)
+    {
+        $data = $this->getData();
+        $abilites = $data['abilites'];
+
+        $rolls = [];
+        for ($i = 0; $i < 4; $i++) {
+            $rolls[] = rand(1, 6);
+        }
+        rsort($rolls);
+        array_pop($rolls);
+        $result = array_sum($rolls);
+
+        $abilite = $request->input('abilite');
+
+        if (!$abilite || !in_array($abilite, ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'])) {
+            return $request->expectsJson()
+                ? response()->json(['error' => 'Abilite invalide'], 400)
+                : redirect()->back();
+        }
+
+        $abilites[$abilite] = $result;
+        $this->saveData(['abilites' => $abilites]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['value' => $result, 'abilite' => $abilite]);
+        }
+
+        return redirect()->back()->with('rolled', $abilite);
+    }
+
+    public function stepCompetences(): View
+    {
+        $data = $this->getData();
+
+        if (!$this->abilitesComplete($data['abilites'] ?? [])) {
+            return redirect()->route('creation.caracteristiques');
+        }
+
+        $classe = Classe::find($data['classe_id']);
+
+        $allCompetences = [
+            'Acrobaties', 'Arcanes', 'Athlétisme', 'Art de la duplicité',
+            'Artisanat', 'Attention', 'Dissimulation', 'Histoire',
+            'Intimidation', 'Insight', 'Médecine', 'Nature',
+            'Perception', 'Performance', 'Persuasion', 'Religion',
+            'Sapience animale', 'Survie',
+        ];
+
+        return view('personnages.creation.competences', [
+            'competencesDisponibles' => $allCompetences,
+            'competencesSelectionnees' => $data['competences'] ?? [],
+            'nombreCompetences' => 2,
+            'currentStep' => 5,
+            'progress' => $this->getProgress(),
+        ]);
+    }
+
+    public function saveCompetences(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'competences' => 'required|array|min:2',
+            'competences.*' => 'string|max:50',
+        ]);
+
+        $this->saveData([
+            'competences' => array_unique($validated['competences']),
+        ]);
+
+        return redirect()->route('creation.contexte');
+    }
+
+    public function stepContexte(): View
+    {
+        $data = $this->getData();
+
+        $maitrises = [
+            'Religieux', 'Marchand', 'Artisan', 'Noble',
+            'Soldat', 'Roublard', 'Erfge', 'Hors-la-loi',
+        ];
+
+        $outils = [
+            'Aucun', 'Kit de calligraphe', 'Kit de charpentier',
+            'Kit de cuisinier', 'Kit de joueur', 'Kit de potier',
+            'Instruments de musique', 'Outils de voleur',
+        ];
+
+        $langues = [
+            'Commun', 'Abyssal', 'Aérien', 'Ancien',
+            'Bestiaire', 'Celte', 'Drow', 'Dwarvique',
+            'Elfe', 'Géant', 'Gnôme', 'Gobelin',
+            'Halfling', 'Hidana', 'Immortel', 'Nain',
+            'Orc', 'Souterrain', 'Titan', 'Sylvain',
+        ];
+
+        $equipements = [
+            'Harpe', 'Livre', 'Épée', 'Arc court',
+            'Bouclier', 'Armure de cuir', 'Sac à dos',
+            'Kit d\'explorateur', 'Lanternes', 'Cordes',
+        ];
+
+        return view('personnages.creation.contexte', [
+            'maitrises' => $maitrises,
+            'outils' => $outils,
+            'langues' => $langues,
+            'equipements' => $equipements,
+            'selectedMaitrise' => $data['maitrise'],
+            'selectedOutil' => $data['outil'],
+            'selectedLangues' => $data['langues'] ?? [],
+            'selectedEquipements' => $data['equipement'] ?? [],
+            'currentStep' => 6,
+            'progress' => $this->getProgress(),
+        ]);
+    }
+
+    public function saveContexte(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'maitrise' => 'nullable|string|max:50',
+            'outil' => 'nullable|string|max:50',
+            'langues' => 'nullable|array|min:2',
+            'langues.*' => 'string|max:50',
+            'equipements' => 'nullable|array',
+            'equipements.*' => 'string|max:50',
+            'nom' => 'required|string|max:100',
+            'alignement' => 'nullable|string|max:50',
+            'description' => 'nullable|string',
+        ]);
+
+        $this->saveData([
+            'maitrise' => $validated['maitrise'] ?? null,
+            'outil' => $validated['outil'] === 'Aucun' ? null : ($validated['outil'] ?? null),
+            'langues' => $validated['langues'] ?? [],
+            'equipement' => $validated['equipements'] ?? [],
+            'nom' => $validated['nom'],
+            'alignement' => $validated['alignement'] ?? null,
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return redirect()->route('creation.confirmation');
+    }
+
+    public function stepConfirmation(): View
+    {
+        $data = $this->getData();
+
+        if (empty($data['nom'])) {
+            return redirect()->route('creation.contexte');
+        }
+
+        $race = Race::find($data['race_id']);
+        $sousRace = $data['sous_race_id'] ? SousRace::find($data['sous_race_id']) : null;
+        $classe = Classe::find($data['classe_id']);
+        $sousClasse = $data['sous_classe_id'] ? SousClasse::find($data['sous_classe_id']) : null;
+
+        $abilites = $data['abilites'];
+        $pv = $this->calculatePV($abilites, $classe);
+
+        return view('personnages.creation.confirmation', [
+            'data' => $data,
+            'race' => $race,
+            'sousRace' => $sousRace,
+            'classe' => $classe,
+            'sousClasse' => $sousClasse,
+            'abilites' => $abilites,
+            'pv' => $pv,
+            'currentStep' => 6,
+            'progress' => 6,
+        ]);
+    }
+
+    protected function calculatePV(array $abilites, ?Classe $classe): int
+    {
+        $conMod = floor(($abilites['constitution'] ?? 8) - 10) / 2;
+        $conMod = floor($conMod);
+
+        if ($classe && $classe->de_de_vie) {
+            $de = (int)str_replace('d', '', $classe->de_de_vie);
+            return max($de, $conMod) + $conMod;
+        }
+
+        return 10 + $conMod;
+    }
+
+    public function finalize(Request $request, PersonnageCreationService $service): RedirectResponse
+    {
+        $data = $this->getData();
+
+        $payload = [
+            'utilisateur_id' => 1,
+            'race_id' => $data['race_id'],
+            'sous_race_id' => $data['sous_race_id'],
+            'classe_id' => $data['classe_id'],
+            'sous_classe_id' => $data['sous_classe_id'],
+            'abilites' => $data['abilites'],
+            'competences' => $data['competences'],
+            'nom' => $data['nom'],
+            'niveau' => 1,
+            'alignement' => $data['alignement'],
+            'description' => $data['description'],
+            'point_de_vie' => $this->calculatePV($data['abilites'], Classe::find($data['classe_id'])),
+        ];
+
+        try {
+            $personnage = $service->create($payload);
+            session()->forget(static::SESSION_KEY);
+
+            return redirect()->route('personnages.show', $personnage)
+                ->with('success', 'Votre personnage a été créé avec succès !');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->route('creation.confirmation')
+                ->withErrors($e->errors())
+                ->withInput();
+        }
+    }
+
+    public function getSousClasses($classeId): JsonResponse
+    {
+        $sousClasses = SousClasse::where('classe_id', $classeId)->get();
+        return response()->json($sousClasses);
+    }
+
+    public function getSousRaces($raceId): JsonResponse
+    {
+        $sousRaces = SousRace::where('race_id', $raceId)->get();
+        return response()->json($sousRaces);
+    }
+}
