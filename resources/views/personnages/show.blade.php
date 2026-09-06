@@ -19,14 +19,14 @@
                 <a href="{{ route('personnages.index') }}" class="text-gold" style="text-decoration: none; font-size: 0.9rem;">
                     ← Retour à la sélection de personnages
                 </a>
-                <button class="btn btn-secondary btn-small">Édité</button>
+                <button class="btn btn-secondary btn-small">Modifier</button>
             </div>
 
             <div style="display: flex; gap: 2rem; margin-bottom: 2rem;">
                 <div style="position: relative;">
                     <div style="width: 120px; height: 120px; border-radius: 50%; background: #e6b84d;"></div>
-                    <div style="position: absolute; bottom: -5px; right: -5px; width: 45px; height: 45px; border-radius: 50%; background: #e6b84d; display: flex; align-items: center; justify-content: center; color: #1a0533; font-size: 0.7rem; font-weight: 600;">
-                        Niveaux<br>{{ $personnage->niveau }}
+                    <div style="position: absolute; bottom: -5px; right: -5px; width: 45px; height: 45px; border-radius: 50%; padding: 25px; background: #e6b84d; display: flex; align-items: center; justify-content: center; color: #1a0533; font-size: 0.7rem; font-weight: 600;">
+                        Niveau<br>{{ $personnage->niveau }}
                     </div>
                 </div>
 
