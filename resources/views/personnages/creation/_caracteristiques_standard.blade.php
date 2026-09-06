@@ -47,7 +47,10 @@
 
     <div class="btn-group-row">
         <a href="{{ route('creation.methode') }}" class="btn btn-secondary">Retour</a>
-        <button type="submit" class="btn btn-primary" id="btnSuivant">Suivant</button>
+        <div>
+            <button type="button" class="btn btn-secondary" onclick="resetStandard()">Réinitialiser</button>
+            <button type="submit" class="btn btn-primary" id="btnSuivant">Suivant</button>
+        </div>
     </div>
 </form>
 
@@ -88,6 +91,16 @@
         const allAssigned = statsOrder.every(s => currentAbilites[s] > 0);
         document.getElementById('btnSuivant').disabled = !allAssigned;
         document.getElementById('pointsDisponibles').value = allAssigned ? '1' : '0';
+    }
+
+    function resetStandard() {
+        statsOrder.forEach(s => {
+            currentAbilites[s] = 0;
+            document.getElementById('stat-' + s).textContent = 'X';
+            document.getElementById('input-' + s).value = '0';
+        });
+        updateButtons();
+        checkComplete();
     }
 
     checkComplete();
