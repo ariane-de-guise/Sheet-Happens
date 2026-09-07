@@ -117,7 +117,9 @@ class CreationPersonnageController extends Controller
 
     public function stepClasse(): View
     {
-        $classes = Classe::with('sousClasses')->get();
+        $classes = Classe::with(['sousClasses' => function ($query) {
+            $query->where('niveau_sous_classe', 1);
+        }])->get();
         $data = $this->getData();
 
         if (empty($data['race_id'])) {
@@ -465,6 +467,14 @@ class CreationPersonnageController extends Controller
     public function finalize(Request $request, PersonnageCreationService $service): RedirectResponse
     {
         $data = $this->getData();
+        $niveau = 1;
+
+        if (!empty($data['sous_classe_id'])) {
+            $sousClasse = SousClasse::find($data['sous_classe_id']);
+            if ($sousClasse && $sousClasse->niveau_sous_classe > $niveau) {
+                $data['sous_classe_id'] = null;
+            }
+        }
 
         $payload = [
             'utilisateur_id' => 1,
@@ -475,7 +485,7 @@ class CreationPersonnageController extends Controller
             'abilites' => $data['abilites'],
             'competences' => $data['competences'],
             'nom' => $data['nom'],
-            'niveau' => 1,
+            'niveau' => $niveau,
             'alignement' => $data['alignement'],
             'description' => $data['description'],
             'point_de_vie' => $this->calculatePV($data['abilites'], Classe::find($data['classe_id'])),
@@ -494,9 +504,11 @@ class CreationPersonnageController extends Controller
         }
     }
 
-    public function getSousClasses($classeId): JsonResponse
+    public function getSousClasses($classeId, $niveauMax = 1): JsonResponse
     {
-        $sousClasses = SousClasse::where('classe_id', $classeId)->get();
+        $sousClasses = SousClasse::where('classe_id', $classeId)
+            ->where('niveau_sous_classe', '<=', $niveauMax)
+            ->get();
         return response()->json($sousClasses);
     }
 

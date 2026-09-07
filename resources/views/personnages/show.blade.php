@@ -43,7 +43,7 @@
                             @endif
                         </div>
 
-                        <a href="#" class="btn btn-secondary btn-small">Modifier</a>
+                        <a href="{{ route('personnages.edit', $personnage) }}" class="btn btn-secondary btn-small">Modifier</a>
                     </div>
 
                     <div style="font-size: 0.75rem; color: #b8a9c9; display: flex; justify-content: space-between; margin-top: 0.5rem;">
@@ -102,7 +102,7 @@
             <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-size: 0.95rem; font-weight: 600; color: #e6b84d;">Équipements</span>
-                    <button class="btn btn-secondary btn-small">Tous voir</button>
+                    <button class="btn btn-secondary btn-small"  @disabled($errors->any())>Tous voir (à venir)</button>
                 </div>
             </div>
 
