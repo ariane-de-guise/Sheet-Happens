@@ -8,9 +8,19 @@ use Illuminate\Notifications\Notifiable;
 
 class Utilisateur extends Authenticatable
 {
-    protected $fillable = ['courriel', 'mot_de_passe'];
-
     use HasFactory, Notifiable;
+
+    protected $table = 'utilisateurs';
+
+    protected $fillable = [
+        'courriel',
+        'mot_de_passe',
+    ];
+
+    protected $hidden = [
+        'mot_de_passe',
+        'remember_token',
+    ];
 
     protected function casts(): array
     {
@@ -19,13 +29,8 @@ class Utilisateur extends Authenticatable
         ];
     }
 
-    protected $hidden = [
-        'mot_de_passe',
-        'remember_token',
-    ];
-
-    public function getAuthPassword(): string
+    public function getAuthPasswordName(): string
     {
-        return $this->mot_de_passe;
+        return 'mot_de_passe';
     }
 }

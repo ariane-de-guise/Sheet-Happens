@@ -7,7 +7,14 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/inscription.css') }}">
 </head>
-<body>
+<body style="
+    background-image: url('{{ asset('images/background_montagne.webp') }}');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+">
 
 <div class="auth-badge">
     @auth

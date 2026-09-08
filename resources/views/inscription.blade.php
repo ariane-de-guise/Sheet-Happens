@@ -12,6 +12,7 @@
     <h1>Création de compte</h1>
 
     <form action="/inscription" method="POST">
+        @csrf
         <div>
             <label for="courriel">Adresse courriel :</label>
             <input
@@ -50,6 +51,11 @@
                 minlength="8"
                 autocomplete="new-password"
             >
+            @error('mot_de_passe')
+            <span style="color: red; font-size: 0.9em; display: block; margin-top: 4px;">
+                Les mots de passes inscrits ne sont pas correspondants.
+            </span>
+            @enderror
         </div>
 
         <br>
