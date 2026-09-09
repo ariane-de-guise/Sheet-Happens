@@ -1,5 +1,5 @@
 <?php
-
+use App\Http\Controllers\UtilisateurController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PersonnageController;
 use App\Http\Controllers\CreationPersonnageController;
@@ -37,9 +37,15 @@ Route::prefix('personnages/creer')->group(function () {
     Route::post('/', [CreationPersonnageController::class, 'finalize'])->name('creation.finalize');
 });
 
+<<<<<<< HEAD
 Route::get('/personnages/{personnage}', [PersonnageSheetController::class, 'show'])->name('personnages.show');
 Route::get('/personnages/{personnage}/edit', [PersonnageSheetController::class, 'edit'])->name('personnages.edit');
 Route::patch('/personnages/{personnage}', [PersonnageSheetController::class, 'update'])->name('personnages.update');
 
 Route::get('/api/sous-classes/{classeId}/{niveauMax?}', [CreationPersonnageController::class, 'getSousClasses'])->name('api.sous-classes');
 Route::get('/api/sous-races/{raceId}', [CreationPersonnageController::class, 'getSousRaces'])->name('api.sous-races');
+=======
+Route::get('/inscription', [UtilisateurController::class, 'create'])->name('utilisateurs.create');
+
+Route::post('/inscription', [UtilisateurController::class, 'store'])->name('utilisateurs.store');
+>>>>>>> develop

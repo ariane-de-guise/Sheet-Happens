@@ -1,3 +1,41 @@
+@import '../../node_modules/tailwindcss/dist/lib.d.mts';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+:root {
+    /* Palette sombre avec reflets mauves plus marqués */
+    --fond: #141124;
+    --surface: #1e1933;
+    --champ-fond: #171329;
+    --bordure: #362e59;
+
+    /* Mauve principal */
+    --primaire: #a78bfa;
+    --primaire-survol: #c4b5fd;
+    --primaire-halo: rgba(167, 139, 250, 0.25);
+
+    /* Orange tirant vers le jaune (ambre / or chaud) */
+    --secondaire: #f59e0b;
+    --secondaire-survol: #fbbf24;
+    --secondaire-halo: rgba(245, 158, 11, 0.3);
+    --bouton-texte: #141124;
+
+    /* Textes */
+    --texte: #fdfcff;
+    --texte-secondaire: #b4a9cc;
+    --texte-espace-reserve: #6c638a;
+
+    --rayon: 10px;
+}
+
 *,
 *::before,
 *::after {
@@ -527,5 +565,105 @@ body {
 
     .title-main {
         font-size: 2rem;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.5;
+        color: var(--texte);
+        background-color: var(--fond);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1.5rem;
     }
+}
+
+main {
+    width: 100%;
+    max-width: 420px;
+    background-color: var(--surface);
+    padding: 2.5rem;
+    border-radius: var(--rayon);
+    border: 1px solid var(--bordure);
+    box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.6), 0 0 40px -10px rgba(167, 139, 250, 0.12);
+}
+
+h1, h2, h3 {
+    color: var(--primaire);
+    margin-bottom: 1.75rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+form > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--texte-secondaire);
+}
+
+input {
+    width: 100%;
+    padding: 0.75rem 0.875rem;
+    background-color: var(--champ-fond);
+    border: 1px solid var(--bordure);
+    border-radius: var(--rayon);
+    font-size: 1rem;
+    color: var(--texte);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input::placeholder {
+    color: var(--texte-espace-reserve);
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--primaire);
+    box-shadow: 0 0 0 3px var(--primaire-halo);
+}
+
+button {
+    margin-top: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    background-color: var(--secondaire);
+    color: var(--bouton-texte);
+    border: none;
+    border-radius: var(--rayon);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.05s ease;
+}
+
+button:hover {
+    background-color: var(--secondaire-survol);
+    box-shadow: 0 0 18px var(--secondaire-halo);
+}
+
+button:active {
+    transform: scale(0.99);
+}
+
+a {
+    color: var(--secondaire);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.15s ease;
+}
+
+a:hover {
+    color: var(--secondaire-survol);
+    text-decoration: underline;
 }
