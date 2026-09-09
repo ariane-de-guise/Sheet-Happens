@@ -13,6 +13,10 @@ Route::post('/api/personnages', [PersonnageController::class, 'store']);
 
 Route::get('/personnages', [PersonnageSheetController::class, 'index'])->name('personnages.index');
 
+Route::get('/personnages/choix', function () {
+    return view('personnages.choixPersonnage');
+})->name('personnages.choix');
+
 Route::prefix('personnages/creer')->group(function () {
     Route::get('/', [CreationPersonnageController::class, 'stepRace'])->name('creation.race');
     Route::post('/race', [CreationPersonnageController::class, 'saveRace'])->name('creation.race.save');
@@ -37,15 +41,13 @@ Route::prefix('personnages/creer')->group(function () {
     Route::post('/', [CreationPersonnageController::class, 'finalize'])->name('creation.finalize');
 });
 
-<<<<<<< HEAD
 Route::get('/personnages/{personnage}', [PersonnageSheetController::class, 'show'])->name('personnages.show');
 Route::get('/personnages/{personnage}/edit', [PersonnageSheetController::class, 'edit'])->name('personnages.edit');
 Route::patch('/personnages/{personnage}', [PersonnageSheetController::class, 'update'])->name('personnages.update');
 
 Route::get('/api/sous-classes/{classeId}/{niveauMax?}', [CreationPersonnageController::class, 'getSousClasses'])->name('api.sous-classes');
 Route::get('/api/sous-races/{raceId}', [CreationPersonnageController::class, 'getSousRaces'])->name('api.sous-races');
-=======
+
 Route::get('/inscription', [UtilisateurController::class, 'create'])->name('utilisateurs.create');
 
 Route::post('/inscription', [UtilisateurController::class, 'store'])->name('utilisateurs.store');
->>>>>>> develop

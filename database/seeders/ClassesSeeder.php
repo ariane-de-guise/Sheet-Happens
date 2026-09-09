@@ -47,6 +47,15 @@ class ClassesSeeder extends Seeder
                     ['nom' => 'École de l\'évoque', 'niveau_sous_classe' => 2],
                 ],
             ],
+            [
+                'nom' => 'Guerrier',
+                'de_de_vie' => '10',
+                'description' => 'Un maître des armes et de l\'art de la guerre.',
+                'sous_classes' => [
+                    ['nom' => 'Champion', 'niveau_sous_classe' => 3],
+                    ['nom' => 'Maître de guerre', 'niveau_sous_classe' => 3],
+                ],
+            ],
         ];
 
         foreach ($classes as $classeData) {

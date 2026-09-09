@@ -115,7 +115,7 @@ class CreationPersonnageController extends Controller
         return redirect()->route('creation.classe');
     }
 
-    public function stepClasse(): View
+    public function stepClasse(): View|RedirectResponse
     {
         $classes = Classe::with(['sousClasses' => function ($query) {
             $query->where('niveau_sous_classe', 1);
@@ -161,7 +161,7 @@ class CreationPersonnageController extends Controller
         return redirect()->route('creation.methode');
     }
 
-    public function stepMethode(): View
+    public function stepMethode(): View|RedirectResponse
     {
         if (empty($this->getData()['classe_id'])) {
             return redirect()->route('creation.classe');
@@ -214,7 +214,7 @@ class CreationPersonnageController extends Controller
         return redirect()->route('creation.caracteristiques');
     }
 
-    public function stepCaracteristiques(): View
+    public function stepCaracteristiques(): View|RedirectResponse
     {
         $data = $this->getData();
 
@@ -311,7 +311,7 @@ class CreationPersonnageController extends Controller
         return redirect()->back()->with('rolled', $abilite);
     }
 
-    public function stepCompetences(): View
+    public function stepCompetences(): View|RedirectResponse
     {
         $data = $this->getData();
 
@@ -422,7 +422,7 @@ class CreationPersonnageController extends Controller
         return redirect()->route('creation.confirmation');
     }
 
-    public function stepConfirmation(): View
+    public function stepConfirmation(): View|RedirectResponse
     {
         $data = $this->getData();
 

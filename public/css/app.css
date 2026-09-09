@@ -565,16 +565,19 @@ body {
 
     .title-main {
         font-size: 2rem;
-        min-height: 100vh;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        line-height: 1.5;
-        color: var(--texte);
-        background-color: var(--fond);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 1.5rem;
     }
+}
+
+body {
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    color: var(--texte);
+    background-color: var(--fond);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
 }
 
 main {
