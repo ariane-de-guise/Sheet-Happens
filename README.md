@@ -1,5 +1,3 @@
-# README #
-
 ## Comment démarrer le projet
 
 ### Prérequis
@@ -48,11 +46,43 @@ cp .env.example .env
 ```
 
 ### 4. Démarrer les conteneurs Sail
+=======
+Ce document explique comment configurer et exécuter ce projet Laravel sur votre machine locale en utilisant **Laravel Sail** (l'environnement Docker de Laravel).
+
+## 📦 Prérequis
+
+Puisque ce projet utilise la conteneurisation, vous n'avez pas besoin d'installer PHP ou d'autres outils localement. Vous devez uniquement avoir :
+
+1. **Docker Engine**
+2. **Docker Compose**
+3. **PHP 8.4
+
+*Note pour les utilisateurs Linux : assurez-vous que le service Docker tourne et que votre utilisateur est dans le groupe `docker` pour éviter les conflits de permissions.*
+
+## 🚀 Installation et Configuration
+
+### 1. Installation des dépendances Composer
+
+Lorsque vous venez de cloner ce projet, le dossier `vendor` (qui contient toutes les dépendances PHP) est absent. Vous devez d'abord l'installer via un conteneur éphémère. 
+
+Exécutez cette commande à la racine du projet (assurez-vous d'être dans le dossier du projet) :
+
+```bash
+docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/html laravelsail/php84-composer:latest composer install --ignore-platform-reqs
+```
+
+## ⛵ Démarrer l'application
+
+### 1. Lancer les conteneurs
+
+Une fois les dépendances installées, vous pouvez démarrer les services en arrière-plan (serveur web, base de données, etc.) avec Sail :
+>>>>>>> develop
 
 ```bash
 ./vendor/bin/sail up -d
 ```
 
+<<<<<<< HEAD
 #### Cas particulier — Apache (ou un autre service) occupe déjà le port 80
 
 Erreur typique :
