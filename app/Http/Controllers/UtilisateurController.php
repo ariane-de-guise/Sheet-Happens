@@ -29,7 +29,7 @@ class UtilisateurController extends Controller
         Auth::login($utilisateur);
         $request->session()->regenerate();
         // Redirige l'utilisateur vers la page d'accueil
-        return redirect('/');
+        return redirect('/personnages');
     }
 
     /**
