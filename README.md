@@ -8,6 +8,7 @@ Puisque ce projet utilise la conteneurisation, vous n'avez pas besoin d'installe
 
 1. **Docker Engine**
 2. **Docker Compose**
+3. **PHP 8.4
 
 *Note pour les utilisateurs Linux : assurez-vous que le service Docker tourne et que votre utilisateur est dans le groupe `docker` pour éviter les conflits de permissions.*
 
@@ -61,6 +62,3 @@ Lorsque vous avez terminé de travailler, vous pouvez stopper proprement l'envir
 ```bash
 ./vendor/bin/sail down
 ```
-
-
-don't i need to do composer install?
