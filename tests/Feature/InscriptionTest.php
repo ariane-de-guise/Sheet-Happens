@@ -38,7 +38,7 @@ class InscriptionTest extends TestCase
         $reponse = $this->post('/inscription', $donnees);
 
         // 1. Vérifie la redirection vers l'accueil
-        $reponse->assertRedirect('/');
+        $reponse->assertRedirect('/personnages');
 
         // 2. Vérifie que la ligne existe dans la table 'utilisateurs'
         $this->assertDatabaseHas('utilisateurs', [

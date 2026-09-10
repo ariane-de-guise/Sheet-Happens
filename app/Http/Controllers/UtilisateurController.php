@@ -28,8 +28,8 @@ class UtilisateurController extends Controller
         $utilisateur = Utilisateur::create($request->validated());
         Auth::login($utilisateur);
         $request->session()->regenerate();
-        // Redirige l'utilisateur vers la page d'accueil
-        return redirect('/personnages');
+        // La liste des personnages est la première page après connexion.
+        return redirect()->route('personnages.index');
     }
 
     /**
@@ -38,5 +38,27 @@ class UtilisateurController extends Controller
     public function create(): View
     {
         return view('inscription');
+    }
+
+    /**
+     * Déconnecte l'utilisateur et retourne à l'inscription.
+     */
+    public function logout(Request $request): RedirectResponse
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('utilisateurs.create');
+    }
+
+    /**
+     * Affiche le profil de l'utilisateur actuellement connecté.
+     */
+    public function show(Request $request): View
+    {
+        return view('profil', [
+            'utilisateur' => $request->user(),
+        ]);
     }
 }

@@ -670,3 +670,77 @@ a:hover {
     color: var(--secondaire-survol);
     text-decoration: underline;
 }
+
+/* Profil utilisateur */
+.profile-page {
+    min-height: calc(100vh - 4rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-card {
+    width: min(100%, 680px);
+}
+
+.profile-header {
+    margin-bottom: 2rem;
+}
+
+.profile-eyebrow {
+    color: #b8a9c9;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.5rem;
+}
+
+.profile-information {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.profile-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 1.25rem;
+    background: rgba(25, 10, 50, 0.75);
+    border: 1px solid #c49a3c;
+    border-radius: 10px;
+}
+
+.profile-label {
+    color: #b8a9c9;
+    font-size: 0.85rem;
+}
+
+.profile-value {
+    color: #f5f5f5;
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+}
+
+.profile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* Actions du profil */
+.logout-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.btn-danger {
+    background: #b91c1c;
+    color: #ffffff;
+    border-color: #b91c1c;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
