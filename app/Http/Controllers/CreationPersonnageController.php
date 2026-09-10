@@ -33,6 +33,7 @@ class CreationPersonnageController extends Controller
                 'sagesse' => 8,
                 'charisme' => 8,
             ],
+            'bonus_aptitudes' => [],
             'competences' => [],
             'maitrise' => null,
             'outil' => null,
@@ -96,13 +97,12 @@ class CreationPersonnageController extends Controller
             'sous_race_id' => 'nullable|integer|exists:sous_races,id',
         ]);
 
-        $current = $this->getData();
-        $newRaceId = $validated['race_id'];
-        $newSousRaceId = $validated['sous_race_id'] ?? null;
+        $newRaceId = (int) $validated['race_id'];
+        $newSousRaceId = !empty($validated['sous_race_id']) ? (int) $validated['sous_race_id'] : null;
 
-        if (!empty($newSousRaceId)) {
+        if ($newSousRaceId !== null) {
             $sr = SousRace::find($newSousRaceId);
-            if (!$sr || $sr->race_id !== $newRaceId) {
+            if (!$sr || (int) $sr->race_id !== $newRaceId) {
                 $newSousRaceId = null;
             }
         }
@@ -222,9 +222,14 @@ class CreationPersonnageController extends Controller
             return redirect()->route('creation.methode');
         }
 
+        $race = Race::find($data['race_id']);
+        $sousRace = SousRace::find($data['sous_race_id']);
+
         return view('personnages.creation.caracteristiques', [
             'methode' => $data['methode'],
             'abilites' => $data['abilites'],
+            'race' => $race,
+            'sousRace' => $sousRace,
             'currentStep' => 4,
             'progress' => $this->getProgress(),
         ]);
@@ -265,13 +270,13 @@ class CreationPersonnageController extends Controller
             'sagesse' => $validated['sagesse'],
             'charisme' => $validated['charisme'],
         ];
-
         if ($methode === 'points') {
-            $costTable = [8 => 0, 9 => 1, 10 => 2, 11 => 3, 12 => 4, 13 => 6, 14 => 8, 15 => 10];
-            $totalCost = array_sum(array_map(fn($v) => $costTable[$v] ?? 0, $abilites));
+            $costTable = [8 => 0, 9 => 1, 10 => 2, 11 => 3, 12 => 4, 13 => 5, 14 => 7, 15 => 9];
+            $totalCost = array_sum(array_map(fn($v) => $costTable[(int)$v] ?? 0, $abilites));
+
             if ($totalCost !== 27) {
                 return redirect()->back()
-                    ->with('error', 'Vous devez utiliser exactement 27 points (coût progressif : 9=1, 10=2, 11=3, 12=4, 13=6, 14=8, 15=10).');
+                    ->with('error', 'Vous devez utiliser exactement 27 points (coût : 9=1, 10=2, 11=3, 12=4, 13=5, 14=7, 15=9).');
             }
         }
 

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('vitesse')->nullable();
             $table->string('type_creature')->default('Humanoide');
             $table->text('description')->nullable();
+            $table->json('bonus_aptitudes')->nullable();
             $table->timestamps();
         });
 
