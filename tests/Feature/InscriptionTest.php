@@ -125,7 +125,7 @@ class InscriptionTest extends TestCase
 
     public function test_get_auth_password_retourne_le_mot_de_passe_hache(): void
     {
-        $utilisateur = new \App\Models\Utilisateur([
+        $utilisateur = new Utilisateur([
             'mot_de_passe' => 'Secret1234!',
         ]);
 
@@ -135,5 +135,4 @@ class InscriptionTest extends TestCase
         // 2. Ou vérifie directement que getAuthPassword() retourne bien l'attribut 'mot_de_passe'
         $this->assertSame($utilisateur->mot_de_passe, $utilisateur->getAuthPassword());
     }
-
 }

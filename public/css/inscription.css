@@ -45,12 +45,8 @@
     font-weight: 500;
 }
 
-.auth-id {
-    color: #64748b;
-    font-size: 0.75rem;
-}
-
 .auth-btn-logout {
+    margin: 0;
     background: transparent;
     border: 1px solid #334155;
     color: #cbd5e1;
