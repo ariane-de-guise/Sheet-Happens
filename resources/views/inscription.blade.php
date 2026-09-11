@@ -11,7 +11,7 @@
 <main>
     <h1>Création de compte</h1>
 
-    <form action="/inscription" method="POST">
+    <form action="{{ route('utilisateurs.store') }}" method="POST">
         @csrf
         <div>
             <label for="courriel">Adresse courriel :</label>
@@ -19,10 +19,16 @@
                 type="email"
                 id="courriel"
                 name="courriel"
+                value="{{ old('courriel') }}"
                 required
                 autocomplete="email"
                 placeholder="exemple@domaine.com"
             >
+            @error('courriel')
+            <span style="color: red; font-size: 0.9em; display: block; margin-top: 4px;">
+                {{ $message }}
+            </span>
+            @enderror
         </div>
 
         <br>

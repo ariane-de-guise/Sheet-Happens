@@ -40,8 +40,8 @@
     <p>Accédez à votre espace ou rejoignez la plateforme en quelques secondes.</p>
 
     <nav>
-        <a href="/connexion"><button>Se connecter</button></a>
-        <a href="/inscription"><button>Créer un compte</button></a>
+        <a href="{{ route('connexion.create') }}"><button>Se connecter</button></a>
+        <a href="{{ route('utilisateurs.create') }}"><button>Créer un compte</button></a>
     </nav>
 </main>
 

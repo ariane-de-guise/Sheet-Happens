@@ -10,11 +10,13 @@ use App\Services\PersonnageCreationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CreationPersonnageController extends Controller
 {
     protected const SESSION_KEY = 'personnage_creation';
+
     protected const TOTAL_STEPS = 6;
 
     protected function getData(): array
@@ -55,18 +57,28 @@ class CreationPersonnageController extends Controller
         $data = $this->getData();
         $step = 0;
 
-        if (!empty($data['race_id'])) $step = 1;
-        if (!empty($data['classe_id'])) $step = 2;
-        if (!empty($data['methode'])) $step = 3;
-        if ($this->abilitesComplete($data['abilites'] ?? [])) $step = 4;
-        if (!empty($data['competences'])) $step = 5;
+        if (! empty($data['race_id'])) {
+            $step = 1;
+        }
+        if (! empty($data['classe_id'])) {
+            $step = 2;
+        }
+        if (! empty($data['methode'])) {
+            $step = 3;
+        }
+        if ($this->abilitesComplete($data['abilites'] ?? [])) {
+            $step = 4;
+        }
+        if (! empty($data['competences'])) {
+            $step = 5;
+        }
 
         return $step;
     }
 
     protected function abilitesComplete(array $abilites): bool
     {
-        return !empty($abilites) &&
+        return ! empty($abilites) &&
                ($abilites['force'] ?? 0) > 0 &&
                ($abilites['dexterite'] ?? 0) > 0 &&
                ($abilites['constitution'] ?? 0) > 0 &&
@@ -100,9 +112,9 @@ class CreationPersonnageController extends Controller
         $newRaceId = $validated['race_id'];
         $newSousRaceId = $validated['sous_race_id'] ?? null;
 
-        if (!empty($newSousRaceId)) {
+        if (! empty($newSousRaceId)) {
             $sr = SousRace::find($newSousRaceId);
-            if (!$sr || $sr->race_id !== $newRaceId) {
+            if (! $sr || $sr->race_id !== $newRaceId) {
                 $newSousRaceId = null;
             }
         }
@@ -146,9 +158,9 @@ class CreationPersonnageController extends Controller
         $newClasseId = $validated['classe_id'];
         $newSousClasseId = $validated['sous_classe_id'] ?? null;
 
-        if ($newClasseId !== $current['classe_id'] && !empty($newSousClasseId)) {
+        if ($newClasseId !== $current['classe_id'] && ! empty($newSousClasseId)) {
             $sc = SousClasse::find($newSousClasseId);
-            if (!$sc || $sc->classe_id !== $newClasseId) {
+            if (! $sc || $sc->classe_id !== $newClasseId) {
                 $newSousClasseId = null;
             }
         }
@@ -268,7 +280,7 @@ class CreationPersonnageController extends Controller
 
         if ($methode === 'points') {
             $costTable = [8 => 0, 9 => 1, 10 => 2, 11 => 3, 12 => 4, 13 => 6, 14 => 8, 15 => 10];
-            $totalCost = array_sum(array_map(fn($v) => $costTable[$v] ?? 0, $abilites));
+            $totalCost = array_sum(array_map(fn ($v) => $costTable[$v] ?? 0, $abilites));
             if ($totalCost !== 27) {
                 return redirect()->back()
                     ->with('error', 'Vous devez utiliser exactement 27 points (coût progressif : 9=1, 10=2, 11=3, 12=4, 13=6, 14=8, 15=10).');
@@ -295,7 +307,7 @@ class CreationPersonnageController extends Controller
 
         $abilite = $request->input('abilite');
 
-        if (!$abilite || !in_array($abilite, ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'])) {
+        if (! $abilite || ! in_array($abilite, ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'])) {
             return $request->expectsJson()
                 ? response()->json(['error' => 'Abilite invalide'], 400)
                 : redirect()->back();
@@ -315,7 +327,7 @@ class CreationPersonnageController extends Controller
     {
         $data = $this->getData();
 
-        if (!$this->abilitesComplete($data['abilites'] ?? [])) {
+        if (! $this->abilitesComplete($data['abilites'] ?? [])) {
             return redirect()->route('creation.caracteristiques');
         }
 
@@ -457,7 +469,8 @@ class CreationPersonnageController extends Controller
         $conMod = floor($conMod);
 
         if ($classe && $classe->de_de_vie) {
-            $de = (int)str_replace('d', '', $classe->de_de_vie);
+            $de = (int) str_replace('d', '', $classe->de_de_vie);
+
             return max($de, $conMod) + $conMod;
         }
 
@@ -469,7 +482,7 @@ class CreationPersonnageController extends Controller
         $data = $this->getData();
         $niveau = 1;
 
-        if (!empty($data['sous_classe_id'])) {
+        if (! empty($data['sous_classe_id'])) {
             $sousClasse = SousClasse::find($data['sous_classe_id']);
             if ($sousClasse && $sousClasse->niveau_sous_classe > $niveau) {
                 $data['sous_classe_id'] = null;
@@ -477,7 +490,7 @@ class CreationPersonnageController extends Controller
         }
 
         $payload = [
-            'utilisateur_id' => 1,
+            'utilisateur_id' => $request->user()->id,
             'race_id' => $data['race_id'],
             'sous_race_id' => $data['sous_race_id'],
             'classe_id' => $data['classe_id'],
@@ -497,7 +510,7 @@ class CreationPersonnageController extends Controller
 
             return redirect()->route('personnages.show', $personnage)
                 ->with('success', 'Votre personnage a été créé avec succès !');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return redirect()->route('creation.confirmation')
                 ->withErrors($e->errors())
                 ->withInput();
@@ -509,12 +522,14 @@ class CreationPersonnageController extends Controller
         $sousClasses = SousClasse::where('classe_id', $classeId)
             ->where('niveau_sous_classe', '<=', $niveauMax)
             ->get();
+
         return response()->json($sousClasses);
     }
 
     public function getSousRaces($raceId): JsonResponse
     {
         $sousRaces = SousRace::where('race_id', $raceId)->get();
+
         return response()->json($sousRaces);
     }
 }
