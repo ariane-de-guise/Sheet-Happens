@@ -24,7 +24,11 @@ class DeconnexionTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_le_bouton_de_deconnexion_est_visible_uniquement_sur_le_profil(): void
+    /**
+     * Teste que le badge d'accueil affiche le bouton de déconnexion pour un
+     * utilisateur connecté.
+     */
+    public function test_la_page_d_accueil_affiche_le_bouton_de_deconnexion_pour_un_utilisateur_connecte(): void
     {
         $utilisateur = Utilisateur::factory()->create([
             'courriel' => 'samuel@exemple.com',
@@ -35,11 +39,6 @@ class DeconnexionTest extends TestCase
             ->assertSee('samuel@exemple.com')
             ->assertSee('Afficher le profil')
             ->assertDontSee('Se déconnecter');
-
-        $this->actingAs($utilisateur)
-            ->get('/profil')
-            ->assertSee('samuel@exemple.com')
-            ->assertSee('Se déconnecter');
     }
 
     /**

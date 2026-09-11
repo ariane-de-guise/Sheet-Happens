@@ -17,11 +17,22 @@
 ">
 
 <div class="auth-badge">
-    <span class="auth-status-dot dot-offline"></span>
-    <div class="auth-info">
-        <span style="color: #94a3b8;">Non connecté</span>
-        <a href="{{ route('utilisateurs.create') }}" class="auth-link">S'inscrire</a>
-    </div>
+    @auth
+        <span class="auth-status-dot dot-online"></span>
+        <div class="auth-info">
+            <span class="auth-email">{{ Auth::user()->courriel }}</span>
+            <form action="{{ route('deconnexion') }}" method="POST" style="margin: 0;">
+                @csrf
+                <button type="submit" class="auth-btn-logout">Déconnexion</button>
+            </form>
+        </div>
+    @else
+        <span class="auth-status-dot dot-offline"></span>
+        <div class="auth-info">
+            <span style="color: #94a3b8;">Non connecté</span>
+            <a href="/inscription" class="auth-link">S'inscrire</a>
+        </div>
+    @endauth
 </div>
 
 <main>

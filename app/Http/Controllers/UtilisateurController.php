@@ -69,3 +69,4 @@ class UtilisateurController extends Controller
         return redirect()->route('welcome');
     }
 }
+
