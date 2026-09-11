@@ -43,6 +43,7 @@ docker run --rm \
 
 ```bash
 cp .env.example .env
+sail artisan key:generate
 ```
 
 ### 4. Démarrer les conteneurs Sail
