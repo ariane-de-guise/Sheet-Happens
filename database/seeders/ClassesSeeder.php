@@ -21,6 +21,18 @@ class ClassesSeeder extends Seeder
                     ['nom' => 'Barbare combattant Totem',  'description' => 'Barbare qui accept un animal totem comme guide, protecteur et source d\'inspiration.'],
                 ],
             ],
+
+            [
+                'nom' => 'Combattant',
+                'de_de_vie' => '10',
+                'description' => 'Un combattant qui a une maîtrise inégalée des armes et des armures, ainsi qu’une connaissance approfondie des compétences de combat.',
+                'niveau_sous_classe' => 3,
+                'sous_classes' => [
+                    ['nom' => 'Maitre de Bataille', 'description' => 'Combattant qui emploient des techniques martiales transmises de génération en génération.'],
+                    ['nom' => 'Champion', 'description' => 'Combattant à la puissance physique brute est affûtée à une perfection mortelle.'],
+                    ['nom' => 'Chevalier Surnaturel', 'description' => 'Combattant mémorisant des sort pour la bataille.'],
+                ],
+            ],
             [
                 'nom' => 'Clerc',
                 'de_de_vie' => '8',
@@ -36,25 +48,16 @@ class ClassesSeeder extends Seeder
                     ['nom' => 'Domaine de la Guerre', 'description' => 'Clerc qui excel en combat grace à son dieu'],
                 ],
             ],
-            [
-                'nom' => 'Combattant',
-                'de_de_vie' => '8',
-                'description' => 'Un combattant qui a une maîtrise inégalée des armes et des armures, ainsi qu’une connaissance approfondie des compétences de combat.',
-                'niveau_sous_classe' => 3,
-                'sous_classes' => [
-                    ['nom' => 'Maitre de Bataille', 'description' => 'Combattant qui emploient des techniques martiales transmises de génération en génération.'],
-                    ['nom' => 'Champion', 'description' => ''],
-                    ['nom' => 'Chevalier Surnaturel', 'description' => ''],
-                ],
-            ],
+
             [
                 'nom' => 'Roublard',
                 'de_de_vie' => '8',
                 'description' => 'Un expert de la furtivité et du piège.',
                 'niveau_sous_classe' => 2,
                 'sous_classes' => [
-                    ['nom' => 'Voleur', 'description' => ''],
-                    ['nom' => 'Assassin', 'description' => ''],
+                    ['nom' => 'Voleur', 'description' => 'Roublard qui a perfectionné ses compétences dans les arts du vol'],
+                    ['nom' => 'Assassin', 'description' => 'Roublard qui a concentré son entraînement sur l’art sombre de la mort'],
+                    ['nom' => 'Filou Arcanique', 'description' => 'Roublard qui à perfectionné ses compétences à l\'aide de magie'],
                 ],
             ],
             [
@@ -63,8 +66,14 @@ class ClassesSeeder extends Seeder
                 'description' => 'Un savant qui étudie les arcanes pour maîtriser la magie.',
                 'niveau_sous_classe' => 2,
                 'sous_classes' => [
-                    ['nom' => 'École de l\'évasion', 'description' => ''],
-                    ['nom' => 'École de l\'évoque', 'description' => ''],
+                    ['nom' => 'École de l\'Abjuration', 'description' => 'Magicien qui se specialise dans la magie qui bloque, bannit ou protège.'],
+                    ['nom' => 'École de la Conjuration', 'description' => 'Magicien qui se specialise dans les sorts qui produisent des objets et des créatures à partir de rien.'],
+                    ['nom' => 'École de la Divination', 'description' => 'Magicien qui se specialise dans les sorts de discernement, la vision à distance, la connaissance surnaturelle et la clairvoyance.'],
+                    ['nom' => 'École de l\'Enchantement', 'description' => 'Magicien qui a affiné sa capacité à captiver et séduire magiquement les autres et les monstres.'],
+                    ['nom' => 'École de l\'Évocation', 'description' => 'Magicien qui se specialise dans la magie qui crée de puissants effets élémentaires tels que le froid mordant, les flammes brûlantes, le tonnerre roulant, la foudre crépitante et l’acide brûlant.'],
+                    ['nom' => 'École de l\'Illusion', 'description' => 'Magicien qui se concentre sur une magie qui éblouit les sens, déroute l’esprit et trompe même les plus sages.'],
+                    ['nom' => 'École de la Nécromancie', 'description' => 'Magicien qui se specialise dans la transformation de énergie vitale en puissance magique manipulable.'],
+                    ['nom' => 'École de la Transmutation', 'description' => 'Magicien qui se specialise dans les sorts qui modifient l’énergie et la matière'],
                 ],
             ],
         ];
