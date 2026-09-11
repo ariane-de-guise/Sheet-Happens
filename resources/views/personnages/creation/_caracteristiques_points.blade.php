@@ -12,11 +12,10 @@
     ];
 @endphp
 
-<form action="{{ route('creation.caracteristiques.save') }}" method="POST" class="stat-sheet-form">
+<form action="{{ route('creation.caracteristiques.save') }}" method="POST" class="stat-sheet-form" id="mainForm">
     @csrf
     <div class="stats-container">
-        <div class="stats-list">
-            <!-- Table Header for clear context -->
+        <div class="dice-roll-table">
             <div class="stat-header-row">
                 <span>Caractéristique</span>
                 <span>Base (8–15)</span>
@@ -26,39 +25,34 @@
 
             @foreach($stats as $key => $label)
                 @php
-                    $raceBonus = data_get($race, "bonus_aptitudes.$key", 0);
-                    $subRaceBonus = data_get($sousRace, "bonus_aptitudes.$key", 0);
-                    $bonus = (int)$raceBonus + (int)$subRaceBonus;
+                    $raceBonus = (int) data_get($race, "bonus_aptitudes.$key", 0);
+                    $subRaceBonus = (int) data_get($sousRace, "bonus_aptitudes.$key", 0);
+                    $bonus = $raceBonus + $subRaceBonus;
 
-                    $baseVal = (int)($abilites[$key] ?? 8);
+                    $baseVal = (int) ($abilites[$key] ?? 8);
                     $finalScore = $baseVal + $bonus;
                 @endphp
 
                 <div class="stat-row">
-                    <!-- Column 1: Label -->
                     <div class="stat-name-block">
                         <span class="stat-name">{{ $label }}</span>
                     </div>
 
-                    <!-- Column 2: Stepper controls -->
                     <div class="stat-controls-wrapper">
-
-                        <button type="button" class="btn-stat btn-stat-plus"
-                                id="btn-plus-{{ $key }}"
-                                onclick="modifierStat('{{ $key }}', 1)">+</button>
-
-                        <input type="number" name="{{ $key }}" value="{{ $baseVal }}"
-                               min="8" max="15" class="stat-value" id="stat-{{ $key }}"
-                               data-key="{{ $key }}" data-bonus="{{ $bonus }}" readonly>
-
                         <button type="button" class="btn-stat btn-stat-minus"
                                 id="btn-minus-{{ $key }}"
                                 onclick="modifierStat('{{ $key }}', -1)"
                             {{ $baseVal <= 8 ? 'disabled' : '' }}>−</button>
 
+                        <input type="number" name="{{ $key }}" value="{{ $baseVal }}"
+                               min="8" max="15" class="stat-value" id="stat-{{ $key }}"
+                               data-key="{{ $key }}" data-bonus="{{ $bonus }}" readonly>
+
+                        <button type="button" class="btn-stat btn-stat-plus"
+                                id="btn-plus-{{ $key }}"
+                                onclick="modifierStat('{{ $key }}', 1)">+</button>
                     </div>
 
-                    <!-- Column 3: Bonus badge -->
                     <div class="stat-bonus-box">
                         @if($bonus > 0)
                             <span class="badge-racial" title="Bonus de race et sous-race">+{{ $bonus }}</span>
@@ -67,7 +61,6 @@
                         @endif
                     </div>
 
-                    <!-- Column 4: Unified Score Card & Modifier -->
                     <div class="stat-final-card">
                         <div class="stat-final-num" id="total-{{ $key }}">{{ $finalScore }}</div>
                     </div>
@@ -113,7 +106,7 @@
         function getTotalCost() {
             let total = 0;
             document.querySelectorAll('.stat-value').forEach(input => {
-                total += getCost(parseInt(input.value) || 8);
+                total += getCost(parseInt(input.value, 10) || 8);
             });
             return total;
         }
@@ -127,29 +120,18 @@
             display.classList.toggle('negative', remaining < 0);
             display.classList.toggle('zero', remaining === 0);
 
-            // Validation du bouton de soumission
             const nextBtn = document.getElementById('btnSuivant');
             nextBtn.disabled = remaining !== 0;
 
-            // Recalcul des modificateurs et ajustement dynamique des boutons
             document.querySelectorAll('.stat-value').forEach(input => {
                 const key = input.dataset.key;
-                const bonus = parseInt(input.dataset.bonus) || 0;
-                const baseVal = parseInt(input.value) || 8;
+                const bonus = parseInt(input.dataset.bonus, 10) || 0;
+                const baseVal = parseInt(input.value, 10) || 8;
                 const finalScore = baseVal + bonus;
 
-                // Affichage Score Total
                 const totalDisplay = document.getElementById('total-' + key);
                 if (totalDisplay) totalDisplay.textContent = finalScore;
 
-                // Affichage Modificateur
-                const modDisplay = document.getElementById('mod-' + key);
-                if (modDisplay) {
-                    const mod = Math.floor((finalScore - 10) / 2);
-                    modDisplay.textContent = (mod >= 0 ? '+' : '') + mod;
-                }
-
-                // Désactivation contextuelle des boutons +/-
                 const minusBtn = document.getElementById('btn-minus-' + key);
                 const plusBtn = document.getElementById('btn-plus-' + key);
 
@@ -164,7 +146,7 @@
 
         function modifierStat(key, delta) {
             const input = document.getElementById('stat-' + key);
-            const value = parseInt(input.value) || 8;
+            const value = parseInt(input.value, 10) || 8;
             const targetValue = value + delta;
 
             if (targetValue < 8 || targetValue > 15) return;

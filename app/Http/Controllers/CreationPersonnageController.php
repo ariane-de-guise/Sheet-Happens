@@ -280,6 +280,18 @@ class CreationPersonnageController extends Controller
             }
         }
 
+        $race = Race::find($data['race_id']);
+        $sousRace = !empty($data['sous_race_id']) ? SousRace::find($data['sous_race_id']) : null;
+
+        // 4. Add bonuses to the base scores
+        foreach ($abilites as $key => &$score) {
+            $raceBonus = (int) data_get($race, "bonus_aptitudes.$key", 0);
+            $subRaceBonus = (int) data_get($sousRace, "bonus_aptitudes.$key", 0);
+
+            $score += ($raceBonus + $subRaceBonus);
+        }
+        unset($score);
+
         $this->saveData(['abilites' => $abilites]);
 
         return redirect()->route('creation.competences');
