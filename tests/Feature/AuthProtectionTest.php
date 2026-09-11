@@ -28,6 +28,7 @@ class AuthProtectionTest extends TestCase
             ->get('/inscription')
             ->assertRedirect(route('personnages.index'));
     }
+
     public function test_un_utilisateur_connecte_qui_visite_l_accueil_est_redirige_vers_personnages(): void
     {
         $utilisateur = Utilisateur::factory()->create();
@@ -36,5 +37,4 @@ class AuthProtectionTest extends TestCase
             ->get('/')
             ->assertRedirect(route('personnages.index'));
     }
-
 }

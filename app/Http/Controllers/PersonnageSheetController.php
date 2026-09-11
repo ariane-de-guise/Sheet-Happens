@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Abilite;
 use App\Models\Classe;
-use App\Models\ListeCompetence;
 use App\Models\Personnage;
 use App\Models\Race;
 use App\Models\SousClasse;
@@ -98,7 +96,7 @@ class PersonnageSheetController extends Controller
 
         $personnage->load(['abilites', 'listeCompetence']);
 
-        $niveau = (int)$request->input('niveau', $personnage->niveau);
+        $niveau = (int) $request->input('niveau', $personnage->niveau);
 
         $maxCompetences = $this->getMaxCompetencesByLevel($niveau);
         $maxLangues = $this->getMaxLanguesByLevel($niveau);
@@ -135,7 +133,7 @@ class PersonnageSheetController extends Controller
         $sousRaceId = $validated['sous_race_id'] ?? null;
         if ($sousRaceId) {
             $sr = SousRace::find($sousRaceId);
-            if (!$sr || $sr->race_id !== $validated['race_id']) {
+            if (! $sr || $sr->race_id !== $validated['race_id']) {
                 $sousRaceId = null;
             }
         }
@@ -143,7 +141,7 @@ class PersonnageSheetController extends Controller
         $sousClasseId = $validated['sous_classe_id'] ?? null;
         if ($sousClasseId) {
             $sc = SousClasse::find($sousClasseId);
-            if (!$sc || $sc->classe_id !== $validated['classe_id'] || $sc->niveau_sous_classe > $validated['niveau']) {
+            if (! $sc || $sc->classe_id !== $validated['classe_id'] || $sc->niveau_sous_classe > $validated['niveau']) {
                 $sousClasseId = null;
             }
         }
@@ -188,11 +186,11 @@ class PersonnageSheetController extends Controller
 
     protected function getMaxCompetencesByLevel(int $niveau): int
     {
-        return 2 + (int)floor(($niveau - 1) / 2);
+        return 2 + (int) floor(($niveau - 1) / 2);
     }
 
     protected function getMaxLanguesByLevel(int $niveau): int
     {
-        return 2 + (int)floor(($niveau - 1) / 3);
+        return 2 + (int) floor(($niveau - 1) / 3);
     }
 }

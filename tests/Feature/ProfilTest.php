@@ -37,7 +37,6 @@ class ProfilTest extends TestCase
         $this->get('/profil')->assertRedirect(route('connexion.create'));
     }
 
-
     public function test_un_utilisateur_connecte_ne_peut_pas_revenir_a_l_inscription(): void
     {
         $utilisateur = Utilisateur::factory()->create();
