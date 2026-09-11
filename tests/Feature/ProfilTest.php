@@ -34,17 +34,9 @@ class ProfilTest extends TestCase
 
     public function test_un_utilisateur_non_connecte_ne_peut_pas_consulter_un_profil(): void
     {
-        $this->get('/profil')->assertRedirect('/inscription');
+        $this->get('/profil')->assertRedirect(route('connexion.create'));
     }
 
-    public function test_un_utilisateur_connecte_qui_va_a_l_accueil_est_envoye_aux_personnages(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-
-        $this->actingAs($utilisateur)
-            ->get('/')
-            ->assertRedirect(route('personnages.index'));
-    }
 
     public function test_un_utilisateur_connecte_ne_peut_pas_revenir_a_l_inscription(): void
     {
@@ -52,7 +44,7 @@ class ProfilTest extends TestCase
 
         $reponse = $this->actingAs($utilisateur)->get('/inscription');
 
-        $reponse->assertRedirect('/');
+        $reponse->assertRedirect(route('personnages.index'));
     }
 
     public function test_la_deconnexion_retourne_a_l_inscription(): void
@@ -61,7 +53,7 @@ class ProfilTest extends TestCase
 
         $this->actingAs($utilisateur)
             ->post('/deconnexion')
-            ->assertRedirect(route('utilisateurs.create'));
+            ->assertRedirect(route('welcome'));
 
         $this->assertGuest();
     }

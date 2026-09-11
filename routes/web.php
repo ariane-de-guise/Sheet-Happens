@@ -4,11 +4,10 @@ use App\Http\Controllers\CreationPersonnageController;
 use App\Http\Controllers\PersonnageController;
 use App\Http\Controllers\PersonnageSheetController;
 use App\Http\Controllers\UtilisateurController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    if (Auth::check()) {
+    if (auth()->check()) {
         return redirect()->route('personnages.index');
     }
 
@@ -18,11 +17,14 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/inscription', [UtilisateurController::class, 'create'])->name('utilisateurs.create');
     Route::post('/inscription', [UtilisateurController::class, 'store'])->name('utilisateurs.store');
+
+    Route::get('/connexion', [UtilisateurController::class, 'formulaireConnexion'])->name('connexion.create');
+    Route::post('/connexion', [UtilisateurController::class, 'connexion'])->name('connexion.store');
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profil', [UtilisateurController::class, 'show'])->name('utilisateurs.profil');
-    Route::post('/deconnexion', [UtilisateurController::class, 'logout'])->name('utilisateurs.logout');
+    Route::get('/profil', [UtilisateurController::class, 'profil'])->name('utilisateurs.profil');
+    Route::post('/deconnexion', [UtilisateurController::class, 'deconnexion'])->name('deconnexion');
 
     Route::post('/api/personnages', [PersonnageController::class, 'store']);
 

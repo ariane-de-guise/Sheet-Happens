@@ -11,13 +11,14 @@ use App\Models\SousClasse;
 use App\Models\SousRace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class PersonnageSheetController extends Controller
 {
     public function index(): View
     {
-        $personnages = Personnage::where('utilisateur_id', 1)
+        $personnages = Personnage::where('utilisateur_id', Auth::id())
             ->with(['race', 'classe', 'abilites'])
             ->get();
 
@@ -28,6 +29,8 @@ class PersonnageSheetController extends Controller
 
     public function show(Personnage $personnage): View
     {
+        $this->authorizeOwner($personnage);
+
         $personnage->load(['race', 'sousRace', 'classe', 'sousClasse', 'abilites', 'listeCompetence']);
 
         return view('personnages.show', [
@@ -37,6 +40,8 @@ class PersonnageSheetController extends Controller
 
     public function edit(Personnage $personnage): View
     {
+        $this->authorizeOwner($personnage);
+
         $personnage->load(['race', 'sousRace', 'classe', 'sousClasse', 'abilites', 'listeCompetence']);
 
         $races = Race::with('sousRaces')->get();
@@ -89,6 +94,8 @@ class PersonnageSheetController extends Controller
 
     public function update(Request $request, Personnage $personnage): RedirectResponse
     {
+        $this->authorizeOwner($personnage);
+
         $personnage->load(['abilites', 'listeCompetence']);
 
         $niveau = (int)$request->input('niveau', $personnage->niveau);
@@ -172,6 +179,11 @@ class PersonnageSheetController extends Controller
 
         return redirect()->route('personnages.show', $personnage)
             ->with('success', 'Personnage mis à jour avec succès !');
+    }
+
+    protected function authorizeOwner(Personnage $personnage): void
+    {
+        abort_unless($personnage->utilisateur_id === Auth::id(), 403);
     }
 
     protected function getMaxCompetencesByLevel(int $niveau): int

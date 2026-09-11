@@ -477,7 +477,7 @@ class CreationPersonnageController extends Controller
         }
 
         $payload = [
-            'utilisateur_id' => 1,
+            'utilisateur_id' => $request->user()->id,
             'race_id' => $data['race_id'],
             'sous_race_id' => $data['sous_race_id'],
             'classe_id' => $data['classe_id'],

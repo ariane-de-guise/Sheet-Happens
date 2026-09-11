@@ -21,6 +21,8 @@
 
     <div class="text-center">
         <a href="{{ route('creation.race') }}" class="btn btn-primary mb-2">Créez un personnage</a>
+        <br>
+        <a href="{{ route('welcome') }}" class="btn btn-secondary">Retour à l'accueil</a>
     </div>
 </div>
 @endsection

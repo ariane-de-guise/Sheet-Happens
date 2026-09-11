@@ -28,7 +28,7 @@
             <div class="profile-actions">
                 <a href="{{ route('personnages.index') }}" class="btn btn-primary">Mes personnages</a>
 
-                <form method="POST" action="{{ route('utilisateurs.logout') }}" class="logout-form">
+                <form method="POST" action="{{ route('deconnexion') }}" class="logout-form">
                     @csrf
                     <button type="submit" class="btn btn-danger">Se déconnecter</button>
                 </form>
