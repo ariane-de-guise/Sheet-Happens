@@ -14,6 +14,7 @@ class Race extends Model
         return ['bonus_aptitudes' => 'array'];
     }
 
+
     public function sousRaces(): HasMany
     {
         return $this->hasMany(SousRace::class);
