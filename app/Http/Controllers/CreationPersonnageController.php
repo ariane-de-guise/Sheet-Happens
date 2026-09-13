@@ -6,10 +6,12 @@ use App\Models\Classe;
 use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\SousRace;
+use App\Models\User;
 use App\Services\PersonnageCreationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -105,7 +107,13 @@ class CreationPersonnageController extends Controller
     {
         $validated = $request->validate([
             'race_id' => 'required|integer|exists:races,id',
-            'sous_race_id' => 'nullable|integer|exists:sous_races,id',
+            'sous_race_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('sous_races', 'id')->where(function ($query) use ($request) {
+                    return $query->where('race_id', $request->input('race_id'));
+                }),
+            ],
         ]);
 
         $current = $this->getData();
@@ -129,9 +137,7 @@ class CreationPersonnageController extends Controller
 
     public function stepClasse(): View|RedirectResponse
     {
-        $classes = Classe::with(['sousClasses' => function ($query) {
-            $query->where('niveau_sous_classe', 1);
-        }])->get();
+        $classes = Classe::with('sousClasses')->get();
         $data = $this->getData();
 
         if (empty($data['race_id'])) {
@@ -151,7 +157,13 @@ class CreationPersonnageController extends Controller
     {
         $validated = $request->validate([
             'classe_id' => 'required|integer|exists:classes,id',
-            'sous_classe_id' => 'nullable|integer|exists:sous_classes,id',
+            'sous_classe_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('sous_classes', 'id')->where(function ($query) use ($request) {
+                    return $query->where('classe_id', $request->input('classe_id'));
+                }),
+            ],
         ]);
 
         $current = $this->getData();
@@ -484,13 +496,14 @@ class CreationPersonnageController extends Controller
 
         if (! empty($data['sous_classe_id'])) {
             $sousClasse = SousClasse::find($data['sous_classe_id']);
-            if ($sousClasse && $sousClasse->niveau_sous_classe > $niveau) {
+            $classe = Classe::find($data['classe_id']);
+            if ($sousClasse && $classe && $classe->niveau_sous_classe > $niveau) {
                 $data['sous_classe_id'] = null;
             }
         }
 
         $payload = [
-            'utilisateur_id' => $request->user()->id,
+            'utilisateur_id' => auth()->id() ?? User::query()->firstOrFail()->getKey(),
             'race_id' => $data['race_id'],
             'sous_race_id' => $data['sous_race_id'],
             'classe_id' => $data['classe_id'],
@@ -519,9 +532,10 @@ class CreationPersonnageController extends Controller
 
     public function getSousClasses($classeId, $niveauMax = 1): JsonResponse
     {
-        $sousClasses = SousClasse::where('classe_id', $classeId)
-            ->where('niveau_sous_classe', '<=', $niveauMax)
-            ->get();
+        $classe = Classe::findOrFail($classeId);
+        $sousClasses = $classe->niveau_sous_classe <= $niveauMax
+            ? $classe->sousClasses->each->setAttribute('niveau_sous_classe', $classe->niveau_sous_classe)
+            : collect();
 
         return response()->json($sousClasses);
     }

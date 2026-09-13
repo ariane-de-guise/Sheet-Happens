@@ -7,16 +7,20 @@ use App\Models\Personnage;
 use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\SousRace;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class PersonnageSheetController extends Controller
 {
     public function index(): View
     {
-        $personnages = Personnage::where('utilisateur_id', Auth::id())
+        $userId = auth()->id() ?? User::query()->value('id');
+        $personnages = Personnage::query()
+            ->when($userId, fn ($query) => $query->where('utilisateur_id', $userId))
             ->with(['race', 'classe', 'abilites'])
             ->get();
 
@@ -104,9 +108,21 @@ class PersonnageSheetController extends Controller
         $validated = $request->validate([
             'nom' => 'required|string|max:100',
             'race_id' => 'required|integer|exists:races,id',
-            'sous_race_id' => 'nullable|integer|exists:sous_races,id',
+            'sous_race_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('sous_races', 'id')->where(function ($query) use ($request) {
+                    return $query->where('race_id', $request->input('race_id'));
+                }),
+            ],
             'classe_id' => 'required|integer|exists:classes,id',
-            'sous_classe_id' => 'nullable|integer|exists:sous_classes,id',
+            'sous_classe_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('sous_classes', 'id')->where(function ($query) use ($request) {
+                    return $query->where('classe_id', $request->input('classe_id'));
+                }),
+            ],
             'niveau' => 'required|integer|min:1|max:20',
             'alignement' => 'nullable|string|max:50',
             'description' => 'nullable|string',
@@ -141,7 +157,8 @@ class PersonnageSheetController extends Controller
         $sousClasseId = $validated['sous_classe_id'] ?? null;
         if ($sousClasseId) {
             $sc = SousClasse::find($sousClasseId);
-            if (! $sc || $sc->classe_id !== $validated['classe_id'] || $sc->niveau_sous_classe > $validated['niveau']) {
+            $classe = Classe::find($validated['classe_id']);
+            if (! $sc || ! $classe || $sc->classe_id !== $validated['classe_id'] || $classe->niveau_sous_classe > $validated['niveau']) {
                 $sousClasseId = null;
             }
         }

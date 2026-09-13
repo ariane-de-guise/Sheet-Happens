@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['classe_id', 'nom', 'description', 'niveau_sous_classe'])]
+#[Fillable(['classe_id', 'nom', 'description'])]
 class SousClasse extends Model
 {
     public function classe(): BelongsTo
