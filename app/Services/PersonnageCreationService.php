@@ -14,9 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class PersonnageCreationService
 {
-    public function __construct(private readonly DatabaseManager $database)
-    {
-    }
+    public function __construct(private readonly DatabaseManager $database) {}
 
     public function create(array $data): Personnage
     {
@@ -53,16 +51,23 @@ class PersonnageCreationService
             ]);
         }
 
-        if (! empty($data['sous_classe_id']) && SousClasse::whereKey($data['sous_classe_id'])->where('classe_id', $data['classe_id'])->doesntExist()) {
-            throw ValidationException::withMessages([
-                'sous_classe_id' => 'La sous-classe ne correspond pas à la classe sélectionnée.',
-            ]);
-        }
-
-        if (Race::whereKey($data['race_id'])->doesntExist() || Classe::whereKey($data['classe_id'])->doesntExist()) {
+        $classe = Classe::find($data['classe_id']);
+        if (Race::whereKey($data['race_id'])->doesntExist() || ! $classe) {
             throw ValidationException::withMessages([
                 'race_id' => 'La race ou la classe sélectionnée est invalide.',
             ]);
+        }
+
+        if (! empty($data['sous_classe_id'])) {
+            $sousClasse = SousClasse::whereKey($data['sous_classe_id'])
+                ->where('classe_id', $data['classe_id'])
+                ->first();
+
+            if (! $sousClasse || $classe->niveau_sous_classe > ($data['niveau'] ?? 1)) {
+                throw ValidationException::withMessages([
+                    'sous_classe_id' => 'La sous-classe ne correspond pas à la classe ou au niveau sélectionné.',
+                ]);
+            }
         }
     }
 }

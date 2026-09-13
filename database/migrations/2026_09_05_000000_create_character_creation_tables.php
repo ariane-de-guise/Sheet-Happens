@@ -15,6 +15,9 @@ return new class extends Migration
             $table->unsignedSmallInteger('vitesse')->nullable();
             $table->string('type_creature')->default('Humanoide');
             $table->text('description')->nullable();
+            $table->string('bonus_abilite1');
+            $table->string('bonus_abilite2')->nullable();
+            $table->string('bonus_abilite3')->nullable();
             $table->timestamps();
         });
 
@@ -23,7 +26,8 @@ return new class extends Migration
             $table->foreignId('race_id')->constrained('races')->cascadeOnDelete();
             $table->string('nom');
             $table->text('description')->nullable();
-            $table->json('bonus_aptitudes')->nullable();
+            $table->string('bonus_abilite1')->nullable();
+            $table->string('bonus_abilite2')->nullable();
             $table->timestamps();
             $table->unique(['race_id', 'nom']);
         });
@@ -33,6 +37,7 @@ return new class extends Migration
             $table->string('nom')->unique();
             $table->string('de_de_vie')->nullable();
             $table->text('description')->nullable();
+            $table->unsignedTinyInteger('niveau_sous_classe')->default(1);
             $table->timestamps();
         });
 
@@ -41,7 +46,6 @@ return new class extends Migration
             $table->foreignId('classe_id')->constrained('classes')->cascadeOnDelete();
             $table->string('nom');
             $table->text('description')->nullable();
-            $table->unsignedTinyInteger('niveau_sous_classe')->default(1);
             $table->timestamps();
             $table->unique(['classe_id', 'nom']);
         });

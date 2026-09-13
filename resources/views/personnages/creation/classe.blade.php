@@ -60,7 +60,7 @@
                                    {{ $selectedSousClasse == $sousClasse->id ? 'checked' : '' }}
                                    style="display: none;">
                             <div class="card-title">{{ $sousClasse->nom }}</div>
-                            <div class="card-desc">Niveau {{ $sousClasse->niveau_sous_classe }}</div>
+                            <div class="card-desc">Niveau {{ $classes->find($selectedClasse)->niveau_sous_classe }}</div>
                         </div>
                     @endforeach
                 </div>

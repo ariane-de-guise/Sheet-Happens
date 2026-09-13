@@ -39,7 +39,7 @@ class ConnexionTest extends TestCase
 
         $reponse = $this->post('/connexion', $donnees);
 
-        $reponse->assertRedirect('/');
+        $reponse->assertRedirect(route('personnages.index'));
         $this->assertAuthenticatedAs($utilisateur);
     }
 

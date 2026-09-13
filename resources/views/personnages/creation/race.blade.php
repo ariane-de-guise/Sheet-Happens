@@ -38,7 +38,7 @@
                         <div class="card-desc">{{ $race->taille }}</div>
                     @endif
                     @if($race->vitesse)
-                        <div class="card-desc">Vitesse: {{ $race->vitesse }} pi</div>
+                        <div class="card-desc">Vitesse: {{ $race->vitesse }} ft</div>
                     @endif
                 </div>
             @endforeach
