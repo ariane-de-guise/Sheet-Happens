@@ -36,6 +36,13 @@
             </div>
         @endif
 
+        @php
+            $selectedRaceModel = $selectedRace ? $races->find($selectedRace) : null;
+            $selectedSousRaceModel = $selectedRaceModel && $selectedSousRace
+                ? $selectedRaceModel->sousRaces->firstWhere('id', $selectedSousRace)
+                : null;
+        @endphp
+
         <form action="{{ route('creation.race.save') }}" method="POST" id="raceForm">
             @csrf
             <div class="grid-cards mb-4" id="racesGrid">
@@ -57,95 +64,52 @@
                 @endforeach
             </div>
 
+            <div class="help-box mb-4" id="raceDescription" style="{{ $selectedRaceModel && $selectedRaceModel->description ? '' : 'display:none;' }}">
+                <div class="title" id="raceDescriptionTitle">{{ $selectedRaceModel->nom ?? '' }}</div>
+                <div class="content" id="raceDescriptionContent">{{ $selectedRaceModel->description ?? '' }}</div>
+            </div>
+
             <div id="sousRaceContainer">
-                @if($selectedRace && $races->find($selectedRace)->sousRaces->count() > 0)
-                    <h3 class="title-section mb-2">Sous-race (optionnel)</h3>
+                @if($selectedRaceModel && $selectedRaceModel->sousRaces->count() > 0)
+                    <h3 class="title-section mb-2">Sous-race</h3>
+                    <div class="alert alert-error" id="sousRaceErrors" style="display: none;">
+                        Vous devez choisir une sous-race avant de continuer.
+                    </div>
                     <div class="grid-cards mb-4" id="sousRacesGrid">
-                        <div class="card-choice {{ $selectedSousRace === null ? 'selected' : '' }}"
-                             onclick="selectSousRace(null, this)">
-                            <input type="radio" name="sous_race_id" value=""
-                                   {{ $selectedSousRace === null ? 'checked' : '' }}
-                                   style="display: none;">
-                            <div class="card-title">Aucune sous-race</div>
-                        </div>
-                        @foreach($races->find($selectedRace)->sousRaces as $sousRace)
+                        @foreach($selectedRaceModel->sousRaces as $sousRace)
                             <div class="card-choice {{ $selectedSousRace == $sousRace->id ? 'selected' : '' }}"
                                  onclick="selectSousRace({{ $sousRace->id }}, this)">
                                 <input type="radio" name="sous_race_id" value="{{ $sousRace->id }}"
                                        {{ $selectedSousRace == $sousRace->id ? 'checked' : '' }}
+                                       required
                                        style="display: none;">
                                 <div class="card-title">{{ $sousRace->nom }}</div>
                             </div>
                         @endforeach
+                    </div>
+                    <div class="help-box mb-4" id="sousRaceDescription" style="{{ $selectedSousRaceModel && $selectedSousRaceModel->description ? '' : 'display:none;' }}">
+                        <div class="title" id="sousRaceDescriptionTitle">{{ $selectedSousRaceModel->nom ?? '' }}</div>
+                        <div class="content" id="sousRaceDescriptionContent">{{ $selectedSousRaceModel->description ?? '' }}</div>
                     </div>
                 @endif
             </div>
 
             <div class="btn-group-row">
                 <a href="{{ route('welcome') }}" class="btn btn-secondary">Retour</a>
-                <button type="submit" class="btn btn-primary" id="btnSuivant" {{ $selectedRace ? '' : 'disabled' }}>Suivant</button>
+                <button type="submit" class="btn btn-primary" id="btnSuivant">Suivant</button>
             </div>
         </form>
     </div>
 
     @push('scripts')
         <script>
-            function selectRace(raceId, element) {
-                document.querySelectorAll('#racesGrid .card-choice').forEach(el => {
-                    el.classList.remove('selected');
-                });
-                element.classList.add('selected');
-                element.querySelector('input[type="radio"]').checked = true;
-
-                document.getElementById('btnSuivant').disabled = false;
-                document.getElementById('raceErrors').style.display = 'none';
-
-                fetchSousRaces(raceId);
-            }
-
-            document.getElementById('raceForm').addEventListener('submit', function (event) {
-                const hasSelection = document.querySelector('#racesGrid input[type="radio"]:checked');
-                if (!hasSelection) {
-                    event.preventDefault();
-                    document.getElementById('raceErrors').style.display = 'block';
-                }
-            });
-
-            function selectSousRace(id, element) {
-                document.querySelectorAll('#sousRacesGrid .card-choice').forEach(el => {
-                    el.classList.remove('selected');
-                });
-                element.classList.add('selected');
-                element.querySelector('input[type="radio"]').checked = true;
-            }
-
-            function fetchSousRaces(raceId) {
-                fetch('/api/sous-races/' + raceId)
-                    .then(response => response.json())
-                    .then(data => {
-                        const container = document.getElementById('sousRaceContainer');
-                        if (data.length === 0) {
-                            container.innerHTML = '';
-                            return;
-                        }
-
-                        let html = '<h3 class="title-section mb-2">Sous-race (optionnel)</h3>';
-                        html += '<div class="grid-cards mb-4" id="sousRacesGrid">';
-                        html += '<div class="card-choice selected" onclick="selectSousRace(null, this)">';
-                        html += '<input type="radio" name="sous_race_id" value="" checked style="display: none;">';
-                        html += '<div class="card-title">Aucune sous-race</div></div>';
-
-                        data.forEach(sr => {
-                            html += '<div class="card-choice" onclick="selectSousRace(' + sr.id + ', this)">';
-                            html += '<input type="radio" name="sous_race_id" value="' + sr.id + '" style="display: none;">';
-                            html += '<div class="card-title">' + sr.nom + '</div>';
-                            html += '</div>';
-                        });
-
-                        html += '</div>';
-                        container.innerHTML = html;
-                    });
-            }
+            // Données injectées par le serveur pour cette page ; toute la logique
+            // vit dans un fichier séparé (public/js/creation/race.js).
+            window.RaceCreationData = {
+                races: @json($races->keyBy('id')),
+                initialSousRaces: @json($selectedRaceModel->sousRaces ?? []),
+            };
         </script>
+        <script src="{{ asset('js/creation/race.js') }}"></script>
     @endpush
 @endsection

@@ -98,6 +98,16 @@ class PersonnageCreationTest extends TestCase
             ->assertSessionHasErrors(['race_id']);
     }
 
+    public function test_l_enregistrement_de_la_race_exige_une_sous_race_si_la_race_en_propose(): void
+    {
+        $this->utilisateurConnecte();
+        $race = RaceFactory::new()->create();
+        SousRaceFactory::new()->pourRace($race)->create();
+
+        $this->post('/personnages/creer/race', ['race_id' => $race->id])
+            ->assertSessionHasErrors(['sous_race_id']);
+    }
+
     // --- Étape Classe ---
 
     public function test_l_etape_classe_redirige_si_aucune_race_selectionnee(): void
@@ -185,6 +195,32 @@ class PersonnageCreationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['sous_classe_id']);
+    }
+
+    public function test_l_enregistrement_de_la_classe_exige_une_sous_classe_disponible_des_le_niveau_1(): void
+    {
+        $this->utilisateurConnecte();
+        $race = RaceFactory::new()->create();
+        $this->post('/personnages/creer/race', ['race_id' => $race->id]);
+        $classe = ClasseFactory::new()->create(['niveau_sous_classe' => 1]);
+        SousClasseFactory::new()->pourClasse($classe)->create();
+
+        $this->post('/personnages/creer/classe', ['classe_id' => $classe->id])
+            ->assertSessionHasErrors(['sous_classe_id']);
+    }
+
+    public function test_l_enregistrement_de_la_classe_n_exige_pas_une_sous_classe_indisponible_au_niveau_1(): void
+    {
+        $this->utilisateurConnecte();
+        $race = RaceFactory::new()->create();
+        $this->post('/personnages/creer/race', ['race_id' => $race->id]);
+        $classe = ClasseFactory::new()->create(['niveau_sous_classe' => 2]);
+        SousClasseFactory::new()->pourClasse($classe)->create();
+
+        $response = $this->post('/personnages/creer/classe', ['classe_id' => $classe->id]);
+
+        $response->assertRedirect(route('creation.methode'));
+        $this->assertNull(session('personnage_creation')['sous_classe_id']);
     }
 
     // --- Étape Méthode ---
@@ -331,6 +367,57 @@ class PersonnageCreationTest extends TestCase
         ]);
 
         $response->assertRedirect(route('creation.competences'));
+    }
+
+    public function test_l_enregistrement_des_caracteristiques_en_methode_standard_refuse_une_repartition_incorrecte(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaMethode('standard');
+
+        $response = $this
+            ->withHeader('referer', route('creation.caracteristiques'))
+            ->post('/personnages/creer/caracteristiques', [
+                'force' => 15, 'dexterite' => 14, 'constitution' => 13,
+                'intelligence' => 12, 'sagesse' => 10, 'charisme' => 9,
+            ]);
+
+        $response->assertRedirect(route('creation.caracteristiques'));
+        $response->assertSessionHas('error');
+    }
+
+    public function test_l_enregistrement_des_caracteristiques_en_methode_dice_refuse_sans_avoir_lance_les_des(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaMethode('dice');
+
+        $response = $this->post('/personnages/creer/caracteristiques', [
+            'force' => 15, 'dexterite' => 14, 'constitution' => 13,
+            'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
+        ]);
+
+        $response->assertRedirect(route('creation.caracteristiques'));
+        $response->assertSessionHas('error');
+    }
+
+    public function test_l_enregistrement_des_caracteristiques_en_methode_dice_refuse_une_repartition_incorrecte(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaMethode('dice');
+        $this->post('/personnages/creer/caracteristiques/roller', []);
+        $pool = session('personnage_creation')['dice_pool'];
+
+        // On modifie une valeur pour qu'elle ne corresponde plus au lancer.
+        $valeurs = [
+            'force' => $pool[0], 'dexterite' => $pool[1], 'constitution' => $pool[2],
+            'intelligence' => $pool[3], 'sagesse' => $pool[4], 'charisme' => $pool[5] + 1,
+        ];
+
+        $response = $this
+            ->withHeader('referer', route('creation.caracteristiques'))
+            ->post('/personnages/creer/caracteristiques', $valeurs);
+
+        $response->assertRedirect(route('creation.caracteristiques'));
+        $response->assertSessionHas('error');
     }
 
     /**
@@ -481,6 +568,14 @@ class PersonnageCreationTest extends TestCase
         $this->progresserJusquaCompetences();
 
         $this->get('/personnages/creer/contexte')->assertOk();
+    }
+
+    public function test_l_etape_contexte_redirige_si_aucune_race_selectionnee(): void
+    {
+        $this->utilisateurConnecte();
+
+        $this->get('/personnages/creer/contexte')
+            ->assertRedirect(route('creation.race'));
     }
 
     public function test_on_peut_enregistrer_le_contexte_avec_loutil_aucun(): void

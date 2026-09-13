@@ -540,7 +540,25 @@ input.stat-value[type="number"] {
 .value-pool {
     display: flex;
     flex-wrap: wrap;
+    align-content: flex-start;
     gap: 0.6rem;
+    min-height: 48px;
+    border-radius: 10px;
+    transition: outline-color 0.15s ease, background 0.15s ease;
+}
+
+.value-pool.drag-over {
+    outline: 2px dashed #e6b84d;
+    outline-offset: 6px;
+    background: rgba(230, 184, 77, 0.08);
+}
+
+.stat-value.drop-target[draggable="true"] {
+    cursor: grab;
+}
+
+.stat-value.drop-target.dragging {
+    opacity: 0.4;
 }
 
 .value-chip {
@@ -579,10 +597,15 @@ input.stat-value[type="number"] {
 
 .roll-actions {
     display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: stretch;
     gap: 0.75rem;
-    margin-bottom: 1rem;
+    margin-top: 1rem;
+}
+
+.roll-actions .btn {
+    flex: 1 1 200px;
 }
 
 .drag-hint {
@@ -674,9 +697,17 @@ input.stat-value[type="number"] {
 
 .btn-group-row {
     display: flex;
+    flex-direction: row;
     justify-content: space-between;
+    align-items: center;
     margin-top: 2rem;
     gap: 1rem;
+}
+
+.btn-group-row > div {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
 }
 
 .standard-points-container {

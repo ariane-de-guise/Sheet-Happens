@@ -108,10 +108,15 @@ class CreationPersonnageController extends Controller
 
     public function saveRace(Request $request): RedirectResponse
     {
+        // Une sous-race ne peut pas rester "optionnelle" quand la race en
+        // propose : le joueur doit alors obligatoirement en choisir une.
+        $race = Race::with('sousRaces')->find($request->input('race_id'));
+        $sousRaceRequise = $race && $race->sousRaces->isNotEmpty();
+
         $validated = $request->validate([
             'race_id' => 'required|integer|exists:races,id',
             'sous_race_id' => [
-                'nullable',
+                $sousRaceRequise ? 'required' : 'nullable',
                 'integer',
                 Rule::exists('sous_races', 'id')->where(function ($query) use ($request) {
                     return $query->where('race_id', $request->input('race_id'));
@@ -119,6 +124,7 @@ class CreationPersonnageController extends Controller
             ],
         ], [
             'race_id.required' => 'Vous devez choisir une race avant de continuer.',
+            'sous_race_id.required' => 'Vous devez choisir une sous-race avant de continuer.',
         ]);
 
         $current = $this->getData();
@@ -160,10 +166,19 @@ class CreationPersonnageController extends Controller
 
     public function saveClasse(Request $request): RedirectResponse
     {
+        // Une sous-classe ne peut pas rester "optionnelle" quand elle est
+        // disponible dès le niveau 1 (niveau auquel un personnage est
+        // toujours créé) : le joueur doit alors obligatoirement en choisir
+        // une.
+        $classe = Classe::with('sousClasses')->find($request->input('classe_id'));
+        $sousClasseRequise = $classe
+            && $classe->niveau_sous_classe <= 1
+            && $classe->sousClasses->isNotEmpty();
+
         $validated = $request->validate([
             'classe_id' => 'required|integer|exists:classes,id',
             'sous_classe_id' => [
-                'nullable',
+                $sousClasseRequise ? 'required' : 'nullable',
                 'integer',
                 Rule::exists('sous_classes', 'id')->where(function ($query) use ($request) {
                     return $query->where('classe_id', $request->input('classe_id'));
@@ -171,6 +186,7 @@ class CreationPersonnageController extends Controller
             ],
         ], [
             'classe_id.required' => 'Vous devez choisir une classe avant de continuer.',
+            'sous_classe_id.required' => 'Vous devez choisir une sous-classe avant de continuer.',
         ]);
 
         $current = $this->getData();
@@ -444,6 +460,9 @@ class CreationPersonnageController extends Controller
         $validated = $request->validate([
             'competences' => 'required|array|min:2',
             'competences.*' => 'string|max:50',
+        ], [
+            'competences.required' => 'Vous devez choisir 2 compétences avant de continuer.',
+            'competences.min' => 'Vous devez choisir 2 compétences avant de continuer.',
         ]);
 
         $this->saveData([
