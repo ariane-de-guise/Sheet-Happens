@@ -23,7 +23,7 @@ class CreationPersonnageController extends Controller
 
     protected function getData(): array
     {
-        return session(static::SESSION_KEY, [
+        $defaults = [
             'race_id' => null,
             'sous_race_id' => null,
             'classe_id' => null,
@@ -37,6 +37,7 @@ class CreationPersonnageController extends Controller
                 'sagesse' => 8,
                 'charisme' => 8,
             ],
+            'dice_pool' => null,
             'competences' => [],
             'maitrise' => null,
             'outil' => null,
@@ -45,7 +46,9 @@ class CreationPersonnageController extends Controller
             'nom' => '',
             'alignement' => null,
             'description' => '',
-        ]);
+        ];
+
+        return array_merge($defaults, session(static::SESSION_KEY, []));
     }
 
     protected function saveData(array $data): void
@@ -81,12 +84,12 @@ class CreationPersonnageController extends Controller
     protected function abilitesComplete(array $abilites): bool
     {
         return ! empty($abilites) &&
-               ($abilites['force'] ?? 0) > 0 &&
-               ($abilites['dexterite'] ?? 0) > 0 &&
-               ($abilites['constitution'] ?? 0) > 0 &&
-               ($abilites['intelligence'] ?? 0) > 0 &&
-               ($abilites['sagesse'] ?? 0) > 0 &&
-               ($abilites['charisme'] ?? 0) > 0;
+            ($abilites['force'] ?? 0) > 0 &&
+            ($abilites['dexterite'] ?? 0) > 0 &&
+            ($abilites['constitution'] ?? 0) > 0 &&
+            ($abilites['intelligence'] ?? 0) > 0 &&
+            ($abilites['sagesse'] ?? 0) > 0 &&
+            ($abilites['charisme'] ?? 0) > 0;
     }
 
     public function stepRace(): View
@@ -114,6 +117,8 @@ class CreationPersonnageController extends Controller
                     return $query->where('race_id', $request->input('race_id'));
                 }),
             ],
+        ], [
+            'race_id.required' => 'Vous devez choisir une race avant de continuer.',
         ]);
 
         $current = $this->getData();
@@ -164,6 +169,8 @@ class CreationPersonnageController extends Controller
                     return $query->where('classe_id', $request->input('classe_id'));
                 }),
             ],
+        ], [
+            'classe_id.required' => 'Vous devez choisir une classe avant de continuer.',
         ]);
 
         $current = $this->getData();
@@ -233,10 +240,45 @@ class CreationPersonnageController extends Controller
         $this->saveData([
             'methode' => $validated['methode'],
             'abilites' => $abilites,
+            'dice_pool' => null,
         ]);
 
         return redirect()->route('creation.caracteristiques');
     }
+
+    protected const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
+
+    protected const ABILITES_KEYS = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'];
+
+    /**
+     * Chaque maîtrise (historique) vient avec son propre équipement de
+     * départ, au lieu de laisser choisir librement dans tout l'équipement
+     * disponible.
+     */
+    protected const MAITRISE_EQUIPEMENT = [
+        'Religieux' => ['Livre', 'Sac à dos', 'Lanternes'],
+        'Marchand' => ['Sac à dos', 'Cordes', 'Livre'],
+        'Artisan' => ['Kit d\'explorateur', 'Cordes', 'Sac à dos'],
+        'Noble' => ['Épée', 'Livre', 'Harpe'],
+        'Soldat' => ['Épée', 'Bouclier', 'Armure de cuir'],
+        'Roublard' => ['Arc court', 'Cordes', 'Kit d\'explorateur'],
+        'Erfge' => ['Livre', 'Lanternes', 'Sac à dos'],
+        'Hors-la-loi' => ['Arc court', 'Cordes', 'Sac à dos'],
+    ];
+
+    /**
+     * La maîtrise (historique) détermine l'alignement du personnage.
+     */
+    protected const MAITRISE_ALIGNEMENT = [
+        'Religieux' => 'Loyal bon',
+        'Marchand' => 'Neutre',
+        'Artisan' => 'Neutre bon',
+        'Noble' => 'Loyal neutre',
+        'Soldat' => 'Loyal neutre',
+        'Roublard' => 'Chaotique neutre',
+        'Erfge' => 'Neutre',
+        'Hors-la-loi' => 'Chaotique méchant',
+    ];
 
     public function stepCaracteristiques(): View|RedirectResponse
     {
@@ -249,6 +291,8 @@ class CreationPersonnageController extends Controller
         return view('personnages.creation.caracteristiques', [
             'methode' => $data['methode'],
             'abilites' => $data['abilites'],
+            'dicePool' => $data['dice_pool'],
+            'standardArray' => static::STANDARD_ARRAY,
             'currentStep' => 4,
             'progress' => $this->getProgress(),
         ]);
@@ -282,12 +326,12 @@ class CreationPersonnageController extends Controller
         $validated = $request->validate($rules);
 
         $abilites = [
-            'force' => $validated['force'],
-            'dexterite' => $validated['dexterite'],
-            'constitution' => $validated['constitution'],
-            'intelligence' => $validated['intelligence'],
-            'sagesse' => $validated['sagesse'],
-            'charisme' => $validated['charisme'],
+            'force' => (int) $validated['force'],
+            'dexterite' => (int) $validated['dexterite'],
+            'constitution' => (int) $validated['constitution'],
+            'intelligence' => (int) $validated['intelligence'],
+            'sagesse' => (int) $validated['sagesse'],
+            'charisme' => (int) $validated['charisme'],
         ];
 
         if ($methode === 'points') {
@@ -299,40 +343,73 @@ class CreationPersonnageController extends Controller
             }
         }
 
+        // La répartition standard et le lancer de dés attribuent chaque
+        // caractéristique en glissant-déposant une valeur d'un lot fixe :
+        // on vérifie ici que les valeurs soumises correspondent exactement
+        // à ce lot (même multiset), pour empêcher un envoi de formulaire
+        // trafiqué depuis le client.
+        if ($methode === 'standard') {
+            $submitted = array_values($abilites);
+            sort($submitted);
+            $expected = static::STANDARD_ARRAY;
+            sort($expected);
+            if ($submitted !== $expected) {
+                return redirect()->back()
+                    ->with('error', 'La répartition ne correspond pas aux valeurs disponibles (15, 14, 13, 12, 10, 8). Merci de glisser chaque valeur dans une seule caractéristique.');
+            }
+        }
+
+        if ($methode === 'dice') {
+            $pool = $data['dice_pool'];
+            if (! is_array($pool) || count($pool) !== 6) {
+                return redirect()->route('creation.caracteristiques')
+                    ->with('error', 'Vous devez lancer les dés avant de continuer.');
+            }
+            $submitted = array_values($abilites);
+            sort($submitted);
+            $expected = $pool;
+            sort($expected);
+            if ($submitted !== $expected) {
+                return redirect()->back()
+                    ->with('error', 'La répartition ne correspond pas aux valeurs lancées. Merci de glisser chaque résultat dans une seule caractéristique.');
+            }
+        }
+
         $this->saveData(['abilites' => $abilites]);
 
         return redirect()->route('creation.competences');
     }
 
+    /**
+     * Lance les 6 groupes de caractéristiques (4d6, on garde les 3 meilleurs)
+     * en une seule fois. Le joueur répartit ensuite librement les 6
+     * résultats obtenus par glisser-déposer (voir _caracteristiques_dice).
+     */
     public function rollDice(Request $request)
     {
-        $data = $this->getData();
-        $abilites = $data['abilites'];
-
         $rolls = [];
-        for ($i = 0; $i < 4; $i++) {
-            $rolls[] = rand(1, 6);
-        }
-        rsort($rolls);
-        array_pop($rolls);
-        $result = array_sum($rolls);
-
-        $abilite = $request->input('abilite');
-
-        if (! $abilite || ! in_array($abilite, ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'])) {
-            return $request->expectsJson()
-                ? response()->json(['error' => 'Abilite invalide'], 400)
-                : redirect()->back();
+        for ($i = 0; $i < 6; $i++) {
+            $dice = [];
+            for ($j = 0; $j < 4; $j++) {
+                $dice[] = random_int(1, 6);
+            }
+            rsort($dice);
+            array_pop($dice);
+            $rolls[] = array_sum($dice);
         }
 
-        $abilites[$abilite] = $result;
-        $this->saveData(['abilites' => $abilites]);
+        $abilitesVides = array_fill_keys(static::ABILITES_KEYS, 0);
+
+        $this->saveData([
+            'dice_pool' => $rolls,
+            'abilites' => $abilitesVides,
+        ]);
 
         if ($request->expectsJson()) {
-            return response()->json(['value' => $result, 'abilite' => $abilite]);
+            return response()->json(['rolls' => $rolls]);
         }
 
-        return redirect()->back()->with('rolled', $abilite);
+        return redirect()->back();
     }
 
     public function stepCompetences(): View|RedirectResponse
@@ -376,14 +453,15 @@ class CreationPersonnageController extends Controller
         return redirect()->route('creation.contexte');
     }
 
-    public function stepContexte(): View
+    public function stepContexte(): View|RedirectResponse
     {
         $data = $this->getData();
 
-        $maitrises = [
-            'Religieux', 'Marchand', 'Artisan', 'Noble',
-            'Soldat', 'Roublard', 'Erfge', 'Hors-la-loi',
-        ];
+        if (empty($data['race_id'])) {
+            return redirect()->route('creation.race');
+        }
+
+        $maitrises = array_keys(static::MAITRISE_EQUIPEMENT);
 
         $outils = [
             'Aucun', 'Kit de calligraphe', 'Kit de charpentier',
@@ -391,29 +469,18 @@ class CreationPersonnageController extends Controller
             'Instruments de musique', 'Outils de voleur',
         ];
 
-        $langues = [
-            'Commun', 'Abyssal', 'Aérien', 'Ancien',
-            'Bestiaire', 'Celte', 'Drow', 'Dwarvique',
-            'Elfe', 'Géant', 'Gnôme', 'Gobelin',
-            'Halfling', 'Hidana', 'Immortel', 'Nain',
-            'Orc', 'Souterrain', 'Titan', 'Sylvain',
-        ];
-
-        $equipements = [
-            'Harpe', 'Livre', 'Épée', 'Arc court',
-            'Bouclier', 'Armure de cuir', 'Sac à dos',
-            'Kit d\'explorateur', 'Lanternes', 'Cordes',
-        ];
+        $race = Race::find($data['race_id']);
+        $languesRace = $race->langues ?? ['Commun'];
 
         return view('personnages.creation.contexte', [
+            'data' => $data,
             'maitrises' => $maitrises,
             'outils' => $outils,
-            'langues' => $langues,
-            'equipements' => $equipements,
+            'maitriseEquipement' => static::MAITRISE_EQUIPEMENT,
+            'maitriseAlignement' => static::MAITRISE_ALIGNEMENT,
+            'languesRace' => $languesRace,
             'selectedMaitrise' => $data['maitrise'],
             'selectedOutil' => $data['outil'],
-            'selectedLangues' => $data['langues'] ?? [],
-            'selectedEquipements' => $data['equipement'] ?? [],
             'currentStep' => 6,
             'progress' => $this->getProgress(),
         ]);
@@ -421,25 +488,31 @@ class CreationPersonnageController extends Controller
 
     public function saveContexte(Request $request): RedirectResponse
     {
+        $data = $this->getData();
+
         $validated = $request->validate([
-            'maitrise' => 'nullable|string|max:50',
+            'maitrise' => ['required', 'string', Rule::in(array_keys(static::MAITRISE_EQUIPEMENT))],
             'outil' => 'nullable|string|max:50',
-            'langues' => 'nullable|array|min:2',
-            'langues.*' => 'string|max:50',
-            'equipements' => 'nullable|array',
-            'equipements.*' => 'string|max:50',
             'nom' => 'required|string|max:100',
-            'alignement' => 'nullable|string|max:50',
             'description' => 'nullable|string',
+        ], [
+            'maitrise.required' => 'Vous devez choisir une maîtrise avant de continuer.',
+            'maitrise.in' => 'La maîtrise sélectionnée est invalide.',
         ]);
 
+        $race = Race::find($data['race_id']);
+
         $this->saveData([
-            'maitrise' => $validated['maitrise'] ?? null,
+            'maitrise' => $validated['maitrise'],
             'outil' => $validated['outil'] === 'Aucun' ? null : ($validated['outil'] ?? null),
-            'langues' => $validated['langues'] ?? [],
-            'equipement' => $validated['equipements'] ?? [],
+            // La maîtrise vient avec son propre équipement, et détermine
+            // l'alignement ; la race détermine les langues parlées : ces
+            // trois valeurs ne sont donc jamais saisies directement par le
+            // joueur, elles sont dérivées ici pour éviter toute incohérence.
+            'equipement' => static::MAITRISE_EQUIPEMENT[$validated['maitrise']],
+            'alignement' => static::MAITRISE_ALIGNEMENT[$validated['maitrise']],
+            'langues' => $race->langues ?? ['Commun'],
             'nom' => $validated['nom'],
-            'alignement' => $validated['alignement'] ?? null,
             'description' => $validated['description'] ?? null,
         ]);
 
@@ -515,6 +588,10 @@ class CreationPersonnageController extends Controller
             'alignement' => $data['alignement'],
             'description' => $data['description'],
             'point_de_vie' => $this->calculatePV($data['abilites'], Classe::find($data['classe_id'])),
+            'maitrise' => $data['maitrise'],
+            'outil' => $data['outil'],
+            'langues' => $data['langues'],
+            'equipement' => $data['equipement'],
         ];
 
         try {

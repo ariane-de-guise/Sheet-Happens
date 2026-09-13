@@ -16,6 +16,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Moyenne',
                 'vitesse' => 30,
                 'type_creature' => 'Humanoïde',
+                'langues' => ['Commun'],
                 'description' => 'Les humains sont les plus nombreux et les plus diversifiés des peuples de l\'Île des Héros.',
                 'sous_races' => [],
                 'bonus_abilite1' => 'tous',
@@ -25,6 +26,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Moyenne',
                 'vitesse' => 30,
                 'type_creature' => 'Humanoïde',
+                'langues' => ['Commun'],
                 'description' => 'Les humains sont les plus nombreux et les plus diversifiés des peuples de l\'Île des Héros.',
                 'sous_races' => [],
                 'bonus_abilite1' => 'au choix',
@@ -34,6 +36,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Moyenne',
                 'vitesse' => 30,
                 'type_creature' => 'Humanoïde',
+                'langues' => ['Commun', 'Elfe'],
                 'description' => 'Les elfes sont gracieux, immortels et profondément liés à la magie.',
                 'sous_races' => [
                     ['nom' => 'Elfe Sombre', 'description' => 'Elfe fin à la peau obsidienne banni de la surface.', 'bonus_abilite1' => 'Charisme'],
@@ -47,6 +50,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Moyenne',
                 'vitesse' => 25,
                 'type_creature' => 'Humanoïde',
+                'langues' => ['Commun', 'Nain'],
                 'description' => 'Les nains sont robustes, têtus et excellents artisans.',
                 'sous_races' => [
                     ['nom' => 'Nain de montagne', 'description' => 'Nain fort et robuste habitué à la vie difficile.', 'bonus_abilite1' => 'Force', 'bonus_abilite2' => 'Force'],
@@ -59,6 +63,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Petite',
                 'vitesse' => 25,
                 'type_creature' => 'Humanoïde',
+                'langues' => ['Commun', 'Halfling'],
                 'description' => 'Les halfelins sont petits, chanceux et aimables.',
                 'sous_races' => [
                     ['nom' => 'Halfelin pied-roux', 'description' => 'Halfelin corpulent resistant dit descendant de Nain', 'bonus_abilite1' => 'Constitution'],
@@ -71,6 +76,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Moyenne',
                 'vitesse' => 30,
                 'type_creature' => 'Humanoïde',
+                'langues' => ['Commun', 'Elfe'],
                 'description' => 'Mi-humains, mi-elfes, ils combinent le meilleur des deux mondes.',
                 'sous_races' => [],
                 'bonus_abilite1' => 'Charisme',
@@ -82,6 +88,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Moyenne',
                 'vitesse' => 30,
                 'type_creature' => 'Humanoïde',
+                'langues' => ['Commun', 'Orc'],
                 'description' => 'Fort et résilient, le demi-orc est souvent méprisé mais loyal.',
                 'sous_races' => [],
                 'bonus_abilite1' => 'Force',
@@ -92,6 +99,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Moyenne',
                 'vitesse' => 30,
                 'type_creature' => 'Humanoïde',
+                'langues' => ['Commun', 'Draconique'],
                 'description' => 'Des humanoïdes à l\'apparence reptilienne, descendants de dragons.',
                 'sous_races' => [
                     ['nom' => 'Drakéide Noir', 'description' => 'Drakéide, respirant de l\'acide.'],
@@ -113,6 +121,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Petite',
                 'vitesse' => 25,
                 'type_creature' => 'Humanoïde',
+                'langues' => ['Commun', 'Gnôme'],
                 'description' => 'Petits, inventifs et curieux, les gnômes adorent la magie et les machines.',
                 'sous_races' => [
                     ['nom' => 'Gnome de la roche', 'description' => 'Magiciens rusés et excellents illusionnistes.', 'bonus_abilite1' => 'Constitution'],
@@ -125,6 +134,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Moyenne',
                 'vitesse' => 30,
                 'type_creature' => 'Humanoïde',
+                'langues' => ['Commun', 'Abyssal'],
                 'description' => 'Marqués par le sang infernal, les tieffelins sont souvent craints mais résilients.',
                 'sous_races' => [
                     ['nom' => 'Tieffelin de la Lignée d\'Asmodée', 'description' => 'Tieffelin liées à Nessus qui commande le pouvoir du feu et des ténèbres', 'bonus_abilite1' => 'Intelligence'],

@@ -1,14 +1,8 @@
-@import '../../node_modules/tailwindcss/dist/lib.d.mts';
-
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
-
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-    'Segoe UI Symbol', 'Noto Color Emoji';
-}
+/* Cette feuille de style est chargée directement en tant que fichier CSS
+   statique (voir layouts/app.blade.php) et n'est pas compilée par
+   Tailwind/Vite : les directives Tailwind (@import, @source, @theme) ont
+   été retirées ici car elles ne sont pas comprises par le navigateur et
+   déclenchaient une requête 404 inutile. */
 
 :root {
     /* Palette sombre avec reflets mauves */
@@ -57,7 +51,14 @@ body {
 }
 
 .container {
-    max-width: 900px;
+    /* `width: 100%` is required here: body is a flex container, and a flex
+       item with only `max-width` shrinks to fit its content instead of
+       stretching to that max-width. Without it, any CSS grid inside using
+       `repeat(auto-fill, ...)` cannot see a real available width and
+       collapses to a single narrow column, which is what made the whole
+       character creation flow look cramped/"mobile" on desktop. */
+    width: 100%;
+    max-width: 960px;
     margin: 0 auto;
     padding: 2rem 1.5rem;
 }
@@ -302,8 +303,9 @@ button:active {
 }
 
 .btn-icon {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
+    margin-top: 0;
     padding: 0;
     border-radius: 6px;
     font-size: 1.1rem;
@@ -342,6 +344,11 @@ a:hover {
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 110px;
 }
 
 .card-choice:hover {
@@ -473,9 +480,14 @@ a:hover {
 }
 
 .stat-value {
-    width: 60px;
+    width: 70px;
+    height: 40px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    padding: 0.3rem;
+    padding: 0 0.5rem;
     background: rgba(60, 15, 90, 0.8);
     border: 1px solid #c49a3c;
     border-radius: 6px;
@@ -483,11 +495,99 @@ a:hover {
     font-size: 1rem;
     font-weight: 600;
     margin: 0 0.5rem;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+/* Number inputs (méthode "points") default to the browser's native
+   up/down spinner, which renders as a light widget glued to the input's
+   right edge and clashes with the dark theme, plus it isn't reset the
+   same way as the rest of the field, throwing off the vertical alignment
+   with the +/- buttons next to it. Remove it entirely since we already
+   provide dedicated +/- buttons. */
+input.stat-value::-webkit-outer-spin-button,
+input.stat-value::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input.stat-value[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 .stat-controls {
     display: flex;
-    gap: 0.25rem;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.stat-value.drop-target {
+    cursor: pointer;
+}
+
+.stat-value.drop-target.drag-over {
+    border-color: #e6b84d;
+    background: rgba(230, 184, 77, 0.25);
+    transform: scale(1.05);
+}
+
+.stat-value.drop-target.filled {
+    border-color: #e6b84d;
+}
+
+/* Répartition standard / Lancer de dés : pool de valeurs à glisser */
+
+.value-pool {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.value-chip {
+    min-width: 64px;
+    padding: 0.55rem 0.9rem;
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 10px;
+    color: #e6b84d;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    cursor: grab;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.value-chip:hover {
+    border-color: #e6b84d;
+    background: rgba(40, 15, 70, 0.95);
+}
+
+.value-chip:active {
+    cursor: grabbing;
+}
+
+.value-chip.dragging {
+    opacity: 0.4;
+}
+
+.value-chip:disabled,
+.value-chip.is-used {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.roll-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.drag-hint {
+    font-size: 0.8rem;
+    color: #b8a9c9;
 }
 
 .points-box {

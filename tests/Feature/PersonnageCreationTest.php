@@ -370,52 +370,7 @@ class PersonnageCreationTest extends TestCase
 
     // --- Jet de dés ---
 
-    public function test_le_jet_de_des_met_a_jour_une_abilite_valide(): void
-    {
-        $this->utilisateurConnecte();
-        $this->progresserJusquaMethode('dice');
-
-        $response = $this->post('/personnages/creer/caracteristiques/roller', ['abilite' => 'force']);
-
-        $response->assertRedirect();
-        $response->assertSessionHas('rolled', 'force');
-        $valeur = session('personnage_creation')['abilites']['force'];
-        $this->assertGreaterThanOrEqual(3, $valeur);
-        $this->assertLessThanOrEqual(18, $valeur);
-    }
-
-    public function test_le_jet_de_des_en_json_retourne_la_valeur(): void
-    {
-        $this->utilisateurConnecte();
-        $this->progresserJusquaMethode('dice');
-
-        $response = $this->postJson('/personnages/creer/caracteristiques/roller', ['abilite' => 'dexterite']);
-
-        $response->assertOk()->assertJsonStructure(['value', 'abilite']);
-    }
-
-    public function test_le_jet_de_des_refuse_une_abilite_invalide(): void
-    {
-        $this->utilisateurConnecte();
-        $this->progresserJusquaMethode('dice');
-
-        $response = $this->post('/personnages/creer/caracteristiques/roller', ['abilite' => 'invalide']);
-
-        $response->assertRedirect();
-        $response->assertSessionMissing('rolled');
-    }
-
-    public function test_le_jet_de_des_refuse_une_abilite_invalide_en_json(): void
-    {
-        $this->utilisateurConnecte();
-        $this->progresserJusquaMethode('dice');
-
-        $response = $this->postJson('/personnages/creer/caracteristiques/roller', ['abilite' => 'invalide']);
-
-        $response->assertStatus(400)->assertJson(['error' => 'Abilite invalide']);
-    }
-
-    public function test_le_jet_de_des_refuse_une_absence_d_abilite(): void
+    public function test_le_jet_de_des_genere_six_valeurs_valides(): void
     {
         $this->utilisateurConnecte();
         $this->progresserJusquaMethode('dice');
@@ -423,6 +378,41 @@ class PersonnageCreationTest extends TestCase
         $response = $this->post('/personnages/creer/caracteristiques/roller', []);
 
         $response->assertRedirect();
+        $rolls = session('personnage_creation')['dice_pool'];
+        $this->assertCount(6, $rolls);
+        foreach ($rolls as $valeur) {
+            $this->assertGreaterThanOrEqual(3, $valeur);
+            $this->assertLessThanOrEqual(18, $valeur);
+        }
+    }
+
+    public function test_le_jet_de_des_reinitialise_les_abilites_deja_attribuees(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaMethode('dice');
+
+        $this->post('/personnages/creer/caracteristiques', [
+            'force' => 15, 'dexterite' => 14, 'constitution' => 13,
+            'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
+        ]);
+
+        $this->post('/personnages/creer/caracteristiques/roller', []);
+
+        $abilites = session('personnage_creation')['abilites'];
+        foreach ($abilites as $valeur) {
+            $this->assertSame(0, $valeur);
+        }
+    }
+
+    public function test_le_jet_de_des_en_json_retourne_les_six_resultats(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaMethode('dice');
+
+        $response = $this->postJson('/personnages/creer/caracteristiques/roller', []);
+
+        $response->assertOk()->assertJsonStructure(['rolls']);
+        $this->assertCount(6, $response->json('rolls'));
     }
 
     // --- Étape Compétences ---
@@ -501,6 +491,7 @@ class PersonnageCreationTest extends TestCase
         $response = $this->post('/personnages/creer/contexte', [
             'nom' => 'Aragorn',
             'outil' => 'Aucun',
+            'maitrise' => 'Soldat',
             'langues' => ['Commun', 'Elfe'],
         ]);
 
@@ -527,7 +518,7 @@ class PersonnageCreationTest extends TestCase
         $donnees = session('personnage_creation');
         $this->assertSame('Kit de joueur', $donnees['outil']);
         $this->assertSame('Noble', $donnees['maitrise']);
-        $this->assertSame(['Épée'], $donnees['equipement']);
+        $this->assertSame(['Épée', 'Livre', 'Harpe'], $donnees['equipement']);
     }
 
     public function test_l_enregistrement_du_contexte_exige_un_nom(): void
@@ -547,6 +538,7 @@ class PersonnageCreationTest extends TestCase
         $this->post('/personnages/creer/contexte', [
             'nom' => 'Aragorn',
             'outil' => 'Aucun',
+            'maitrise' => 'Soldat',
             'langues' => ['Commun', 'Elfe'],
         ]);
     }
@@ -592,7 +584,7 @@ class PersonnageCreationTest extends TestCase
         ]);
         $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
         $this->post('/personnages/creer/contexte', [
-            'nom' => 'Aragorn', 'outil' => 'Aucun', 'langues' => ['Commun', 'Elfe'],
+            'nom' => 'Aragorn', 'outil' => 'Aucun', 'maitrise' => 'Soldat', 'langues' => ['Commun', 'Elfe'],
         ]);
 
         $this->get('/personnages/creer/confirmation')
@@ -615,7 +607,7 @@ class PersonnageCreationTest extends TestCase
         ]);
         $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
         $this->post('/personnages/creer/contexte', [
-            'nom' => 'Sans classe', 'outil' => 'Aucun', 'langues' => ['Commun', 'Elfe'],
+            'nom' => 'Sans classe', 'outil' => 'Aucun', 'maitrise' => 'Soldat', 'langues' => ['Commun', 'Elfe'],
         ]);
 
         $this->get('/personnages/creer/confirmation')->assertOk();
@@ -662,7 +654,7 @@ class PersonnageCreationTest extends TestCase
         ]);
         $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
         $this->post('/personnages/creer/contexte', [
-            'nom' => 'Aragorn', 'outil' => 'Aucun', 'langues' => ['Commun', 'Elfe'],
+            'nom' => 'Aragorn', 'outil' => 'Aucun', 'maitrise' => 'Soldat', 'langues' => ['Commun', 'Elfe'],
         ]);
 
         $this->post('/personnages/creer');
