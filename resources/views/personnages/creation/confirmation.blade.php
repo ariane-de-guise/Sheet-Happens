@@ -71,16 +71,28 @@
     </div>
 
     <div class="summary-card">
-        <div class="title">Contexte</div>
-        @if($data['maitrise'])
-            <div class="value">Maîtrise: {{ $data['maitrise'] }}</div>
+        <div class="title">Contexte & Historique</div>
+        @if($historique)
+            <div class="value"><strong>Historique:</strong> {{ $historique->nom }}</div>
+        @endif
+        @if($ideal)
+            <div class="value"><strong>Idéal:</strong> {{ $ideal->valeur }}</div>
+        @endif
+        @if($defaut)
+            <div class="value"><strong>Défaut:</strong> {{ $defaut->valeur }}</div>
+        @endif
+        @if($attachement)
+            <div class="value"><strong>Attachement:</strong> {{ $attachement->valeur }}</div>
+        @endif
+        @if($personnalite)
+            <div class="value"><strong>Personnalité:</strong> {{ $personnalite->valeur }}</div>
         @endif
         @if($data['outil'])
-            <div class="value">Outil: {{ $data['outil'] }}</div>
+            <div class="value"><strong>Outil:</strong> {{ $data['outil'] }}</div>
         @endif
-        <div class="value">Langues: {{ implode(', ', $data['langues']) }}</div>
+        <div class="value"><strong>Langues:</strong> {{ implode(', ', $data['langues']) }}</div>
         @if(!empty($data['equipement']))
-            <div class="value">Équipement: {{ implode(', ', $data['equipement']) }}</div>
+            <div class="value"><strong>Équipement:</strong> {{ implode(', ', $data['equipement']) }}</div>
         @endif
     </div>
 
