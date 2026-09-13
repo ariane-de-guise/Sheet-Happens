@@ -76,6 +76,16 @@ class ClassesSeeder extends Seeder
                     ['nom' => 'École de la Transmutation', 'description' => 'Magicien qui se specialise dans les sorts qui modifient l’énergie et la matière'],
                 ],
             ],
+            [
+                'nom' => 'Guerrier',
+                'de_de_vie' => '10',
+                'description' => 'Un maître des armes et de l\'art de la guerre.',
+                'niveau_sous_classe' => 3,
+                'sous_classes' => [
+                    ['nom' => 'Champion', 'description' => 'Un combattant direct et puissant. Il se concentre sur la force brute et l’optimisation des coups critiques, ce qui lui permet de réussir des attaques dévastatrices plus souvent que les autres.'],
+                    ['nom' => 'Maître de guerre', 'description' => 'Un tacticien hors pair. Il utilise des « dés de supériorité » pour exécuter des manœuvres spéciales afin de perturber ses ennemis, contrôler le terrain ou protéger ses alliés'],
+                ],
+            ],
         ];
 
         foreach ($classes as $classeData) {
@@ -89,7 +99,6 @@ class ClassesSeeder extends Seeder
                     'classe_id' => $classe->id,
                     'nom' => $sc['nom'],
                     'description' => $sc['description'],
-                    'niveau_sous_classe' => $sc['niveau_sous_classe'],
                 ]);
             }
         }

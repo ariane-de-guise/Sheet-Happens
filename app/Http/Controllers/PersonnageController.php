@@ -10,7 +10,11 @@ class PersonnageController extends Controller
 {
     public function store(StorePersonnageRequest $request, PersonnageCreationService $service): JsonResponse
     {
-        $personnage = $service->create($request->validated());
+        $payload = array_merge($request->validated(), [
+            'utilisateur_id' => $request->user()->id,
+        ]);
+
+        $personnage = $service->create($payload);
 
         return response()->json($personnage, 201);
     }

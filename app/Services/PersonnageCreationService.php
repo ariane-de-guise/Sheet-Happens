@@ -14,9 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class PersonnageCreationService
 {
-    public function __construct(private readonly DatabaseManager $database)
-    {
-    }
+    public function __construct(private readonly DatabaseManager $database) {}
 
     public function create(array $data): Personnage
     {

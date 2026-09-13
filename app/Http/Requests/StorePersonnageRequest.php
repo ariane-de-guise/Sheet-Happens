@@ -17,7 +17,6 @@ class StorePersonnageRequest extends FormRequest
         $niveau = $this->input('niveau', 1);
 
         return [
-            'utilisateur_id' => ['required', 'integer', 'exists:users,id'],
             'nom' => ['required', 'string', 'max:100'],
             'race_id' => ['required', 'integer', 'exists:races,id'],
             'sous_race_id' => [

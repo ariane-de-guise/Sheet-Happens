@@ -18,7 +18,7 @@ class RacesSeeder extends Seeder
                 'type_creature' => 'Humanoïde',
                 'description' => 'Les humains sont les plus nombreux et les plus diversifiés des peuples de l\'Île des Héros.',
                 'sous_races' => [],
-                'bonus_abilite1' => 'tous'
+                'bonus_abilite1' => 'tous',
             ],
             [
                 'nom' => 'Humain, Variant',
@@ -37,7 +37,7 @@ class RacesSeeder extends Seeder
                 'description' => 'Les elfes sont gracieux, immortels et profondément liés à la magie.',
                 'sous_races' => [
                     ['nom' => 'Elfe Sombre', 'description' => 'Elfe fin à la peau obsidienne banni de la surface.', 'bonus_abilite1' => 'Charisme'],
-                    ['nom' => 'Elfe des bois', 'description' => 'Elfe furtif et rapide de la forêt.','bonus_abilite1' => 'Sagesse'],
+                    ['nom' => 'Elfe des bois', 'description' => 'Elfe furtif et rapide de la forêt.', 'bonus_abilite1' => 'Sagesse'],
                     ['nom' => 'Haut Elfe', 'description' => 'Elfe à l\'esprit vif maitrisant une base de magie.', 'bonus_abilite1' => 'Intelligence'],
                 ],
                 'bonus_abilite1' => 'Dextérité',
@@ -127,7 +127,7 @@ class RacesSeeder extends Seeder
                 'type_creature' => 'Humanoïde',
                 'description' => 'Marqués par le sang infernal, les tieffelins sont souvent craints mais résilients.',
                 'sous_races' => [
-                    ['nom' => 'Tieffelin de la Lignée d\'Asmodée', 'description' => 'Tieffelin liées à Nessus qui commande le pouvoir du feu et des ténèbres', 'bonus_abilite1' => 'Intelligence']
+                    ['nom' => 'Tieffelin de la Lignée d\'Asmodée', 'description' => 'Tieffelin liées à Nessus qui commande le pouvoir du feu et des ténèbres', 'bonus_abilite1' => 'Intelligence'],
                 ],
                 'bonus_abilite1' => 'Charisme',
             ],

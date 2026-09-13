@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Abilite;
 use App\Models\Classe;
-use App\Models\ListeCompetence;
 use App\Models\Personnage;
 use App\Models\Race;
 use App\Models\SousClasse;
@@ -12,6 +10,7 @@ use App\Models\SousRace;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -32,6 +31,8 @@ class PersonnageSheetController extends Controller
 
     public function show(Personnage $personnage): View
     {
+        $this->authorizeOwner($personnage);
+
         $personnage->load(['race', 'sousRace', 'classe', 'sousClasse', 'abilites', 'listeCompetence']);
 
         return view('personnages.show', [
@@ -41,6 +42,8 @@ class PersonnageSheetController extends Controller
 
     public function edit(Personnage $personnage): View
     {
+        $this->authorizeOwner($personnage);
+
         $personnage->load(['race', 'sousRace', 'classe', 'sousClasse', 'abilites', 'listeCompetence']);
 
         $races = Race::with('sousRaces')->get();
@@ -93,9 +96,11 @@ class PersonnageSheetController extends Controller
 
     public function update(Request $request, Personnage $personnage): RedirectResponse
     {
+        $this->authorizeOwner($personnage);
+
         $personnage->load(['abilites', 'listeCompetence']);
 
-        $niveau = (int)$request->input('niveau', $personnage->niveau);
+        $niveau = (int) $request->input('niveau', $personnage->niveau);
 
         $maxCompetences = $this->getMaxCompetencesByLevel($niveau);
         $maxLangues = $this->getMaxLanguesByLevel($niveau);
@@ -144,7 +149,7 @@ class PersonnageSheetController extends Controller
         $sousRaceId = $validated['sous_race_id'] ?? null;
         if ($sousRaceId) {
             $sr = SousRace::find($sousRaceId);
-            if (!$sr || $sr->race_id !== $validated['race_id']) {
+            if (! $sr || $sr->race_id !== $validated['race_id']) {
                 $sousRaceId = null;
             }
         }
@@ -153,7 +158,7 @@ class PersonnageSheetController extends Controller
         if ($sousClasseId) {
             $sc = SousClasse::find($sousClasseId);
             $classe = Classe::find($validated['classe_id']);
-            if (!$sc || !$classe || $sc->classe_id !== $validated['classe_id'] || $classe->niveau_sous_classe > $validated['niveau']) {
+            if (! $sc || ! $classe || $sc->classe_id !== $validated['classe_id'] || $classe->niveau_sous_classe > $validated['niveau']) {
                 $sousClasseId = null;
             }
         }
@@ -191,13 +196,18 @@ class PersonnageSheetController extends Controller
             ->with('success', 'Personnage mis à jour avec succès !');
     }
 
+    protected function authorizeOwner(Personnage $personnage): void
+    {
+        abort_unless($personnage->utilisateur_id === Auth::id(), 403);
+    }
+
     protected function getMaxCompetencesByLevel(int $niveau): int
     {
-        return 2 + (int)floor(($niveau - 1) / 2);
+        return 2 + (int) floor(($niveau - 1) / 2);
     }
 
     protected function getMaxLanguesByLevel(int $niveau): int
     {
-        return 2 + (int)floor(($niveau - 1) / 3);
+        return 2 + (int) floor(($niveau - 1) / 3);
     }
 }

@@ -69,7 +69,7 @@ return new class extends Migration
 
         Schema::create('personnages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('utilisateur_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('utilisateur_id')->constrained('utilisateurs')->cascadeOnDelete();
             $table->foreignId('race_id')->constrained('races')->restrictOnDelete();
             $table->foreignId('sous_race_id')->nullable()->constrained('sous_races')->nullOnDelete();
             $table->foreignId('classe_id')->constrained('classes')->restrictOnDelete();
