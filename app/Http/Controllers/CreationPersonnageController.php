@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attachement;
 use App\Models\Classe;
+use App\Models\Defaut;
+use App\Models\Historique;
+use App\Models\Ideal;
+use App\Models\Personnalite;
 use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\SousRace;
-use App\Models\User;
+use App\Models\Utilisateur;
 use App\Services\PersonnageCreationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -39,6 +44,11 @@ class CreationPersonnageController extends Controller
             ],
             'dice_pool' => null,
             'competences' => [],
+            'historique_id' => null,
+            'ideal_id' => null,
+            'defaut_id' => null,
+            'attachement_id' => null,
+            'personnalite_id' => null,
             'maitrise' => null,
             'outil' => null,
             'langues' => [],
@@ -127,16 +137,16 @@ class CreationPersonnageController extends Controller
             'sous_race_id.required' => 'Vous devez choisir une sous-race avant de continuer.',
         ]);
 
-        $current = $this->getData();
-        $newRaceId = $validated['race_id'];
-        $newSousRaceId = $validated['sous_race_id'] ?? null;
-
-        if (! empty($newSousRaceId)) {
-            $sr = SousRace::find($newSousRaceId);
-            if (! $sr || $sr->race_id !== $newRaceId) {
-                $newSousRaceId = null;
-            }
-        }
+        // $validated vient d'une requête HTTP : ce sont des chaînes, même
+        // pour les champs validés par la règle "integer". On les convertit
+        // pour stocker des id cohérents en session (comparés ailleurs à des
+        // id entiers renvoyés par Eloquent).
+        //
+        // La règle "exists" ci-dessus vérifie déjà, via une requête SQL
+        // scopée sur race_id, que sous_race_id appartient bien à la race
+        // envoyée : il n'y a donc rien à revalider ici.
+        $newRaceId = (int) $validated['race_id'];
+        $newSousRaceId = isset($validated['sous_race_id']) ? (int) $validated['sous_race_id'] : null;
 
         $this->saveData([
             'race_id' => $newRaceId,
@@ -189,16 +199,13 @@ class CreationPersonnageController extends Controller
             'sous_classe_id.required' => 'Vous devez choisir une sous-classe avant de continuer.',
         ]);
 
-        $current = $this->getData();
-        $newClasseId = $validated['classe_id'];
-        $newSousClasseId = $validated['sous_classe_id'] ?? null;
-
-        if ($newClasseId !== $current['classe_id'] && ! empty($newSousClasseId)) {
-            $sc = SousClasse::find($newSousClasseId);
-            if (! $sc || $sc->classe_id !== $newClasseId) {
-                $newSousClasseId = null;
-            }
-        }
+        // Mêmes précautions que dans saveRace() : $validated contient des
+        // chaînes issues de la requête HTTP, à convertir avant tout usage
+        // comme id entier. La règle "exists" ci-dessus garantit déjà que
+        // sous_classe_id appartient à la classe envoyée : rien à revalider
+        // ici.
+        $newClasseId = (int) $validated['classe_id'];
+        $newSousClasseId = isset($validated['sous_classe_id']) ? (int) $validated['sous_classe_id'] : null;
 
         $this->saveData([
             'classe_id' => $newClasseId,
@@ -482,6 +489,9 @@ class CreationPersonnageController extends Controller
 
         $maitrises = array_keys(static::MAITRISE_EQUIPEMENT);
 
+        $historiques = Historique::with(['ideaux', 'defauts', 'attachements', 'personnalites'])->get();
+        $selectedHistoriqueModel = $data['historique_id'] ? $historiques->firstWhere('id', $data['historique_id']) : null;
+
         $outils = [
             'Aucun', 'Kit de calligraphe', 'Kit de charpentier',
             'Kit de cuisinier', 'Kit de joueur', 'Kit de potier',
@@ -494,11 +504,18 @@ class CreationPersonnageController extends Controller
         return view('personnages.creation.contexte', [
             'data' => $data,
             'maitrises' => $maitrises,
+            'historiques' => $historiques,
             'outils' => $outils,
             'maitriseEquipement' => static::MAITRISE_EQUIPEMENT,
             'maitriseAlignement' => static::MAITRISE_ALIGNEMENT,
             'languesRace' => $languesRace,
             'selectedMaitrise' => $data['maitrise'],
+            'selectedHistorique' => $data['historique_id'],
+            'selectedHistoriqueModel' => $selectedHistoriqueModel,
+            'selectedIdeal' => $data['ideal_id'],
+            'selectedDefaut' => $data['defaut_id'],
+            'selectedAttachement' => $data['attachement_id'],
+            'selectedPersonnalite' => $data['personnalite_id'],
             'selectedOutil' => $data['outil'],
             'currentStep' => 6,
             'progress' => $this->getProgress(),
@@ -514,6 +531,11 @@ class CreationPersonnageController extends Controller
             'outil' => 'nullable|string|max:50',
             'nom' => 'required|string|max:100',
             'description' => 'nullable|string',
+            'historique_id' => 'required|integer|exists:historiques,id',
+            'ideal_id' => 'required|integer|exists:ideaux,id',
+            'defaut_id' => 'required|integer|exists:defauts,id',
+            'attachement_id' => 'required|integer|exists:attachements,id',
+            'personnalite_id' => 'required|integer|exists:personnalites,id',
         ], [
             'maitrise.required' => 'Vous devez choisir une maîtrise avant de continuer.',
             'maitrise.in' => 'La maîtrise sélectionnée est invalide.',
@@ -522,6 +544,11 @@ class CreationPersonnageController extends Controller
         $race = Race::find($data['race_id']);
 
         $this->saveData([
+            'historique_id' => $validated['historique_id'],
+            'ideal_id' => $validated['ideal_id'],
+            'defaut_id' => $validated['defaut_id'],
+            'attachement_id' => $validated['attachement_id'],
+            'personnalite_id' => $validated['personnalite_id'],
             'maitrise' => $validated['maitrise'],
             'outil' => $validated['outil'] === 'Aucun' ? null : ($validated['outil'] ?? null),
             // La maîtrise vient avec son propre équipement, et détermine
@@ -550,6 +577,11 @@ class CreationPersonnageController extends Controller
         $sousRace = $data['sous_race_id'] ? SousRace::find($data['sous_race_id']) : null;
         $classe = Classe::find($data['classe_id']);
         $sousClasse = $data['sous_classe_id'] ? SousClasse::find($data['sous_classe_id']) : null;
+        $historique = $data['historique_id'] ? Historique::find($data['historique_id']) : null;
+        $ideal = $data['ideal_id'] ? Ideal::find($data['ideal_id']) : null;
+        $defaut = $data['defaut_id'] ? Defaut::find($data['defaut_id']) : null;
+        $attachement = $data['attachement_id'] ? Attachement::find($data['attachement_id']) : null;
+        $personnalite = $data['personnalite_id'] ? Personnalite::find($data['personnalite_id']) : null;
 
         $abilites = $data['abilites'];
         $pv = $this->calculatePV($abilites, $classe);
@@ -560,6 +592,11 @@ class CreationPersonnageController extends Controller
             'sousRace' => $sousRace,
             'classe' => $classe,
             'sousClasse' => $sousClasse,
+            'historique' => $historique,
+            'ideal' => $ideal,
+            'defaut' => $defaut,
+            'attachement' => $attachement,
+            'personnalite' => $personnalite,
             'abilites' => $abilites,
             'pv' => $pv,
             'currentStep' => 6,
@@ -595,11 +632,16 @@ class CreationPersonnageController extends Controller
         }
 
         $payload = [
-            'utilisateur_id' => auth()->id() ?? User::query()->firstOrFail()->getKey(),
+            'utilisateur_id' => auth()->id() ?? Utilisateur::query()->firstOrFail()->getKey(),
             'race_id' => $data['race_id'],
             'sous_race_id' => $data['sous_race_id'],
             'classe_id' => $data['classe_id'],
             'sous_classe_id' => $data['sous_classe_id'],
+            'historique_id' => $data['historique_id'] ?? null,
+            'ideal_id' => $data['ideal_id'] ?? null,
+            'defaut_id' => $data['defaut_id'] ?? null,
+            'attachement_id' => $data['attachement_id'] ?? null,
+            'personnalite_id' => $data['personnalite_id'] ?? null,
             'abilites' => $data['abilites'],
             'competences' => $data['competences'],
             'nom' => $data['nom'],
@@ -641,5 +683,16 @@ class CreationPersonnageController extends Controller
         $sousRaces = SousRace::where('race_id', $raceId)->get();
 
         return response()->json($sousRaces);
+    }
+
+    public function getHistoriqueDetails($historiqueId): JsonResponse
+    {
+        $historique = Historique::with(['ideaux', 'defauts', 'attachements', 'personnalites'])->find($historiqueId);
+
+        if (! $historique) {
+            return response()->json(['error' => 'Historique introuvable'], 404);
+        }
+
+        return response()->json($historique);
     }
 }

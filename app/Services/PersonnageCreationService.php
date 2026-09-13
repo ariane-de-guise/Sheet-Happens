@@ -32,6 +32,11 @@ readonly class PersonnageCreationService
                 'sous_race_id' => $data['sous_race_id'] ?? null,
                 'classe_id' => $data['classe_id'],
                 'sous_classe_id' => $data['sous_classe_id'] ?? null,
+                'historique_id' => $data['historique_id'] ?? null,
+                'ideal_id' => $data['ideal_id'] ?? null,
+                'defaut_id' => $data['defaut_id'] ?? null,
+                'attachement_id' => $data['attachement_id'] ?? null,
+                'personnalite_id' => $data['personnalite_id'] ?? null,
                 'abilites_id' => $abilites->id,
                 'liste_competence_id' => $listeCompetence->id,
                 'nom' => $data['nom'],
@@ -43,7 +48,12 @@ readonly class PersonnageCreationService
                 'outil' => $data['outil'] ?? null,
                 'langues' => $data['langues'] ?? [],
                 'equipement' => $data['equipement'] ?? [],
-            ])->load(['race', 'sousRace', 'classe', 'sousClasse', 'abilites', 'listeCompetence']);
+            ])->load(['race', 'sousRace', 'classe', 'sousClasse', 'historique', 'ideal', 'defaut', 'attachement', 'personnalite', 'abilites', 'listeCompetence']);
+            // 'maitrise', 'outil', 'langues' et 'equipement' ne sont pas des
+            // relations Eloquent mais de simples colonnes du modèle
+            // Personnage : elles sont déjà présentes sur l'instance
+            // retournée par create(), inutile (et invalide) de les charger
+            // avec load().
         });
     }
 

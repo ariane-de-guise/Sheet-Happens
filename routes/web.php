@@ -64,4 +64,5 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/api/sous-classes/{classeId}/{niveauMax?}', [CreationPersonnageController::class, 'getSousClasses'])->name('api.sous-classes');
     Route::get('/api/sous-races/{raceId}', [CreationPersonnageController::class, 'getSousRaces'])->name('api.sous-races');
+    Route::get('/api/historiques/{historiqueId}', [CreationPersonnageController::class, 'getHistoriqueDetails'])->name('api.historique-details');
 });
