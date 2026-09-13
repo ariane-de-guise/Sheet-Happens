@@ -557,7 +557,7 @@ class CreationPersonnageController extends Controller
             // joueur, elles sont dérivées ici pour éviter toute incohérence.
             'equipement' => static::MAITRISE_EQUIPEMENT[$validated['maitrise']],
             'alignement' => static::MAITRISE_ALIGNEMENT[$validated['maitrise']],
-            'langues' => $race->langues ?? ['Commun'],
+            'langues' => $race?->langues ?? ['Commun'],
             'nom' => $validated['nom'],
             'description' => $validated['description'] ?? null,
         ]);
