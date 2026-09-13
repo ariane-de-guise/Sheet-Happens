@@ -32,6 +32,11 @@ class PersonnageCreationService
                 'sous_race_id' => $data['sous_race_id'] ?? null,
                 'classe_id' => $data['classe_id'],
                 'sous_classe_id' => $data['sous_classe_id'] ?? null,
+                'historique_id' => $data['historique_id'] ?? null,
+                'ideal_id' => $data['ideal_id'] ?? null,
+                'defaut_id' => $data['defaut_id'] ?? null,
+                'attachement_id' => $data['attachement_id'] ?? null,
+                'personnalite_id' => $data['personnalite_id'] ?? null,
                 'abilites_id' => $abilites->id,
                 'liste_competence_id' => $listeCompetence->id,
                 'nom' => $data['nom'],
@@ -39,7 +44,7 @@ class PersonnageCreationService
                 'alignement' => $data['alignement'] ?? null,
                 'description' => $data['description'] ?? null,
                 'point_de_vie' => $data['point_de_vie'],
-            ])->load(['race', 'sousRace', 'classe', 'sousClasse', 'abilites', 'listeCompetence']);
+            ])->load(['race', 'sousRace', 'classe', 'sousClasse', 'historique', 'ideal', 'defaut', 'attachement', 'personnalite', 'abilites', 'listeCompetence']);
         });
     }
 
