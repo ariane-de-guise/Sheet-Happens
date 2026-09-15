@@ -34,6 +34,7 @@ return new class extends Migration
             $table->string('nom')->unique();
             $table->string('de_de_vie')->nullable();
             $table->text('description')->nullable();
+            $table->unsignedTinyInteger('niveau_sous_classe')->default(1);
             $table->timestamps();
         });
 
@@ -42,7 +43,6 @@ return new class extends Migration
             $table->foreignId('classe_id')->constrained('classes')->cascadeOnDelete();
             $table->string('nom');
             $table->text('description')->nullable();
-            $table->unsignedTinyInteger('niveau_sous_classe')->default(1);
             $table->timestamps();
             $table->unique(['classe_id', 'nom']);
         });

@@ -11,8 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'nom',
     'description',
     'bonus_aptitudes',
-    'bonus_abilite1',
-    'bonus_abilite2',
 ])]
 class SousRace extends Model
 {

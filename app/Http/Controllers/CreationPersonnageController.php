@@ -2,14 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attachement;
 use App\Models\Classe;
+use App\Models\Defaut;
+use App\Models\Historique;
+use App\Models\Ideal;
+use App\Models\Personnalite;
 use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\SousRace;
+use App\Models\Utilisateur;
 use App\Services\PersonnageCreationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -21,7 +28,7 @@ class CreationPersonnageController extends Controller
 
     protected function getData(): array
     {
-        return session(static::SESSION_KEY, [
+        $defaults = [
             'race_id' => null,
             'sous_race_id' => null,
             'classe_id' => null,
@@ -35,16 +42,22 @@ class CreationPersonnageController extends Controller
                 'sagesse' => 8,
                 'charisme' => 8,
             ],
-            'bonus_aptitudes' => [],
+            'dice_pool' => null,
             'competences' => [],
-            'maitrise' => null,
+            'historique_id' => null,
+            'ideal_id' => null,
+            'defaut_id' => null,
+            'attachement_id' => null,
+            'personnalite_id' => null,
             'outil' => null,
             'langues' => [],
             'equipement' => [],
             'nom' => '',
             'alignement' => null,
             'description' => '',
-        ]);
+        ];
+
+        return array_merge($defaults, session(static::SESSION_KEY, []));
     }
 
     protected function saveData(array $data): void
@@ -80,12 +93,12 @@ class CreationPersonnageController extends Controller
     protected function abilitesComplete(array $abilites): bool
     {
         return ! empty($abilites) &&
-               ($abilites['force'] ?? 0) > 0 &&
-               ($abilites['dexterite'] ?? 0) > 0 &&
-               ($abilites['constitution'] ?? 0) > 0 &&
-               ($abilites['intelligence'] ?? 0) > 0 &&
-               ($abilites['sagesse'] ?? 0) > 0 &&
-               ($abilites['charisme'] ?? 0) > 0;
+            ($abilites['force'] ?? 0) > 0 &&
+            ($abilites['dexterite'] ?? 0) > 0 &&
+            ($abilites['constitution'] ?? 0) > 0 &&
+            ($abilites['intelligence'] ?? 0) > 0 &&
+            ($abilites['sagesse'] ?? 0) > 0 &&
+            ($abilites['charisme'] ?? 0) > 0;
     }
 
     public function stepRace(): View
@@ -104,20 +117,35 @@ class CreationPersonnageController extends Controller
 
     public function saveRace(Request $request): RedirectResponse
     {
+        // Une sous-race ne peut pas rester "optionnelle" quand la race en
+        // propose : le joueur doit alors obligatoirement en choisir une.
+        $race = Race::with('sousRaces')->find($request->input('race_id'));
+        $sousRaceRequise = $race && $race->sousRaces->isNotEmpty();
+
         $validated = $request->validate([
             'race_id' => 'required|integer|exists:races,id',
-            'sous_race_id' => 'nullable|integer|exists:sous_races,id',
+            'sous_race_id' => [
+                $sousRaceRequise ? 'required' : 'nullable',
+                'integer',
+                Rule::exists('sous_races', 'id')->where(function ($query) use ($request) {
+                    return $query->where('race_id', $request->input('race_id'));
+                }),
+            ],
+        ], [
+            'race_id.required' => 'Vous devez choisir une race avant de continuer.',
+            'sous_race_id.required' => 'Vous devez choisir une sous-race avant de continuer.',
         ]);
 
+        // $validated vient d'une requête HTTP : ce sont des chaînes, même
+        // pour les champs validés par la règle "integer". On les convertit
+        // pour stocker des id cohérents en session (comparés ailleurs à des
+        // id entiers renvoyés par Eloquent).
+        //
+        // La règle "exists" ci-dessus vérifie déjà, via une requête SQL
+        // scopée sur race_id, que sous_race_id appartient bien à la race
+        // envoyée : il n'y a donc rien à revalider ici.
         $newRaceId = (int) $validated['race_id'];
-        $newSousRaceId = !empty($validated['sous_race_id']) ? (int) $validated['sous_race_id'] : null;
-
-        if (!empty($newSousRaceId)) {
-            $sr = SousRace::find($newSousRaceId);
-            if (!$sr || $sr->race_id !== $newRaceId) {
-                $newSousRaceId = null;
-            }
-        }
+        $newSousRaceId = isset($validated['sous_race_id']) ? (int) $validated['sous_race_id'] : null;
 
         $this->saveData([
             'race_id' => $newRaceId,
@@ -129,9 +157,7 @@ class CreationPersonnageController extends Controller
 
     public function stepClasse(): View|RedirectResponse
     {
-        $classes = Classe::with(['sousClasses' => function ($query) {
-            $query->where('niveau_sous_classe', 1);
-        }])->get();
+        $classes = Classe::with('sousClasses')->get();
         $data = $this->getData();
 
         if (empty($data['race_id'])) {
@@ -149,21 +175,36 @@ class CreationPersonnageController extends Controller
 
     public function saveClasse(Request $request): RedirectResponse
     {
+        // Une sous-classe ne peut pas rester "optionnelle" quand elle est
+        // disponible dès le niveau 1 (niveau auquel un personnage est
+        // toujours créé) : le joueur doit alors obligatoirement en choisir
+        // une.
+        $classe = Classe::with('sousClasses')->find($request->input('classe_id'));
+        $sousClasseRequise = $classe
+            && $classe->niveau_sous_classe <= 1
+            && $classe->sousClasses->isNotEmpty();
+
         $validated = $request->validate([
             'classe_id' => 'required|integer|exists:classes,id',
-            'sous_classe_id' => 'nullable|integer|exists:sous_classes,id',
+            'sous_classe_id' => [
+                $sousClasseRequise ? 'required' : 'nullable',
+                'integer',
+                Rule::exists('sous_classes', 'id')->where(function ($query) use ($request) {
+                    return $query->where('classe_id', $request->input('classe_id'));
+                }),
+            ],
+        ], [
+            'classe_id.required' => 'Vous devez choisir une classe avant de continuer.',
+            'sous_classe_id.required' => 'Vous devez choisir une sous-classe avant de continuer.',
         ]);
 
-        $current = $this->getData();
-        $newClasseId = $validated['classe_id'];
-        $newSousClasseId = $validated['sous_classe_id'] ?? null;
-
-        if ($newClasseId !== $current['classe_id'] && ! empty($newSousClasseId)) {
-            $sc = SousClasse::find($newSousClasseId);
-            if (! $sc || $sc->classe_id !== $newClasseId) {
-                $newSousClasseId = null;
-            }
-        }
+        // Mêmes précautions que dans saveRace() : $validated contient des
+        // chaînes issues de la requête HTTP, à convertir avant tout usage
+        // comme id entier. La règle "exists" ci-dessus garantit déjà que
+        // sous_classe_id appartient à la classe envoyée : rien à revalider
+        // ici.
+        $newClasseId = (int) $validated['classe_id'];
+        $newSousClasseId = isset($validated['sous_classe_id']) ? (int) $validated['sous_classe_id'] : null;
 
         $this->saveData([
             'classe_id' => $newClasseId,
@@ -221,10 +262,15 @@ class CreationPersonnageController extends Controller
         $this->saveData([
             'methode' => $validated['methode'],
             'abilites' => $abilites,
+            'dice_pool' => null,
         ]);
 
         return redirect()->route('creation.caracteristiques');
     }
+
+    protected const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
+
+    protected const ABILITES_KEYS = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'];
 
     public function stepCaracteristiques(): View|RedirectResponse
     {
@@ -234,14 +280,13 @@ class CreationPersonnageController extends Controller
             return redirect()->route('creation.methode');
         }
 
-        $race = Race::find($data['race_id']);
-        $sousRace = SousRace::find($data['sous_race_id']);
-
         return view('personnages.creation.caracteristiques', [
             'methode' => $data['methode'],
             'abilites' => $data['abilites'],
-            'race' => $race,
-            'sousRace' => $sousRace,
+            'dicePool' => $data['dice_pool'],
+            'standardArray' => static::STANDARD_ARRAY,
+            'race' => Race::find($data['race_id']),
+            'sousRace' => $data['sous_race_id'] ? SousRace::find($data['sous_race_id']) : null,
             'currentStep' => 4,
             'progress' => $this->getProgress(),
         ]);
@@ -275,31 +320,60 @@ class CreationPersonnageController extends Controller
         $validated = $request->validate($rules);
 
         $abilites = [
-            'force' => $validated['force'],
-            'dexterite' => $validated['dexterite'],
-            'constitution' => $validated['constitution'],
-            'intelligence' => $validated['intelligence'],
-            'sagesse' => $validated['sagesse'],
-            'charisme' => $validated['charisme'],
+            'force' => (int) $validated['force'],
+            'dexterite' => (int) $validated['dexterite'],
+            'constitution' => (int) $validated['constitution'],
+            'intelligence' => (int) $validated['intelligence'],
+            'sagesse' => (int) $validated['sagesse'],
+            'charisme' => (int) $validated['charisme'],
         ];
+
         if ($methode === 'points') {
             $costTable = [8 => 0, 9 => 1, 10 => 2, 11 => 3, 12 => 4, 13 => 6, 14 => 8, 15 => 10];
-            $totalCost = array_sum(array_map(fn($v) => $costTable[$v] ?? 0, $abilites));
+            $totalCost = array_sum(array_map(fn ($v) => $costTable[$v] ?? 0, $abilites));
             if ($totalCost !== 27) {
                 return redirect()->back()
-                    ->with('error', 'Vous devez utiliser exactement 27 points (coût : 9=1, 10=2, 11=3, 12=4, 13=5, 14=7, 15=9).');
+                    ->with('error', 'Vous devez utiliser exactement 27 points (coût progressif : 9=1, 10=2, 11=3, 12=4, 13=6, 14=8, 15=10).');
+            }
+        }
+
+        // La répartition standard et le lancer de dés attribuent chaque
+        // caractéristique en glissant-déposant une valeur d'un lot fixe :
+        // on vérifie ici que les valeurs soumises correspondent exactement
+        // à ce lot (même multiset), pour empêcher un envoi de formulaire
+        // trafiqué depuis le client.
+        if ($methode === 'standard') {
+            $submitted = array_values($abilites);
+            sort($submitted);
+            $expected = static::STANDARD_ARRAY;
+            sort($expected);
+            if ($submitted !== $expected) {
+                return redirect()->back()
+                    ->with('error', 'La répartition ne correspond pas aux valeurs disponibles (15, 14, 13, 12, 10, 8). Merci de glisser chaque valeur dans une seule caractéristique.');
+            }
+        }
+
+        if ($methode === 'dice') {
+            $pool = $data['dice_pool'];
+            if (! is_array($pool) || count($pool) !== 6) {
+                return redirect()->route('creation.caracteristiques')
+                    ->with('error', 'Vous devez lancer les dés avant de continuer.');
+            }
+            $submitted = array_values($abilites);
+            sort($submitted);
+            $expected = $pool;
+            sort($expected);
+            if ($submitted !== $expected) {
+                return redirect()->back()
+                    ->with('error', 'La répartition ne correspond pas aux valeurs lancées. Merci de glisser chaque résultat dans une seule caractéristique.');
             }
         }
 
         $race = Race::find($data['race_id']);
-        $sousRace = !empty($data['sous_race_id']) ? SousRace::find($data['sous_race_id']) : null;
-
-        // 4. Add bonuses to the base scores
+        $sousRace = $data['sous_race_id'] ? SousRace::find($data['sous_race_id']) : null;
         foreach ($abilites as $key => &$score) {
-            $raceBonus = (int) data_get($race, "bonus_aptitudes.$key", 0);
-            $subRaceBonus = (int) data_get($sousRace, "bonus_aptitudes.$key", 0);
-
-            $score += ($raceBonus + $subRaceBonus);
+            $score += (int) data_get($race, "bonus_aptitudes.$key", 0);
+            $score += (int) data_get($sousRace, "bonus_aptitudes.$key", 0);
         }
         unset($score);
 
@@ -308,35 +382,36 @@ class CreationPersonnageController extends Controller
         return redirect()->route('creation.competences');
     }
 
+    /**
+     * Lance les 6 groupes de caractéristiques (4d6, on garde les 3 meilleurs)
+     * en une seule fois. Le joueur répartit ensuite librement les 6
+     * résultats obtenus par glisser-déposer (voir _caracteristiques_dice).
+     */
     public function rollDice(Request $request)
     {
-        $data = $this->getData();
-        $abilites = $data['abilites'];
-
         $rolls = [];
-        for ($i = 0; $i < 4; $i++) {
-            $rolls[] = rand(1, 6);
-        }
-        rsort($rolls);
-        array_pop($rolls);
-        $result = array_sum($rolls);
-
-        $abilite = $request->input('abilite');
-
-        if (! $abilite || ! in_array($abilite, ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'])) {
-            return $request->expectsJson()
-                ? response()->json(['error' => 'Abilite invalide'], 400)
-                : redirect()->back();
+        for ($i = 0; $i < 6; $i++) {
+            $dice = [];
+            for ($j = 0; $j < 4; $j++) {
+                $dice[] = random_int(1, 6);
+            }
+            rsort($dice);
+            array_pop($dice);
+            $rolls[] = array_sum($dice);
         }
 
-        $abilites[$abilite] = $result;
-        $this->saveData(['abilites' => $abilites]);
+        $abilitesVides = array_fill_keys(static::ABILITES_KEYS, 0);
+
+        $this->saveData([
+            'dice_pool' => $rolls,
+            'abilites' => $abilitesVides,
+        ]);
 
         if ($request->expectsJson()) {
-            return response()->json(['value' => $result, 'abilite' => $abilite]);
+            return response()->json(['rolls' => $rolls]);
         }
 
-        return redirect()->back()->with('rolled', $abilite);
+        return redirect()->back();
     }
 
     public function stepCompetences(): View|RedirectResponse
@@ -348,19 +423,14 @@ class CreationPersonnageController extends Controller
         }
 
         $classe = Classe::find($data['classe_id']);
-
-        $allCompetences = [
-            'Acrobaties', 'Arcanes', 'Athlétisme', 'Art de la duplicité',
-            'Artisanat', 'Attention', 'Dissimulation', 'Histoire',
-            'Intimidation', 'Insight', 'Médecine', 'Nature',
-            'Perception', 'Performance', 'Persuasion', 'Religion',
-            'Sapience animale', 'Survie',
-        ];
+        $competencesDisponibles = $classe?->competences_disponibles ?? [];
+        $nombreCompetences = $classe?->nombre_competences ?? 2;
 
         return view('personnages.creation.competences', [
-            'competencesDisponibles' => $allCompetences,
-            'competencesSelectionnees' => $data['competences'] ?? [],
-            'nombreCompetences' => 2,
+            'classe' => $classe,
+            'competencesDisponibles' => $competencesDisponibles,
+            'competencesSelectionnees' => array_values(array_intersect($data['competences'] ?? [], $competencesDisponibles)),
+            'nombreCompetences' => $nombreCompetences,
             'currentStep' => 5,
             'progress' => $this->getProgress(),
         ]);
@@ -368,56 +438,52 @@ class CreationPersonnageController extends Controller
 
     public function saveCompetences(Request $request): RedirectResponse
     {
+        $data = $this->getData();
+        $classe = Classe::find($data['classe_id']);
+        $competencesDisponibles = $classe?->competences_disponibles ?? [];
+        $nombreCompetences = $classe?->nombre_competences ?? 2;
+
         $validated = $request->validate([
-            'competences' => 'required|array|min:2',
-            'competences.*' => 'string|max:50',
+            'competences' => ['required', 'array', "size:$nombreCompetences"],
+            'competences.*' => ['string', Rule::in($competencesDisponibles)],
+        ], [
+            'competences.required' => "Vous devez choisir $nombreCompetences compétences avant de continuer.",
+            'competences.size' => "Vous devez choisir exactement $nombreCompetences compétences.",
+            'competences.*.in' => 'Cette compétence ne fait pas partie de celles offertes par votre classe.',
         ]);
 
         $this->saveData([
-            'competences' => array_unique($validated['competences']),
+            'competences' => array_values(array_unique($validated['competences'])),
         ]);
 
         return redirect()->route('creation.contexte');
     }
 
-    public function stepContexte(): View
+    public function stepContexte(): View|RedirectResponse
     {
         $data = $this->getData();
 
-        $maitrises = [
-            'Religieux', 'Marchand', 'Artisan', 'Noble',
-            'Soldat', 'Roublard', 'Erfge', 'Hors-la-loi',
-        ];
+        if (empty($data['race_id'])) {
+            return redirect()->route('creation.race');
+        }
 
-        $outils = [
-            'Aucun', 'Kit de calligraphe', 'Kit de charpentier',
-            'Kit de cuisinier', 'Kit de joueur', 'Kit de potier',
-            'Instruments de musique', 'Outils de voleur',
-        ];
+        $historiques = Historique::with(['ideaux', 'defauts', 'attachements', 'personnalites'])->get();
+        $selectedHistoriqueModel = $data['historique_id'] ? $historiques->firstWhere('id', $data['historique_id']) : null;
 
-        $langues = [
-            'Commun', 'Abyssal', 'Aérien', 'Ancien',
-            'Bestiaire', 'Celte', 'Drow', 'Dwarvique',
-            'Elfe', 'Géant', 'Gnôme', 'Gobelin',
-            'Halfling', 'Hidana', 'Immortel', 'Nain',
-            'Orc', 'Souterrain', 'Titan', 'Sylvain',
-        ];
-
-        $equipements = [
-            'Harpe', 'Livre', 'Épée', 'Arc court',
-            'Bouclier', 'Armure de cuir', 'Sac à dos',
-            'Kit d\'explorateur', 'Lanternes', 'Cordes',
-        ];
+        $race = Race::find($data['race_id']);
+        $languesRace = $race->langues ?? ['Commun'];
 
         return view('personnages.creation.contexte', [
-            'maitrises' => $maitrises,
-            'outils' => $outils,
-            'langues' => $langues,
-            'equipements' => $equipements,
-            'selectedMaitrise' => $data['maitrise'],
+            'data' => $data,
+            'historiques' => $historiques,
+            'languesRace' => $languesRace,
+            'selectedHistorique' => $data['historique_id'],
+            'selectedHistoriqueModel' => $selectedHistoriqueModel,
+            'selectedIdeal' => $data['ideal_id'],
+            'selectedDefaut' => $data['defaut_id'],
+            'selectedAttachement' => $data['attachement_id'],
+            'selectedPersonnalite' => $data['personnalite_id'],
             'selectedOutil' => $data['outil'],
-            'selectedLangues' => $data['langues'] ?? [],
-            'selectedEquipements' => $data['equipement'] ?? [],
             'currentStep' => 6,
             'progress' => $this->getProgress(),
         ]);
@@ -425,29 +491,147 @@ class CreationPersonnageController extends Controller
 
     public function saveContexte(Request $request): RedirectResponse
     {
+        $data = $this->getData();
+
         $validated = $request->validate([
-            'maitrise' => 'nullable|string|max:50',
-            'outil' => 'nullable|string|max:50',
-            'langues' => 'nullable|array|min:2',
-            'langues.*' => 'string|max:50',
-            'equipements' => 'nullable|array',
-            'equipements.*' => 'string|max:50',
             'nom' => 'required|string|max:100',
-            'alignement' => 'nullable|string|max:50',
             'description' => 'nullable|string',
+            'historique_id' => 'required|integer|exists:historiques,id',
+            'ideal_id' => 'required|integer|exists:ideaux,id',
+            'defaut_id' => 'required|integer|exists:defauts,id',
+            'attachement_id' => 'required|integer|exists:attachements,id',
+            'personnalite_id' => 'required|integer|exists:personnalites,id',
+        ]);
+
+        $race = Race::find($data['race_id']);
+        $historique = Historique::find($validated['historique_id']);
+        $ideal = Ideal::find($validated['ideal_id']);
+        $defaut = Defaut::find($validated['defaut_id']);
+        $attachement = Attachement::find($validated['attachement_id']);
+        $personnalite = Personnalite::find($validated['personnalite_id']);
+
+        // En 5e, si votre historique accorde une compétence que votre classe
+        // vous a déjà fait choisir, les deux ne se cumulent pas : il faut
+        // reprendre un choix différent pour votre classe. On bloque donc ici
+        // plutôt que de silencieusement perdre une maîtrise.
+        $conflits = array_values(array_intersect($data['competences'] ?? [], $historique?->competences ?? []));
+        if (! empty($conflits)) {
+            return redirect()->route('creation.competences')
+                ->with('error', 'Vous maîtrisez déjà '.implode(' et ', $conflits).' grâce à l\'historique '.$historique->nom.'. Choisissez une compétence différente pour votre classe.');
+        }
+
+        // L'outil de départ n'est jamais un choix totalement libre en 5e :
+        // certains historiques n'en accordent aucun, d'autres en imposent
+        // un (ou plusieurs) fixe(s) sans choix (voir plus bas, fusionnés
+        // avec l'équipement), et d'autres encore proposent une liste
+        // précise dans laquelle il faut choisir. On ne peut donc valider ce
+        // champ qu'une fois l'historique connu.
+        $outilsDisponibles = $historique?->outils_disponibles ?? [];
+
+        $outilValidated = $request->validate([
+            'outil' => empty($outilsDisponibles)
+                ? ['nullable']
+                : ['required', 'string', Rule::in($outilsDisponibles)],
+        ], [
+            'outil.required' => 'Vous devez choisir un outil parmi ceux offerts par votre historique.',
+            'outil.in' => 'Cet outil ne fait pas partie de ceux offerts par votre historique.',
         ]);
 
         $this->saveData([
-            'maitrise' => $validated['maitrise'] ?? null,
-            'outil' => $validated['outil'] === 'Aucun' ? null : ($validated['outil'] ?? null),
-            'langues' => $validated['langues'] ?? [],
-            'equipement' => $validated['equipements'] ?? [],
+            'historique_id' => $validated['historique_id'],
+            'ideal_id' => $validated['ideal_id'],
+            'defaut_id' => $validated['defaut_id'],
+            'attachement_id' => $validated['attachement_id'],
+            'personnalite_id' => $validated['personnalite_id'],
+            'outil' => ! empty($outilsDisponibles) ? $outilValidated['outil'] : null,
+            // L'historique vient avec son propre équipement de départ, auquel
+            // s'ajoutent les outils qu'il accorde automatiquement sans choix
+            // (outils_fixes) ; l'alignement final combine les 4 traits de
+            // personnalité choisis (voir calculateAlignement()) ; la race
+            // détermine les langues parlées : ces valeurs ne sont donc
+            // jamais saisies directement par le joueur, elles sont dérivées
+            // ici pour éviter toute incohérence.
+            'equipement' => array_values(array_merge($historique?->equipement_depart ?? [], $historique?->outils_fixes ?? [])),
+            'alignement' => $this->calculateAlignement($ideal, $defaut, $attachement, $personnalite),
+            'langues' => $race?->langues ?? ['Commun'],
             'nom' => $validated['nom'],
-            'alignement' => $validated['alignement'] ?? null,
             'description' => $validated['description'] ?? null,
         ]);
 
         return redirect()->route('creation.confirmation');
+    }
+
+    /**
+     * Combine les 4 traits de personnalité (idéal, défaut, attachement,
+     * trait de personnalité) en un seul alignement final à deux axes,
+     * plutôt que de se baser uniquement sur l'idéal choisi.
+     *
+     * Chaque trait qui porte une étiquette d'alignement "vote" sur les
+     * deux axes : "Loyal" vaut -1 et "Chaotique" vaut +1 sur l'axe loi ;
+     * "Bon" vaut -1 et "Mauvais" vaut +1 sur l'axe bien. Un trait sans
+     * étiquette, ou dont l'étiquette est simplement "Neutre", ne fait
+     * pencher aucun axe. Le signe de la somme des votes sur chaque axe
+     * donne le mot final (Loyal/Neutre/Chaotique, puis Bon/Neutre/
+     * Mauvais) ; une somme nulle (aucun vote, ou des votes qui
+     * s'annulent) donne "Neutre" sur cet axe.
+     *
+     * NB : ce système de "vote" est un choix de conception maison, pas
+     * une règle officielle de D&D 5e — dans les livres, seuls les idéaux
+     * suggèrent un alignement ; les défauts, attachements et traits de
+     * personnalité n'en portent pas officiellement. Les étiquettes
+     * ajoutées ici dans HistoriquesSeeder reflètent simplement ce que le
+     * texte de chaque trait semble indiquer.
+     */
+    protected function calculateAlignement(?Ideal $ideal, ?Defaut $defaut, ?Attachement $attachement, ?Personnalite $personnalite): string
+    {
+        $loiScore = 0;
+        $bienScore = 0;
+
+        foreach ([$ideal, $defaut, $attachement, $personnalite] as $trait) {
+            $alignement = $trait?->alignement;
+
+            if (! $alignement) {
+                continue;
+            }
+
+            if (str_contains($alignement, 'Loyal')) {
+                $loiScore--;
+            } elseif (str_contains($alignement, 'Chaotique')) {
+                $loiScore++;
+            }
+
+            if (str_contains($alignement, 'Bon')) {
+                $bienScore--;
+            } elseif (str_contains($alignement, 'Mauvais')) {
+                $bienScore++;
+            }
+        }
+
+        $loi = match (true) {
+            $loiScore < 0 => 'Loyal',
+            $loiScore > 0 => 'Chaotique',
+            default => 'Neutre',
+        };
+
+        $bien = match (true) {
+            $bienScore < 0 => 'Bon',
+            $bienScore > 0 => 'Mauvais',
+            default => 'Neutre',
+        };
+
+        if ($loi === 'Neutre' && $bien === 'Neutre') {
+            return 'Neutre';
+        }
+
+        if ($loi === 'Neutre') {
+            return "Neutre $bien";
+        }
+
+        if ($bien === 'Neutre') {
+            return "$loi Neutre";
+        }
+
+        return "$loi $bien";
     }
 
     public function stepConfirmation(): View|RedirectResponse
@@ -462,9 +646,19 @@ class CreationPersonnageController extends Controller
         $sousRace = $data['sous_race_id'] ? SousRace::find($data['sous_race_id']) : null;
         $classe = Classe::find($data['classe_id']);
         $sousClasse = $data['sous_classe_id'] ? SousClasse::find($data['sous_classe_id']) : null;
+        $historique = $data['historique_id'] ? Historique::find($data['historique_id']) : null;
+        $ideal = $data['ideal_id'] ? Ideal::find($data['ideal_id']) : null;
+        $defaut = $data['defaut_id'] ? Defaut::find($data['defaut_id']) : null;
+        $attachement = $data['attachement_id'] ? Attachement::find($data['attachement_id']) : null;
+        $personnalite = $data['personnalite_id'] ? Personnalite::find($data['personnalite_id']) : null;
 
         $abilites = $data['abilites'];
         $pv = $this->calculatePV($abilites, $classe);
+
+        // Le personnage final cumule les compétences choisies pour la
+        // classe et celles, fixes, accordées par l'historique (voir
+        // saveContexte() pour la vérification anti-doublon).
+        $competencesFinal = array_values(array_unique(array_merge($data['competences'] ?? [], $historique?->competences ?? [])));
 
         return view('personnages.creation.confirmation', [
             'data' => $data,
@@ -472,7 +666,13 @@ class CreationPersonnageController extends Controller
             'sousRace' => $sousRace,
             'classe' => $classe,
             'sousClasse' => $sousClasse,
+            'historique' => $historique,
+            'ideal' => $ideal,
+            'defaut' => $defaut,
+            'attachement' => $attachement,
+            'personnalite' => $personnalite,
             'abilites' => $abilites,
+            'competencesFinal' => $competencesFinal,
             'pv' => $pv,
             'currentStep' => 6,
             'progress' => 6,
@@ -500,24 +700,40 @@ class CreationPersonnageController extends Controller
 
         if (! empty($data['sous_classe_id'])) {
             $sousClasse = SousClasse::find($data['sous_classe_id']);
-            if ($sousClasse && $sousClasse->niveau_sous_classe > $niveau) {
+            $classe = Classe::find($data['classe_id']);
+            if ($sousClasse && $classe && $classe->niveau_sous_classe > $niveau) {
                 $data['sous_classe_id'] = null;
             }
         }
 
+        $historique = ! empty($data['historique_id']) ? Historique::find($data['historique_id']) : null;
+
+        // Compétences finales du personnage : celles choisies pour la
+        // classe, plus celles, fixes, accordées par l'historique (voir
+        // saveContexte() pour la vérification anti-doublon en amont).
+        $competencesFinal = array_values(array_unique(array_merge($data['competences'] ?? [], $historique?->competences ?? [])));
+
         $payload = [
-            'utilisateur_id' => $request->user()->id,
+            'utilisateur_id' => auth()->id() ?? Utilisateur::query()->firstOrFail()->getKey(),
             'race_id' => $data['race_id'],
             'sous_race_id' => $data['sous_race_id'],
             'classe_id' => $data['classe_id'],
             'sous_classe_id' => $data['sous_classe_id'],
+            'historique_id' => $data['historique_id'] ?? null,
+            'ideal_id' => $data['ideal_id'] ?? null,
+            'defaut_id' => $data['defaut_id'] ?? null,
+            'attachement_id' => $data['attachement_id'] ?? null,
+            'personnalite_id' => $data['personnalite_id'] ?? null,
             'abilites' => $data['abilites'],
-            'competences' => $data['competences'],
+            'competences' => $competencesFinal,
             'nom' => $data['nom'],
             'niveau' => $niveau,
             'alignement' => $data['alignement'],
             'description' => $data['description'],
             'point_de_vie' => $this->calculatePV($data['abilites'], Classe::find($data['classe_id'])),
+            'outil' => $data['outil'],
+            'langues' => $data['langues'],
+            'equipement' => $data['equipement'],
         ];
 
         try {
@@ -535,9 +751,10 @@ class CreationPersonnageController extends Controller
 
     public function getSousClasses($classeId, $niveauMax = 1): JsonResponse
     {
-        $sousClasses = SousClasse::where('classe_id', $classeId)
-            ->where('niveau_sous_classe', '<=', $niveauMax)
-            ->get();
+        $classe = Classe::findOrFail($classeId);
+        $sousClasses = $classe->niveau_sous_classe <= $niveauMax
+            ? $classe->sousClasses->each->setAttribute('niveau_sous_classe', $classe->niveau_sous_classe)
+            : collect();
 
         return response()->json($sousClasses);
     }
@@ -547,5 +764,16 @@ class CreationPersonnageController extends Controller
         $sousRaces = SousRace::where('race_id', $raceId)->get();
 
         return response()->json($sousRaces);
+    }
+
+    public function getHistoriqueDetails($historiqueId): JsonResponse
+    {
+        $historique = Historique::with(['ideaux', 'defauts', 'attachements', 'personnalites'])->find($historiqueId);
+
+        if (! $historique) {
+            return response()->json(['error' => 'Historique introuvable'], 404);
+        }
+
+        return response()->json($historique);
     }
 }

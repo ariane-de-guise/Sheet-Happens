@@ -1,0 +1,15 @@
+image: node:20
+
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: Claude PR Review
+          script:
+            - unset ANTHROPIC_API_KEY
+            - 'curl -s -L -o diff.txt -w "DIFF_HTTP_STATUS:%{http_code}\n" -H "Authorization: Bearer $BB_ACCESS_TOKEN" "https://api.bitbucket.org/2.0/repositories/$BITBUCKET_WORKSPACE/$BITBUCKET_REPO_SLUG/pullrequests/$BITBUCKET_PR_ID/diff"'
+            - npm install -g @anthropic-ai/claude-code
+            - claude -p --allowedTools "" "Review the pull request diff piped in below. Point out bugs, risks, and concrete improvements. Be concise. Do not explore the repository, only use the diff text provided." < diff.txt > review.txt
+            - cat review.txt
+            - echo aW1wb3J0IGpzb24sIG9zLCB1cmxsaWIucmVxdWVzdCBhcyB1Cgp3aXRoIG9wZW4oInJldmlldy50eHQiKSBhcyBmOgogICAgcmV2aWV3ID0gZi5yZWFkKClbOjUwMDAwXQoKcHJpbnQoInJldmlldyBsZW5ndGg6IiwgbGVuKHJldmlldykpCnByaW50KCJyZXZpZXcgcHJldmlldzoiLCByZXZpZXdbOjIwMF0pCgpjYm9keSA9IGpzb24uZHVtcHMoeyJjb250ZW50IjogeyJyYXciOiByZXZpZXd9fSkuZW5jb2RlKCkKd3JrID0gb3MuZW52aXJvblsiQklUQlVDS0VUX1dPUktTUEFDRSJdCnJlcG8gPSBvcy5lbnZpcm9uWyJCSVRCVUNLRVRfUkVQT19TTFVHIl0KcHJpZCA9IG9zLmVudmlyb25bIkJJVEJVQ0tFVF9QUl9JRCJdCgpjb21tZW50X3VybCA9ICJodHRwczovL2FwaS5iaXRidWNrZXQub3JnLzIuMC9yZXBvc2l0b3JpZXMvIiArIHdyayArICIvIiArIHJlcG8gKyAiL3B1bGxyZXF1ZXN0cy8iICsgcHJpZCArICIvY29tbWVudHMiCnByaW50KCJwb3N0aW5nIHRvOiIsIGNvbW1lbnRfdXJsKQoKcHJlcSA9IHUuUmVxdWVzdCgKICAgIGNvbW1lbnRfdXJsLAogICAgZGF0YT1jYm9keSwKICAgIGhlYWRlcnM9ewogICAgICAgICJBdXRob3JpemF0aW9uIjogIkJlYXJlciAiICsgb3MuZW52aXJvblsiQkJfQUNDRVNTX1RPS0VOIl0sCiAgICAgICAgIkNvbnRlbnQtVHlwZSI6ICJhcHBsaWNhdGlvbi9qc29uIiwKICAgIH0sCiAgICBtZXRob2Q9IlBPU1QiLAopCndpdGggdS51cmxvcGVuKHByZXEpIGFzIHByZXNwOgogICAgcHJpbnQoImNvbW1lbnQgcG9zdCBzdGF0dXM6IiwgcHJlc3Auc3RhdHVzKQogICAgcHJpbnQoImNvbW1lbnQgcG9zdCByZXNwb25zZToiLCBwcmVzcC5yZWFkKCkuZGVjb2RlKClbOjMwMF0pCg== | base64 -d > post_comment.py
+            - python3 post_comment.py

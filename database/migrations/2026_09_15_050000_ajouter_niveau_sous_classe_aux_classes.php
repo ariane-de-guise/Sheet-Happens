@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('classes', 'niveau_sous_classe')) {
+            return;
+        }
+
         Schema::table('classes', function (Blueprint $table) {
             $table->unsignedTinyInteger('niveau_sous_classe')->default(1)->after('description');
         });
