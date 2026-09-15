@@ -50,22 +50,8 @@
 
             <div class="context-section">
                 <div class="header">
-                    <span class="title">Maîtrise *</span>
-                    <span class="hint">Détermine votre équipement de départ et votre alignement</span>
-                </div>
-                <select name="maitrise" id="maitriseSelect" class="form-select mt-2" required onchange="updateMaitrisePreview()">
-                    <option value="">-- Choisir --</option>
-                    @foreach($maitrises as $m)
-                        <option value="{{ $m }}" {{ (old('maitrise', $selectedMaitrise) == $m) ? 'selected' : '' }}>
-                            {{ $m }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="context-section">
-                <div class="header">
                     <span class="title">Historique *</span>
+                    <span class="hint">Détermine votre équipement de départ</span>
                 </div>
                 <select name="historique_id" id="historique_select" class="form-select mt-2" onchange="onHistoriqueChange(this.value)" required>
                     <option value="">-- Choisir un historique --</option>
@@ -84,11 +70,11 @@
                 <div class="header">
                     <span class="title">Idéal *</span>
                 </div>
-                <select name="ideal_id" id="ideal_select" class="form-select mt-2" required>
+                <select name="ideal_id" id="ideal_select" class="form-select mt-2" required onchange="updateAlignementPreview()">
                     <option value="">-- Choisir un idéal --</option>
                     @foreach($historiques as $h)
                         @foreach($h->ideaux as $item)
-                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ (old('ideal_id', $selectedIdeal) == $item->id) ? 'selected' : '' }}>
+                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" data-alignement="{{ $item->alignement }}" {{ (old('ideal_id', $selectedIdeal) == $item->id) ? 'selected' : '' }}>
                                 {{ $item->valeur }}{{ $item->alignement ? ' (' . $item->alignement . ')' : '' }}
                             </option>
                         @endforeach
@@ -100,11 +86,11 @@
                 <div class="header">
                     <span class="title">Défaut *</span>
                 </div>
-                <select name="defaut_id" id="defaut_select" class="form-select mt-2" required>
+                <select name="defaut_id" id="defaut_select" class="form-select mt-2" required onchange="updateAlignementPreview()">
                     <option value="">-- Choisir un défaut --</option>
                     @foreach($historiques as $h)
                         @foreach($h->defauts as $item)
-                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ (old('defaut_id', $selectedDefaut) == $item->id) ? 'selected' : '' }}>
+                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" data-alignement="{{ $item->alignement }}" {{ (old('defaut_id', $selectedDefaut) == $item->id) ? 'selected' : '' }}>
                                 {{ $item->valeur }}
                             </option>
                         @endforeach
@@ -116,11 +102,11 @@
                 <div class="header">
                     <span class="title">Attachement *</span>
                 </div>
-                <select name="attachement_id" id="attachement_select" class="form-select mt-2" required>
+                <select name="attachement_id" id="attachement_select" class="form-select mt-2" required onchange="updateAlignementPreview()">
                     <option value="">-- Choisir un attachement --</option>
                     @foreach($historiques as $h)
                         @foreach($h->attachements as $item)
-                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ (old('attachement_id', $selectedAttachement) == $item->id) ? 'selected' : '' }}>
+                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" data-alignement="{{ $item->alignement }}" {{ (old('attachement_id', $selectedAttachement) == $item->id) ? 'selected' : '' }}>
                                 {{ $item->valeur }}
                             </option>
                         @endforeach
@@ -132,11 +118,11 @@
                 <div class="header">
                     <span class="title">Trait de personnalité *</span>
                 </div>
-                <select name="personnalite_id" id="personnalite_select" class="form-select mt-2" required>
+                <select name="personnalite_id" id="personnalite_select" class="form-select mt-2" required onchange="updateAlignementPreview()">
                     <option value="">-- Choisir une personnalité --</option>
                     @foreach($historiques as $h)
                         @foreach($h->personnalites as $item)
-                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ (old('personnalite_id', $selectedPersonnalite) == $item->id) ? 'selected' : '' }}>
+                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" data-alignement="{{ $item->alignement }}" {{ (old('personnalite_id', $selectedPersonnalite) == $item->id) ? 'selected' : '' }}>
                                 {{ $item->valeur }}
                             </option>
                         @endforeach
@@ -147,22 +133,20 @@
             <div class="context-section">
                 <div class="header">
                     <span class="title">Alignement</span>
+                    <span class="hint">Déterminé par vos 4 choix ci-dessus (idéal, défaut, attachement, personnalité)</span>
                 </div>
                 <ul class="items mt-2" id="alignementPreview">
-                    <li>Choisissez une maîtrise pour déterminer l'alignement.</li>
+                    <li>Choisissez un idéal pour déterminer l'alignement.</li>
                 </ul>
             </div>
 
             <div class="context-section">
                 <div class="header">
                     <span class="title">Outil</span>
+                    <span class="hint" id="outil_hint">Choisissez un historique pour voir les outils disponibles</span>
                 </div>
-                <select name="outil" class="form-select mt-2">
-                    @foreach($outils as $o)
-                        <option value="{{ $o }}" {{ (old('outil', $selectedOutil ?? 'Aucun') == $o) ? 'selected' : '' }}>
-                            {{ $o }}
-                        </option>
-                    @endforeach
+                <select name="outil" id="outil_select" class="form-select mt-2" data-old="{{ old('outil', $selectedOutil ?? '') }}" disabled>
+                    <option value="">-- Choisissez d'abord un historique --</option>
                 </select>
             </div>
 
@@ -181,10 +165,10 @@
             <div class="context-section">
                 <div class="header">
                     <span class="title">Équipement</span>
-                    <span class="hint">Fourni par votre maîtrise (avec sa maîtrise d'utilisation)</span>
+                    <span class="hint">Fourni par votre historique (outils accordés automatiquement inclus)</span>
                 </div>
                 <ul class="items mt-2" id="equipementPreview">
-                    <li>Choisissez une maîtrise pour voir votre équipement.</li>
+                    <li>Choisissez un historique pour voir votre équipement.</li>
                 </ul>
             </div>
 
@@ -198,8 +182,6 @@
     @push('scripts')
         <script>
             window.ContexteData = {
-                maitriseEquipement: @json($maitriseEquipement),
-                maitriseAlignement: @json($maitriseAlignement),
                 historiques: @json($historiques),
                 maxLangues: 2,
             };

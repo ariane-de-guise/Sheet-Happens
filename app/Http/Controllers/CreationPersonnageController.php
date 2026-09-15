@@ -49,7 +49,6 @@ class CreationPersonnageController extends Controller
             'defaut_id' => null,
             'attachement_id' => null,
             'personnalite_id' => null,
-            'maitrise' => null,
             'outil' => null,
             'langues' => [],
             'equipement' => [],
@@ -273,36 +272,6 @@ class CreationPersonnageController extends Controller
 
     protected const ABILITES_KEYS = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'];
 
-    /**
-     * Chaque maîtrise (historique) vient avec son propre équipement de
-     * départ, au lieu de laisser choisir librement dans tout l'équipement
-     * disponible.
-     */
-    protected const MAITRISE_EQUIPEMENT = [
-        'Religieux' => ['Livre', 'Sac à dos', 'Lanternes'],
-        'Marchand' => ['Sac à dos', 'Cordes', 'Livre'],
-        'Artisan' => ['Kit d\'explorateur', 'Cordes', 'Sac à dos'],
-        'Noble' => ['Épée', 'Livre', 'Harpe'],
-        'Soldat' => ['Épée', 'Bouclier', 'Armure de cuir'],
-        'Roublard' => ['Arc court', 'Cordes', 'Kit d\'explorateur'],
-        'Erfge' => ['Livre', 'Lanternes', 'Sac à dos'],
-        'Hors-la-loi' => ['Arc court', 'Cordes', 'Sac à dos'],
-    ];
-
-    /**
-     * La maîtrise (historique) détermine l'alignement du personnage.
-     */
-    protected const MAITRISE_ALIGNEMENT = [
-        'Religieux' => 'Loyal bon',
-        'Marchand' => 'Neutre',
-        'Artisan' => 'Neutre bon',
-        'Noble' => 'Loyal neutre',
-        'Soldat' => 'Loyal neutre',
-        'Roublard' => 'Chaotique neutre',
-        'Erfge' => 'Neutre',
-        'Hors-la-loi' => 'Chaotique méchant',
-    ];
-
     public function stepCaracteristiques(): View|RedirectResponse
     {
         $data = $this->getData();
@@ -444,19 +413,14 @@ class CreationPersonnageController extends Controller
         }
 
         $classe = Classe::find($data['classe_id']);
-
-        $allCompetences = [
-            'Acrobaties', 'Arcanes', 'Athlétisme', 'Art de la duplicité',
-            'Artisanat', 'Attention', 'Dissimulation', 'Histoire',
-            'Intimidation', 'Insight', 'Médecine', 'Nature',
-            'Perception', 'Performance', 'Persuasion', 'Religion',
-            'Sapience animale', 'Survie',
-        ];
+        $competencesDisponibles = $classe?->competences_disponibles ?? [];
+        $nombreCompetences = $classe?->nombre_competences ?? 2;
 
         return view('personnages.creation.competences', [
-            'competencesDisponibles' => $allCompetences,
-            'competencesSelectionnees' => $data['competences'] ?? [],
-            'nombreCompetences' => 2,
+            'classe' => $classe,
+            'competencesDisponibles' => $competencesDisponibles,
+            'competencesSelectionnees' => array_values(array_intersect($data['competences'] ?? [], $competencesDisponibles)),
+            'nombreCompetences' => $nombreCompetences,
             'currentStep' => 5,
             'progress' => $this->getProgress(),
         ]);
@@ -464,16 +428,22 @@ class CreationPersonnageController extends Controller
 
     public function saveCompetences(Request $request): RedirectResponse
     {
+        $data = $this->getData();
+        $classe = Classe::find($data['classe_id']);
+        $competencesDisponibles = $classe?->competences_disponibles ?? [];
+        $nombreCompetences = $classe?->nombre_competences ?? 2;
+
         $validated = $request->validate([
-            'competences' => 'required|array|min:2',
-            'competences.*' => 'string|max:50',
+            'competences' => ['required', 'array', "size:$nombreCompetences"],
+            'competences.*' => ['string', Rule::in($competencesDisponibles)],
         ], [
-            'competences.required' => 'Vous devez choisir 2 compétences avant de continuer.',
-            'competences.min' => 'Vous devez choisir 2 compétences avant de continuer.',
+            'competences.required' => "Vous devez choisir $nombreCompetences compétences avant de continuer.",
+            'competences.size' => "Vous devez choisir exactement $nombreCompetences compétences.",
+            'competences.*.in' => 'Cette compétence ne fait pas partie de celles offertes par votre classe.',
         ]);
 
         $this->saveData([
-            'competences' => array_unique($validated['competences']),
+            'competences' => array_values(array_unique($validated['competences'])),
         ]);
 
         return redirect()->route('creation.contexte');
@@ -487,29 +457,16 @@ class CreationPersonnageController extends Controller
             return redirect()->route('creation.race');
         }
 
-        $maitrises = array_keys(static::MAITRISE_EQUIPEMENT);
-
         $historiques = Historique::with(['ideaux', 'defauts', 'attachements', 'personnalites'])->get();
         $selectedHistoriqueModel = $data['historique_id'] ? $historiques->firstWhere('id', $data['historique_id']) : null;
-
-        $outils = [
-            'Aucun', 'Kit de calligraphe', 'Kit de charpentier',
-            'Kit de cuisinier', 'Kit de joueur', 'Kit de potier',
-            'Instruments de musique', 'Outils de voleur',
-        ];
 
         $race = Race::find($data['race_id']);
         $languesRace = $race->langues ?? ['Commun'];
 
         return view('personnages.creation.contexte', [
             'data' => $data,
-            'maitrises' => $maitrises,
             'historiques' => $historiques,
-            'outils' => $outils,
-            'maitriseEquipement' => static::MAITRISE_EQUIPEMENT,
-            'maitriseAlignement' => static::MAITRISE_ALIGNEMENT,
             'languesRace' => $languesRace,
-            'selectedMaitrise' => $data['maitrise'],
             'selectedHistorique' => $data['historique_id'],
             'selectedHistoriqueModel' => $selectedHistoriqueModel,
             'selectedIdeal' => $data['ideal_id'],
@@ -527,8 +484,6 @@ class CreationPersonnageController extends Controller
         $data = $this->getData();
 
         $validated = $request->validate([
-            'maitrise' => ['required', 'string', Rule::in(array_keys(static::MAITRISE_EQUIPEMENT))],
-            'outil' => 'nullable|string|max:50',
             'nom' => 'required|string|max:100',
             'description' => 'nullable|string',
             'historique_id' => 'required|integer|exists:historiques,id',
@@ -536,12 +491,41 @@ class CreationPersonnageController extends Controller
             'defaut_id' => 'required|integer|exists:defauts,id',
             'attachement_id' => 'required|integer|exists:attachements,id',
             'personnalite_id' => 'required|integer|exists:personnalites,id',
-        ], [
-            'maitrise.required' => 'Vous devez choisir une maîtrise avant de continuer.',
-            'maitrise.in' => 'La maîtrise sélectionnée est invalide.',
         ]);
 
         $race = Race::find($data['race_id']);
+        $historique = Historique::find($validated['historique_id']);
+        $ideal = Ideal::find($validated['ideal_id']);
+        $defaut = Defaut::find($validated['defaut_id']);
+        $attachement = Attachement::find($validated['attachement_id']);
+        $personnalite = Personnalite::find($validated['personnalite_id']);
+
+        // En 5e, si votre historique accorde une compétence que votre classe
+        // vous a déjà fait choisir, les deux ne se cumulent pas : il faut
+        // reprendre un choix différent pour votre classe. On bloque donc ici
+        // plutôt que de silencieusement perdre une maîtrise.
+        $conflits = array_values(array_intersect($data['competences'] ?? [], $historique?->competences ?? []));
+        if (! empty($conflits)) {
+            return redirect()->route('creation.competences')
+                ->with('error', 'Vous maîtrisez déjà '.implode(' et ', $conflits).' grâce à l\'historique '.$historique->nom.'. Choisissez une compétence différente pour votre classe.');
+        }
+
+        // L'outil de départ n'est jamais un choix totalement libre en 5e :
+        // certains historiques n'en accordent aucun, d'autres en imposent
+        // un (ou plusieurs) fixe(s) sans choix (voir plus bas, fusionnés
+        // avec l'équipement), et d'autres encore proposent une liste
+        // précise dans laquelle il faut choisir. On ne peut donc valider ce
+        // champ qu'une fois l'historique connu.
+        $outilsDisponibles = $historique?->outils_disponibles ?? [];
+
+        $outilValidated = $request->validate([
+            'outil' => empty($outilsDisponibles)
+                ? ['nullable']
+                : ['required', 'string', Rule::in($outilsDisponibles)],
+        ], [
+            'outil.required' => 'Vous devez choisir un outil parmi ceux offerts par votre historique.',
+            'outil.in' => 'Cet outil ne fait pas partie de ceux offerts par votre historique.',
+        ]);
 
         $this->saveData([
             'historique_id' => $validated['historique_id'],
@@ -549,20 +533,95 @@ class CreationPersonnageController extends Controller
             'defaut_id' => $validated['defaut_id'],
             'attachement_id' => $validated['attachement_id'],
             'personnalite_id' => $validated['personnalite_id'],
-            'maitrise' => $validated['maitrise'],
-            'outil' => $validated['outil'] === 'Aucun' ? null : ($validated['outil'] ?? null),
-            // La maîtrise vient avec son propre équipement, et détermine
-            // l'alignement ; la race détermine les langues parlées : ces
-            // trois valeurs ne sont donc jamais saisies directement par le
-            // joueur, elles sont dérivées ici pour éviter toute incohérence.
-            'equipement' => static::MAITRISE_EQUIPEMENT[$validated['maitrise']],
-            'alignement' => static::MAITRISE_ALIGNEMENT[$validated['maitrise']],
+            'outil' => ! empty($outilsDisponibles) ? $outilValidated['outil'] : null,
+            // L'historique vient avec son propre équipement de départ, auquel
+            // s'ajoutent les outils qu'il accorde automatiquement sans choix
+            // (outils_fixes) ; l'alignement final combine les 4 traits de
+            // personnalité choisis (voir calculateAlignement()) ; la race
+            // détermine les langues parlées : ces valeurs ne sont donc
+            // jamais saisies directement par le joueur, elles sont dérivées
+            // ici pour éviter toute incohérence.
+            'equipement' => array_values(array_merge($historique?->equipement_depart ?? [], $historique?->outils_fixes ?? [])),
+            'alignement' => $this->calculateAlignement($ideal, $defaut, $attachement, $personnalite),
             'langues' => $race?->langues ?? ['Commun'],
             'nom' => $validated['nom'],
             'description' => $validated['description'] ?? null,
         ]);
 
         return redirect()->route('creation.confirmation');
+    }
+
+    /**
+     * Combine les 4 traits de personnalité (idéal, défaut, attachement,
+     * trait de personnalité) en un seul alignement final à deux axes,
+     * plutôt que de se baser uniquement sur l'idéal choisi.
+     *
+     * Chaque trait qui porte une étiquette d'alignement "vote" sur les
+     * deux axes : "Loyal" vaut -1 et "Chaotique" vaut +1 sur l'axe loi ;
+     * "Bon" vaut -1 et "Mauvais" vaut +1 sur l'axe bien. Un trait sans
+     * étiquette, ou dont l'étiquette est simplement "Neutre", ne fait
+     * pencher aucun axe. Le signe de la somme des votes sur chaque axe
+     * donne le mot final (Loyal/Neutre/Chaotique, puis Bon/Neutre/
+     * Mauvais) ; une somme nulle (aucun vote, ou des votes qui
+     * s'annulent) donne "Neutre" sur cet axe.
+     *
+     * NB : ce système de "vote" est un choix de conception maison, pas
+     * une règle officielle de D&D 5e — dans les livres, seuls les idéaux
+     * suggèrent un alignement ; les défauts, attachements et traits de
+     * personnalité n'en portent pas officiellement. Les étiquettes
+     * ajoutées ici dans HistoriquesSeeder reflètent simplement ce que le
+     * texte de chaque trait semble indiquer.
+     */
+    protected function calculateAlignement(?Ideal $ideal, ?Defaut $defaut, ?Attachement $attachement, ?Personnalite $personnalite): string
+    {
+        $loiScore = 0;
+        $bienScore = 0;
+
+        foreach ([$ideal, $defaut, $attachement, $personnalite] as $trait) {
+            $alignement = $trait?->alignement;
+
+            if (! $alignement) {
+                continue;
+            }
+
+            if (str_contains($alignement, 'Loyal')) {
+                $loiScore--;
+            } elseif (str_contains($alignement, 'Chaotique')) {
+                $loiScore++;
+            }
+
+            if (str_contains($alignement, 'Bon')) {
+                $bienScore--;
+            } elseif (str_contains($alignement, 'Mauvais')) {
+                $bienScore++;
+            }
+        }
+
+        $loi = match (true) {
+            $loiScore < 0 => 'Loyal',
+            $loiScore > 0 => 'Chaotique',
+            default => 'Neutre',
+        };
+
+        $bien = match (true) {
+            $bienScore < 0 => 'Bon',
+            $bienScore > 0 => 'Mauvais',
+            default => 'Neutre',
+        };
+
+        if ($loi === 'Neutre' && $bien === 'Neutre') {
+            return 'Neutre';
+        }
+
+        if ($loi === 'Neutre') {
+            return "Neutre $bien";
+        }
+
+        if ($bien === 'Neutre') {
+            return "$loi Neutre";
+        }
+
+        return "$loi $bien";
     }
 
     public function stepConfirmation(): View|RedirectResponse
@@ -586,6 +645,11 @@ class CreationPersonnageController extends Controller
         $abilites = $data['abilites'];
         $pv = $this->calculatePV($abilites, $classe);
 
+        // Le personnage final cumule les compétences choisies pour la
+        // classe et celles, fixes, accordées par l'historique (voir
+        // saveContexte() pour la vérification anti-doublon).
+        $competencesFinal = array_values(array_unique(array_merge($data['competences'] ?? [], $historique?->competences ?? [])));
+
         return view('personnages.creation.confirmation', [
             'data' => $data,
             'race' => $race,
@@ -598,6 +662,7 @@ class CreationPersonnageController extends Controller
             'attachement' => $attachement,
             'personnalite' => $personnalite,
             'abilites' => $abilites,
+            'competencesFinal' => $competencesFinal,
             'pv' => $pv,
             'currentStep' => 6,
             'progress' => 6,
@@ -631,6 +696,13 @@ class CreationPersonnageController extends Controller
             }
         }
 
+        $historique = ! empty($data['historique_id']) ? Historique::find($data['historique_id']) : null;
+
+        // Compétences finales du personnage : celles choisies pour la
+        // classe, plus celles, fixes, accordées par l'historique (voir
+        // saveContexte() pour la vérification anti-doublon en amont).
+        $competencesFinal = array_values(array_unique(array_merge($data['competences'] ?? [], $historique?->competences ?? [])));
+
         $payload = [
             'utilisateur_id' => auth()->id() ?? Utilisateur::query()->firstOrFail()->getKey(),
             'race_id' => $data['race_id'],
@@ -643,13 +715,12 @@ class CreationPersonnageController extends Controller
             'attachement_id' => $data['attachement_id'] ?? null,
             'personnalite_id' => $data['personnalite_id'] ?? null,
             'abilites' => $data['abilites'],
-            'competences' => $data['competences'],
+            'competences' => $competencesFinal,
             'nom' => $data['nom'],
             'niveau' => $niveau,
             'alignement' => $data['alignement'],
             'description' => $data['description'],
             'point_de_vie' => $this->calculatePV($data['abilites'], Classe::find($data['classe_id'])),
-            'maitrise' => $data['maitrise'],
             'outil' => $data['outil'],
             'langues' => $data['langues'],
             'equipement' => $data['equipement'],

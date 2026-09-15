@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['historique_id', 'valeur', 'description'])]
+#[Fillable(['historique_id', 'valeur', 'alignement', 'description'])]
 class Defaut extends Model
 {
     protected $table = 'defauts';

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'niveau', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'maitrise', 'outil', 'langues', 'equipement'])]
+#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'niveau', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'outil', 'langues', 'equipement'])]
 class Personnage extends Model
 {
     protected function casts(): array
