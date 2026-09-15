@@ -76,5 +76,4 @@ class Personnage extends Model
     {
         return $this->belongsTo(ListeCompetence::class, 'liste_competence_id');
     }
-
 }
