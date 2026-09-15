@@ -19,14 +19,19 @@ class StorePersonnageRequest extends FormRequest
         return [
             'nom' => ['required', 'string', 'max:100'],
             'race_id' => ['required', 'integer', 'exists:races,id'],
-            'sous_race_id' => ['nullable', 'integer', 'exists:sous_races,id'],
+            'sous_race_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('sous_races', 'id')->where(function ($query) {
+                    return $query->where('race_id', $this->input('race_id'));
+                }),
+            ],
             'classe_id' => ['required', 'integer', 'exists:classes,id'],
             'sous_classe_id' => [
                 'nullable',
                 'integer',
-                'exists:sous_classes,id',
                 Rule::exists('sous_classes', 'id')->where(function ($query) {
-                    return $query->where('niveau_sous_classe', '<=', $this->input('niveau', 1));
+                    return $query->where('classe_id', $this->input('classe_id'));
                 }),
             ],
             'niveau' => ['sometimes', 'integer', 'min:1', 'max:20'],

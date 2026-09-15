@@ -3,168 +3,189 @@
 @section('title', 'Créer un personnage - Contexte')
 
 @section('content')
-<div class="card">
-    <div class="text-center mb-3">
-        <span class="text-gold">Créer un personnage</span>
+    <div class="card">
+        <div class="text-center mb-3">
+            <span class="text-gold">Créer un personnage</span>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-line">
+                <div class="progress-fill" style="width: 100%;"></div>
+            </div>
+            <div class="progress-step completed">1</div>
+            <div class="progress-step completed">2</div>
+            <div class="progress-step completed">3</div>
+            <div class="progress-step completed">4</div>
+            <div class="progress-step completed">5</div>
+            <div class="progress-step active">6</div>
+        </div>
+
+        <h2 class="title-section text-center">Contexte</h2>
+
+        @if(session('error'))
+            <div class="alert alert-error">{{ session('error') }}</div>
+        @endif
+
+        @if($errors->any())
+            <div class="alert alert-error">
+                @foreach($errors->all() as $error)
+                    {{ $error }}<br>
+                @endforeach
+            </div>
+        @endif
+
+        <form action="{{ route('creation.contexte.save') }}" method="POST" id="contexteForm" onsubmit="return validateContextForm()">
+            @csrf
+
+            <div class="form-group mb-3">
+                <label class="form-label">Nom du personnage *</label>
+                <input type="text" name="nom" value="{{ old('nom', $data['nom'] ?? '') }}"
+                       class="form-input" required>
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="form-label">Description / Backstory (optionnel)</label>
+                <textarea name="description" class="form-input" rows="3">{{ old('description', $data['description'] ?? '') }}</textarea>
+            </div>
+
+            <div class="context-section">
+                <div class="header">
+                    <span class="title">Historique *</span>
+                    <span class="hint">Détermine votre équipement de départ</span>
+                </div>
+                <select name="historique_id" id="historique_select" class="form-select mt-2" onchange="onHistoriqueChange(this.value)" required>
+                    <option value="">-- Choisir un historique --</option>
+                    @foreach($historiques as $h)
+                        <option value="{{ $h->id }}" {{ (old('historique_id', $selectedHistorique) == $h->id) ? 'selected' : '' }}>
+                            {{ $h->nom }}
+                        </option>
+                    @endforeach
+                </select>
+                <div id="historique_description" class="hint mt-2" style="font-style: italic;">
+                    {{ $selectedHistoriqueModel ? $selectedHistoriqueModel->description : '' }}
+                </div>
+            </div>
+
+            <div class="context-section">
+                <div class="header">
+                    <span class="title">Idéal *</span>
+                </div>
+                <select name="ideal_id" id="ideal_select" class="form-select mt-2" required onchange="updateAlignementPreview()">
+                    <option value="">-- Choisir un idéal --</option>
+                    @foreach($historiques as $h)
+                        @foreach($h->ideaux as $item)
+                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" data-alignement="{{ $item->alignement }}" {{ (old('ideal_id', $selectedIdeal) == $item->id) ? 'selected' : '' }}>
+                                {{ $item->valeur }}{{ $item->alignement ? ' (' . $item->alignement . ')' : '' }}
+                            </option>
+                        @endforeach
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="context-section">
+                <div class="header">
+                    <span class="title">Défaut *</span>
+                </div>
+                <select name="defaut_id" id="defaut_select" class="form-select mt-2" required onchange="updateAlignementPreview()">
+                    <option value="">-- Choisir un défaut --</option>
+                    @foreach($historiques as $h)
+                        @foreach($h->defauts as $item)
+                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" data-alignement="{{ $item->alignement }}" {{ (old('defaut_id', $selectedDefaut) == $item->id) ? 'selected' : '' }}>
+                                {{ $item->valeur }}
+                            </option>
+                        @endforeach
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="context-section">
+                <div class="header">
+                    <span class="title">Attachement *</span>
+                </div>
+                <select name="attachement_id" id="attachement_select" class="form-select mt-2" required onchange="updateAlignementPreview()">
+                    <option value="">-- Choisir un attachement --</option>
+                    @foreach($historiques as $h)
+                        @foreach($h->attachements as $item)
+                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" data-alignement="{{ $item->alignement }}" {{ (old('attachement_id', $selectedAttachement) == $item->id) ? 'selected' : '' }}>
+                                {{ $item->valeur }}
+                            </option>
+                        @endforeach
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="context-section">
+                <div class="header">
+                    <span class="title">Trait de personnalité *</span>
+                </div>
+                <select name="personnalite_id" id="personnalite_select" class="form-select mt-2" required onchange="updateAlignementPreview()">
+                    <option value="">-- Choisir une personnalité --</option>
+                    @foreach($historiques as $h)
+                        @foreach($h->personnalites as $item)
+                            <option value="{{ $item->id }}" data-historique="{{ $h->id }}" data-alignement="{{ $item->alignement }}" {{ (old('personnalite_id', $selectedPersonnalite) == $item->id) ? 'selected' : '' }}>
+                                {{ $item->valeur }}
+                            </option>
+                        @endforeach
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="context-section">
+                <div class="header">
+                    <span class="title">Alignement</span>
+                    <span class="hint">Déterminé par vos 4 choix ci-dessus (idéal, défaut, attachement, personnalité)</span>
+                </div>
+                <ul class="items mt-2" id="alignementPreview">
+                    <li>Choisissez un idéal pour déterminer l'alignement.</li>
+                </ul>
+            </div>
+
+            <div class="context-section">
+                <div class="header">
+                    <span class="title">Outil</span>
+                    <span class="hint" id="outil_hint">Choisissez un historique pour voir les outils disponibles</span>
+                </div>
+                <select name="outil" id="outil_select" class="form-select mt-2" data-old="{{ old('outil', $selectedOutil ?? '') }}" disabled>
+                    <option value="">-- Choisissez d'abord un historique --</option>
+                </select>
+            </div>
+
+            <div class="context-section">
+                <div class="header">
+                    <span class="title">Langue</span>
+                    <span class="hint">Déterminée par votre race</span>
+                </div>
+                <ul class="items mt-2">
+                    @foreach($languesRace as $lang)
+                        <li>{{ $lang }}</li>
+                    @endforeach
+                </ul>
+            </div>
+
+            <div class="context-section">
+                <div class="header">
+                    <span class="title">Équipement</span>
+                    <span class="hint">Fourni par votre historique (outils accordés automatiquement inclus)</span>
+                </div>
+                <ul class="items mt-2" id="equipementPreview">
+                    <li>Choisissez un historique pour voir votre équipement.</li>
+                </ul>
+            </div>
+
+            <div class="btn-group-row">
+                <a href="{{ route('creation.competences') }}" class="btn btn-secondary">Retour</a>
+                <button type="submit" class="btn btn-primary">Suivant</button>
+            </div>
+        </form>
     </div>
 
-    <div class="progress-bar">
-        <div class="progress-line"></div>
-        <div class="progress-fill" style="width: 83.3%;"></div>
-        <div class="progress-step completed">1</div>
-        <div class="progress-step completed">2</div>
-        <div class="progress-step completed">3</div>
-        <div class="progress-step completed">4</div>
-        <div class="progress-step completed">5</div>
-        <div class="progress-step active">6</div>
-    </div>
-
-    <h2 class="title-section text-center">Contexte</h2>
-
-    @if(session('error'))
-        <div class="alert alert-error">{{ session('error') }}</div>
-    @endif
-
-    @if($errors->any())
-        <div class="alert alert-error">
-            @foreach($errors->all() as $error)
-                {{ $error }}<br>
-            @endforeach
-        </div>
-    @endif
-
-    <form action="{{ route('creation.contexte.save') }}" method="POST">
-        @csrf
-
-        <div class="form-group mb-3">
-            <label class="form-label">Nom du personnage *</label>
-            <input type="text" name="nom" value="{{ old('nom', $data['nom'] ?? '') }}"
-                   class="form-input" required>
-        </div>
-
-        <div class="form-group mb-3">
-            <label class="form-label">Alignement</label>
-            <select name="alignement" class="form-select">
-                <option value="">-- Choisir --</option>
-                @foreach([
-                    'Loyal bon', 'Neutre bon', 'Chaotique bon',
-                    'Loyal neutre', 'Neutre', 'Chaotique neutre',
-                    'Loyal méchant', 'Neutre méchant', 'Chaotique méchant',
-                ] as $align)
-                    <option value="{{ $align }}" {{ (old('alignement', $data['alignement'] ?? '') == $align) ? 'selected' : '' }}>
-                        {{ $align }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="form-group mb-3">
-            <label class="form-label">Description / Backstory</label>
-            <textarea name="description" class="form-input" rows="3">{{ old('description', $data['description'] ?? '') }}</textarea>
-        </div>
-
-        <div class="context-section">
-            <div class="header">
-                <span class="title">Maîtrise</span>
-            </div>
-            <select name="maitrise" class="form-select mt-2">
-                <option value="">-- Choisir --</option>
-                @foreach($maitrises as $m)
-                    <option value="{{ $m }}" {{ (old('maitrise', $selectedMaitrise) == $m) ? 'selected' : '' }}>
-                        {{ $m }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="context-section">
-            <div class="header">
-                <span class="title">Outil</span>
-            </div>
-            <select name="outil" class="form-select mt-2">
-                @foreach($outils as $o)
-                    <option value="{{ $o }}" {{ (old('outil', $selectedOutil ?? 'Aucun') == $o) ? 'selected' : '' }}>
-                        {{ $o }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="context-section">
-            <div class="header">
-                <span class="title">Langue</span>
-                <span class="hint">Veuillez choisir 2 langues</span>
-            </div>
-            <div class="grid-cards mt-2" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));">
-                @foreach($langues as $lang)
-                    @php
-                        $isSelected = in_array($lang, old('langues', $selectedLangues ?? []));
-                    @endphp
-                    <div class="card-choice {{ $isSelected ? 'selected' : '' }}"
-                         onclick="toggleLangue('{{ $lang }}', this)">
-                        <input type="checkbox" name="langues[]" value="{{ $lang }}"
-                               {{ $isSelected ? 'checked' : '' }}
-                               style="display: none;">
-                        <div class="card-title" style="font-size: 0.85rem;">{{ $lang }}</div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-
-        <div class="context-section">
-            <div class="header">
-                <span class="title">Équipement</span>
-            </div>
-            <div class="grid-cards mt-2" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));">
-                @foreach($equipements as $eq)
-                    @php
-                        $isSelected = in_array($eq, old('equipements', $selectedEquipements ?? []));
-                    @endphp
-                    <div class="card-choice {{ $isSelected ? 'selected' : '' }}"
-                         onclick="toggleEquipement('{{ $eq }}', this)">
-                        <input type="checkbox" name="equipements[]" value="{{ $eq }}"
-                               {{ $isSelected ? 'checked' : '' }}
-                               style="display: none;">
-                        <div class="card-title" style="font-size: 0.85rem;">{{ $eq }}</div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-
-        <div class="btn-group-row">
-            <a href="{{ route('creation.competences') }}" class="btn btn-secondary">Retour</a>
-            <button type="submit" class="btn btn-primary">Suivant</button>
-        </div>
-    </form>
-</div>
-
-@push('scripts')
-<script>
-    const maxLangues = 2;
-
-    function getSelectedLangues() {
-        return Array.from(document.querySelectorAll('input[name="langues[]"]:checked')).map(cb => cb.value);
-    }
-
-    function toggleLangue(lang, element) {
-        const checkbox = element.querySelector('input[type="checkbox"]');
-
-        if (checkbox.checked) {
-            checkbox.checked = false;
-            element.classList.remove('selected');
-        } else {
-            const selected = getSelectedLangues();
-            if (selected.length >= maxLangues) return;
-            checkbox.checked = true;
-            element.classList.add('selected');
-        }
-    }
-
-    function toggleEquipement(eq, element) {
-        const checkbox = element.querySelector('input[type="checkbox"]');
-        checkbox.checked = !checkbox.checked;
-        element.classList.toggle('selected');
-    }
-</script>
-@endpush
+    @push('scripts')
+        <script>
+            window.ContexteData = {
+                historiques: @json($historiques),
+                maxLangues: 2,
+            };
+        </script>
+        <script src="{{ asset('js/creation/contexte.js') }}"></script>
+    @endpush
 @endsection

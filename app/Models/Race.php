@@ -6,12 +6,15 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['nom', 'taille', 'vitesse', 'type_creature', 'description', 'bonus_aptitudes'])]
+#[Fillable(['nom', 'taille', 'vitesse', 'type_creature', 'langues', 'description', 'bonus_aptitudes'])]
 class Race extends Model
 {
     protected function casts(): array
     {
-        return ['bonus_aptitudes' => 'array'];
+        return [
+            'langues' => 'array',
+            'bonus_aptitudes' => 'array',
+        ];
     }
 
 

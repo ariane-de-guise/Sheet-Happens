@@ -12,9 +12,9 @@ use App\Models\SousRace;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Validation\ValidationException;
 
-class PersonnageCreationService
+readonly class PersonnageCreationService
 {
-    public function __construct(private readonly DatabaseManager $database) {}
+    public function __construct(private DatabaseManager $database) {}
 
     public function create(array $data): Personnage
     {
@@ -32,6 +32,11 @@ class PersonnageCreationService
                 'sous_race_id' => $data['sous_race_id'] ?? null,
                 'classe_id' => $data['classe_id'],
                 'sous_classe_id' => $data['sous_classe_id'] ?? null,
+                'historique_id' => $data['historique_id'] ?? null,
+                'ideal_id' => $data['ideal_id'] ?? null,
+                'defaut_id' => $data['defaut_id'] ?? null,
+                'attachement_id' => $data['attachement_id'] ?? null,
+                'personnalite_id' => $data['personnalite_id'] ?? null,
                 'abilites_id' => $abilites->id,
                 'liste_competence_id' => $listeCompetence->id,
                 'nom' => $data['nom'],
@@ -39,7 +44,14 @@ class PersonnageCreationService
                 'alignement' => $data['alignement'] ?? null,
                 'description' => $data['description'] ?? null,
                 'point_de_vie' => $data['point_de_vie'],
-            ])->load(['race', 'sousRace', 'classe', 'sousClasse', 'abilites', 'listeCompetence']);
+                'outil' => $data['outil'] ?? null,
+                'langues' => $data['langues'] ?? [],
+                'equipement' => $data['equipement'] ?? [],
+            ])->load(['race', 'sousRace', 'classe', 'sousClasse', 'historique', 'ideal', 'defaut', 'attachement', 'personnalite', 'abilites', 'listeCompetence']);
+            // 'outil', 'langues' et 'equipement' ne sont pas des relations
+            // Eloquent mais de simples colonnes du modèle Personnage : elles
+            // sont déjà présentes sur l'instance retournée par create(),
+            // inutile (et invalide) de les charger avec load().
         });
     }
 
@@ -51,16 +63,23 @@ class PersonnageCreationService
             ]);
         }
 
-        if (! empty($data['sous_classe_id']) && SousClasse::whereKey($data['sous_classe_id'])->where('classe_id', $data['classe_id'])->doesntExist()) {
-            throw ValidationException::withMessages([
-                'sous_classe_id' => 'La sous-classe ne correspond pas à la classe sélectionnée.',
-            ]);
-        }
-
-        if (Race::whereKey($data['race_id'])->doesntExist() || Classe::whereKey($data['classe_id'])->doesntExist()) {
+        $classe = Classe::find($data['classe_id']);
+        if (Race::whereKey($data['race_id'])->doesntExist() || ! $classe) {
             throw ValidationException::withMessages([
                 'race_id' => 'La race ou la classe sélectionnée est invalide.',
             ]);
+        }
+
+        if (! empty($data['sous_classe_id'])) {
+            $sousClasse = SousClasse::whereKey($data['sous_classe_id'])
+                ->where('classe_id', $data['classe_id'])
+                ->first();
+
+            if (! $sousClasse || $classe->niveau_sous_classe > ($data['niveau'] ?? 1)) {
+                throw ValidationException::withMessages([
+                    'sous_classe_id' => 'La sous-classe ne correspond pas à la classe ou au niveau sélectionné.',
+                ]);
+            }
         }
     }
 }
