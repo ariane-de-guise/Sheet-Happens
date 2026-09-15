@@ -1003,6 +1003,91 @@ class PersonnageCreationTest extends TestCase
         $this->get('/personnages/creer/confirmation')->assertOk();
     }
 
+    // La classe peut désormais accorder un bonus d'aptitude (comme la race
+    // et la sous-race), affiché à l'étape des caractéristiques : il doit se
+    // retrouver dans les caractéristiques finales du personnage, en plus du
+    // bonus racial.
+    public function test_labilites_finales_incluent_le_bonus_daptitude_de_la_classe(): void
+    {
+        $this->utilisateurConnecte();
+        $race = RaceFactory::new()->create(['bonus_aptitudes' => ['force' => 1]]);
+        $classe = ClasseFactory::new()->create(['bonus_aptitudes' => ['dexterite' => 2]]);
+
+        $this->post('/personnages/creer/race', ['race_id' => $race->id]);
+        $this->post('/personnages/creer/classe', ['classe_id' => $classe->id]);
+        $this->post('/personnages/creer/methode', ['methode' => 'standard']);
+        $this->post('/personnages/creer/caracteristiques', [
+            'force' => 15, 'dexterite' => 14, 'constitution' => 13,
+            'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
+        ]);
+        $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
+        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide());
+
+        $response = $this->get('/personnages/creer/confirmation');
+
+        $response->assertOk();
+        $response->assertSee('Force: 16', false);
+        $response->assertSee('Dex: 16', false);
+    }
+
+    // Certaines races (Humain Variant, Demi-elfe, ...) accordent des bonus
+    // "au choix" plutôt que fixes : le joueur doit pouvoir décider lui-même
+    // à quelles caractéristiques les appliquer, et ce choix doit se
+    // retrouver dans les caractéristiques finales du personnage.
+    public function test_on_peut_choisir_ou_placer_un_bonus_au_choix_de_race(): void
+    {
+        $this->utilisateurConnecte();
+        $race = RaceFactory::new()->create([
+            'bonus_aptitudes' => ['au_choix' => ['nombre' => 2, 'bonus' => 1]],
+        ]);
+        $classe = ClasseFactory::new()->create();
+
+        $this->post('/personnages/creer/race', ['race_id' => $race->id]);
+        $this->post('/personnages/creer/classe', ['classe_id' => $classe->id]);
+        $this->post('/personnages/creer/methode', ['methode' => 'standard']);
+
+        $response = $this->post('/personnages/creer/caracteristiques', [
+            'force' => 15, 'dexterite' => 14, 'constitution' => 13,
+            'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
+            'bonus_choix_race' => ['force', 'charisme'],
+        ]);
+
+        $response->assertRedirect(route('creation.competences'));
+        $this->assertSame(['race' => ['force', 'charisme']], session('personnage_creation')['bonus_choix']);
+
+        $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
+        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide());
+
+        $confirmation = $this->get('/personnages/creer/confirmation');
+        $confirmation->assertOk();
+        $confirmation->assertSee('Force: 16', false);
+        $confirmation->assertSee('Cha: 9', false);
+    }
+
+    public function test_le_bonus_au_choix_exige_le_bon_nombre_de_caracteristiques_distinctes(): void
+    {
+        $this->utilisateurConnecte();
+        $race = RaceFactory::new()->create([
+            'bonus_aptitudes' => ['au_choix' => ['nombre' => 2, 'bonus' => 1]],
+        ]);
+        $classe = ClasseFactory::new()->create();
+
+        $this->post('/personnages/creer/race', ['race_id' => $race->id]);
+        $this->post('/personnages/creer/classe', ['classe_id' => $classe->id]);
+        $this->post('/personnages/creer/methode', ['methode' => 'standard']);
+
+        // Deux fois la même caractéristique : refusé (doit être 2
+        // caractéristiques différentes).
+        $response = $this->post('/personnages/creer/caracteristiques', [
+            'force' => 15, 'dexterite' => 14, 'constitution' => 13,
+            'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
+            'bonus_choix_race' => ['force', 'force'],
+        ]);
+
+        $response->assertSessionHas('error');
+        $this->assertSame([], session('personnage_creation')['bonus_choix']);
+    }
+
     public function test_l_etape_confirmation_fonctionne_avec_sous_race_et_sous_classe(): void
     {
         $utilisateur = $this->utilisateurConnecte();

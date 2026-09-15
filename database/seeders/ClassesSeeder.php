@@ -10,6 +10,13 @@ class ClassesSeeder extends Seeder
 {
     public function run(): void
     {
+        // "bonus_aptitudes" suit le même format que sur les races (voir
+        // RacesSeeder) : un +N sur la caractéristique principale de la
+        // classe, telle que listée dans limitations.txt. Ce sont des
+        // valeurs de départ à ajuster en équipe si besoin — le Guerrier
+        // n'a par exemple pas une caractéristique principale unique
+        // ("Force ou Dextérité" dans limitations.txt), Force a été choisi
+        // ici arbitrairement en attendant une décision d'équipe.
         $classes = [
             [
                 'nom' => 'Barbare',
@@ -18,6 +25,7 @@ class ClassesSeeder extends Seeder
                 'niveau_sous_classe' => 3,
                 'competences_disponibles' => ['Dressage', 'Athlétisme', 'Intimidation', 'Nature', 'Perception', 'Survie'],
                 'nombre_competences' => 2,
+                'bonus_aptitudes' => ['force' => 1],
                 'sous_classes' => [
                     ['nom' => 'Barbare Berserk',  'description' => 'Barbare qui utilise la violence pour ses fins.'],
                     ['nom' => 'Barbare combattant Totem',  'description' => 'Barbare qui accept un animal totem comme guide, protecteur et source d\'inspiration.'],
@@ -31,6 +39,7 @@ class ClassesSeeder extends Seeder
                 'niveau_sous_classe' => 1,
                 'competences_disponibles' => ['Histoire', 'Intuition', 'Médecine', 'Persuasion', 'Religion'],
                 'nombre_competences' => 2,
+                'bonus_aptitudes' => ['sagesse' => 1],
                 'sous_classes' => [
                     ['nom' => 'Domaine de la Vie',  'description' => 'Clerc qui valorise l’apprentissage et la compréhension avant tout.'],
                     ['nom' => 'Domaine de la Lumière',  'description' => 'Clerc qui promouvoit l\'énergie positive vibrante.'],
@@ -49,6 +58,7 @@ class ClassesSeeder extends Seeder
                 'niveau_sous_classe' => 2,
                 'competences_disponibles' => ['Acrobaties', 'Athlétisme', 'Art de la duplicité', 'Intuition', 'Intimidation', 'Investigation', 'Perception', 'Performance', 'Persuasion', 'Escamotage', 'Discrétion'],
                 'nombre_competences' => 4,
+                'bonus_aptitudes' => ['dexterite' => 1],
                 'sous_classes' => [
                     ['nom' => 'Voleur', 'description' => 'Roublard qui a perfectionné ses compétences dans les arts du vol'],
                     ['nom' => 'Assassin', 'description' => 'Roublard qui a concentré son entraînement sur l’art sombre de la mort'],
@@ -62,6 +72,7 @@ class ClassesSeeder extends Seeder
                 'niveau_sous_classe' => 2,
                 'competences_disponibles' => ['Arcanes', 'Histoire', 'Intuition', 'Investigation', 'Médecine', 'Religion'],
                 'nombre_competences' => 2,
+                'bonus_aptitudes' => ['intelligence' => 1],
                 'sous_classes' => [
                     ['nom' => 'École de l\'Abjuration', 'description' => 'Magicien qui se specialise dans la magie qui bloque, bannit ou protège.'],
                     ['nom' => 'École de la Conjuration', 'description' => 'Magicien qui se specialise dans les sorts qui produisent des objets et des créatures à partir de rien.'],
@@ -80,6 +91,9 @@ class ClassesSeeder extends Seeder
                 'niveau_sous_classe' => 3,
                 'competences_disponibles' => ['Acrobaties', 'Dressage', 'Athlétisme', 'Histoire', 'Intuition', 'Intimidation', 'Perception', 'Survie'],
                 'nombre_competences' => 2,
+                // Voir le commentaire en tête de méthode : "Force ou
+                // Dextérité" dans limitations.txt, Force choisi par défaut.
+                'bonus_aptitudes' => ['force' => 1],
                 'sous_classes' => [
                     ['nom' => 'Champion', 'description' => 'Un combattant direct et puissant. Il se concentre sur la force brute et l’optimisation des coups critiques, ce qui lui permet de réussir des attaques dévastatrices plus souvent que les autres.'],
                     ['nom' => 'Maître de guerre', 'description' => 'Un tacticien hors pair. Il utilise des « dés de supériorité » pour exécuter des manœuvres spéciales afin de perturber ses ennemis, contrôler le terrain ou protéger ses alliés'],

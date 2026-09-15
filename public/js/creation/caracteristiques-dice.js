@@ -50,7 +50,6 @@ function updateSlotDisplay(key) {
 
     if (index === null || index === undefined) {
         slot.textContent = '0';
-        document.querySelector('.stat-computed[data-key="' + key + '"]')?.replaceChildren('0');
         slot.classList.remove('filled');
         slot.draggable = false;
         input.value = 0;
@@ -58,8 +57,6 @@ function updateSlotDisplay(key) {
     }
 
     slot.textContent = dicePool[index];
-    const total = document.querySelector('.stat-computed[data-key="' + key + '"]');
-    total.textContent = dicePool[index] + parseInt(total.dataset.bonus || '0');
     slot.classList.add('filled');
     slot.draggable = true;
     input.value = dicePool[index];

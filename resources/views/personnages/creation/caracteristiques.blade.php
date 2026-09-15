@@ -27,6 +27,14 @@
         @endif
 
         @php
+            // La maquette d'origine ne prévoit aucune mention de bonus sur
+            // cet écran : plutôt que les 2 gros encadrés "Bonus de race" /
+            // "Bonus de classe" affichés séparément au-dessus de la carte
+            // (ce qui prenait toute la largeur disponible), on ne garde
+            // qu'une mention compacte, placée en haut de la boîte de choix
+            // des caractéristiques elle-même (voir
+            // _caracteristiques_bonus.blade.php, inclus dans chacune des 3
+            // méthodes ci-dessous).
             $labels = [
                 'force' => 'Force',
                 'dexterite' => 'Dextérité',
@@ -35,45 +43,82 @@
                 'sagesse' => 'Sagesse',
                 'charisme' => 'Charisme',
             ];
-            $formatBonus = function (array $bonuses) use ($labels): array {
+            $formatBonusFixe = function (array $bonuses) use ($labels): array {
                 $formatted = [];
                 foreach ($bonuses as $key => $value) {
-                    if ($key === 'au_choix' && is_array($value)) {
-                        $formatted[] = $value['nombre'] . ' bonus de +' . $value['bonus'] . ' au choix';
-                    } elseif (isset($labels[$key]) && is_numeric($value) && (int) $value !== 0) {
+                    if (isset($labels[$key]) && is_numeric($value) && (int) $value !== 0) {
                         $formatted[] = $labels[$key] . ' +' . $value;
                     }
                 }
                 return $formatted;
             };
-            $raceBonusLabels = $formatBonus($bonusAptitudes['race'] ?? []);
-            $sousRaceBonusLabels = $formatBonus($bonusAptitudes['sous_race'] ?? []);
+            $sourcesBonus = [
+                'race' => $race->nom ?? null,
+                'sous_race' => $sousRace->nom ?? null,
+                'classe' => $classe->nom ?? null,
+            ];
+            $bonusFixeMentions = [];
+            foreach ($sourcesBonus as $cle => $nomSource) {
+                if (! $nomSource) {
+                    continue;
+                }
+                $fixes = $formatBonusFixe($bonusAptitudes[$cle] ?? []);
+                if ($fixes) {
+                    $bonusFixeMentions[] = implode(', ', $fixes) . ' (' . $nomSource . ')';
+                }
+            }
+
+            // Petit badge vert par caractéristique (+X / 0 / -X) : ne compte
+            // que les bonus déjà fixés (race, sous-race, classe). Les bonus
+            // "au choix" pas encore assignés ne sont pas comptés ici — une
+            // fois choisis, le JS de _caracteristiques_bonus.blade.php met
+            // ces badges à jour en direct (voir bonus_choix_au_choix.js).
             $bonusParAptitude = array_fill_keys(array_keys($labels), 0);
-            foreach ([$bonusAptitudes['race'] ?? [], $bonusAptitudes['sous_race'] ?? []] as $bonus) {
+            foreach ([$bonusAptitudes['race'] ?? [], $bonusAptitudes['sous_race'] ?? [], $bonusAptitudes['classe'] ?? []] as $bonus) {
                 foreach ($bonus as $key => $value) {
                     if (isset($bonusParAptitude[$key]) && is_numeric($value)) {
                         $bonusParAptitude[$key] += (int) $value;
                     }
                 }
             }
+            // Les bonus "au choix" déjà sélectionnés (retour en arrière,
+            // erreur de validation) comptent aussi dans le total affiché.
+            foreach ($auChoixDisponibles as $source => $config) {
+                foreach ($bonusChoix[$source] ?? [] as $key) {
+                    if (isset($bonusParAptitude[$key])) {
+                        $bonusParAptitude[$key] += (int) $config['bonus'];
+                    }
+                }
+            }
         @endphp
 
-        <div class="help-box mb-4">
-            <div class="title">Bonus de race</div>
-            <div class="content">
-                {{ $raceBonusLabels ? implode(', ', $raceBonusLabels) : 'Aucun bonus' }}
-                @if($sousRaceBonusLabels)
-                    <br><strong>{{ $sousRace->nom }} :</strong> {{ implode(', ', $sousRaceBonusLabels) }}
-                @endif
-            </div>
-        </div>
-
         @if($methode === 'points')
-            @include('personnages.creation._caracteristiques_points', ['abilites' => $abilites])
+            @include('personnages.creation._caracteristiques_points', [
+                'abilites' => $abilites,
+                'labels' => $labels,
+                'bonusFixeMentions' => $bonusFixeMentions,
+                'auChoixDisponibles' => $auChoixDisponibles,
+                'bonusChoix' => $bonusChoix,
+                'bonusParAptitude' => $bonusParAptitude,
+            ])
         @elseif($methode === 'standard')
-            @include('personnages.creation._caracteristiques_standard', ['abilites' => $abilites])
+            @include('personnages.creation._caracteristiques_standard', [
+                'abilites' => $abilites,
+                'labels' => $labels,
+                'bonusFixeMentions' => $bonusFixeMentions,
+                'auChoixDisponibles' => $auChoixDisponibles,
+                'bonusChoix' => $bonusChoix,
+                'bonusParAptitude' => $bonusParAptitude,
+            ])
         @else
-            @include('personnages.creation._caracteristiques_dice', ['abilites' => $abilites])
+            @include('personnages.creation._caracteristiques_dice', [
+                'abilites' => $abilites,
+                'labels' => $labels,
+                'bonusFixeMentions' => $bonusFixeMentions,
+                'auChoixDisponibles' => $auChoixDisponibles,
+                'bonusChoix' => $bonusChoix,
+                'bonusParAptitude' => $bonusParAptitude,
+            ])
         @endif
     </div>
 @endsection

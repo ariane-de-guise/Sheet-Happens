@@ -2,13 +2,9 @@
     @csrf
     <div class="stats-container">
         <div class="stats-list">
-            <div class="stat-columns-header">
-                <span>Points d'aptitudes</span>
-                <span>Bonus de race</span>
-                <span>Total</span>
-            </div>
+            @include('personnages.creation._caracteristiques_bonus')
             @php
-                $stats = [
+                $stats = $labels ?? [
                     'force' => 'Force',
                     'dexterite' => 'Dextérité',
                     'constitution' => 'Constitution',
@@ -21,11 +17,11 @@
                 <div class="stat-row">
                     <div class="stat-icon"></div>
                     <span class="stat-name">{{ $label }}</span>
+                    @php $bonusStat = $bonusParAptitude[$key] ?? 0; @endphp
+                    <span class="stat-bonus-total" data-key="{{ $key }}" data-value="{{ $bonusStat }}">{{ $bonusStat > 0 ? '+' : '' }}{{ $bonusStat }}</span>
                     <input type="number" name="{{ $key }}" value="{{ $abilites[$key] }}"
                            min="8" max="15" class="stat-base-value" id="stat-{{ $key }}"
                            data-key="{{ $key }}">
-                    <span class="stat-bonus">+{{ $bonusParAptitude[$key] }}</span>
-                    <span class="stat-value stat-total" data-key="{{ $key }}" data-bonus="{{ $bonusParAptitude[$key] }}">{{ (int) $abilites[$key] + $bonusParAptitude[$key] }}</span>
                     <div class="stat-controls">
                         <button type="button" class="btn btn-primary btn-icon"
                                 onclick="modifierStat('{{ $key }}', -1)">-</button>
@@ -59,64 +55,59 @@
 </form>
 
 @push('scripts')
-<script>
-    const costTable = {
-        8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 6, 14: 8, 15: 10
-    };
-    const totalBudget = 27;
+    <script>
+        const costTable = {
+            8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 6, 14: 8, 15: 10
+        };
+        const totalBudget = 27;
 
-    function getCost(value) {
-        return costTable[value] ?? 0;
-    }
+        function getCost(value) {
+            return costTable[value] ?? 0;
+        }
 
-    function getTotalCost() {
-        let total = 0;
-        document.querySelectorAll('.stat-base-value').forEach(input => {
-            total += getCost(parseInt(input.value) || 8);
-        });
-        return total;
-    }
+        function getTotalCost() {
+            let total = 0;
+            document.querySelectorAll('.stat-base-value').forEach(input => {
+                total += getCost(parseInt(input.value) || 8);
+            });
+            return total;
+        }
 
-    function updateUI() {
-        const used = getTotalCost();
-        const remaining = totalBudget - used;
-        const display = document.getElementById('pointsRestants');
-        display.textContent = remaining;
-        display.style.color = remaining < 0 ? '#e05555' : '#e6b84d';
-        document.getElementById('btnSuivant').disabled = remaining !== 0;
-        document.querySelectorAll('.stat-total').forEach(total => {
-            const key = total.dataset.key;
-            const value = parseInt(document.getElementById('stat-' + key).value) || 8;
-            total.textContent = value + parseInt(total.dataset.bonus || '0');
-        });
-    }
+        function updateUI() {
+            const used = getTotalCost();
+            const remaining = totalBudget - used;
+            const display = document.getElementById('pointsRestants');
+            display.textContent = remaining;
+            display.style.color = remaining < 0 ? '#e05555' : '#e6b84d';
+            document.getElementById('btnSuivant').disabled = remaining !== 0;
+        }
 
-    function modifierStat(key, delta) {
-        const input = document.getElementById('stat-' + key);
-        let value = parseInt(input.value) || 8;
-        const newCost = getCost(value + delta);
-        const currentCost = getCost(value);
-        const used = getTotalCost();
+        function modifierStat(key, delta) {
+            const input = document.getElementById('stat-' + key);
+            let value = parseInt(input.value) || 8;
+            const newCost = getCost(value + delta);
+            const currentCost = getCost(value);
+            const used = getTotalCost();
 
-        if (delta > 0 && value >= 15) return;
-        if (delta > 0 && used + (newCost - currentCost) > totalBudget) return;
-        if (delta < 0 && value <= 8) return;
+            if (delta > 0 && value >= 15) return;
+            if (delta > 0 && used + (newCost - currentCost) > totalBudget) return;
+            if (delta < 0 && value <= 8) return;
 
-        input.value = value + delta;
-        updateUI();
-    }
-
-    document.querySelectorAll('.stat-base-value').forEach(input => {
-        input.addEventListener('change', function() {
-            let val = parseInt(this.value);
-            if (isNaN(val)) val = 8;
-            if (val < 8) val = 8;
-            if (val > 15) val = 15;
-            this.value = val;
+            input.value = value + delta;
             updateUI();
-        });
-    });
+        }
 
-    updateUI();
-</script>
+        document.querySelectorAll('.stat-base-value').forEach(input => {
+            input.addEventListener('change', function() {
+                let val = parseInt(this.value);
+                if (isNaN(val)) val = 8;
+                if (val < 8) val = 8;
+                if (val > 15) val = 15;
+                this.value = val;
+                updateUI();
+            });
+        });
+
+        updateUI();
+    </script>
 @endpush

@@ -3,13 +3,9 @@
     <p class="drag-hint mb-2">Glissez une valeur sur la caractéristique de votre choix (ou cliquez sur une valeur pour l'attribuer automatiquement). Cliquez sur une caractéristique déjà remplie pour la vider, ou glissez-la à nouveau vers le pool.</p>
     <div class="standard-points-container">
         <div class="stats-list">
-            <div class="stat-columns-header">
-                <span>Points d'aptitudes</span>
-                <span>Bonus de race</span>
-                <span>Total</span>
-            </div>
+            @include('personnages.creation._caracteristiques_bonus')
             @php
-                $stats = [
+                $stats = $labels ?? [
                     'force' => 'Force',
                     'dexterite' => 'Dextérité',
                     'constitution' => 'Constitution',
@@ -22,7 +18,9 @@
                 <div class="stat-row">
                     <div class="stat-icon"></div>
                     <span class="stat-name">{{ $label }}</span>
-                    <span class="stat-value stat-total stat-points drop-target {{ $abilites[$key] > 0 ? 'filled' : '' }}"
+                    @php $bonusStat = $bonusParAptitude[$key] ?? 0; @endphp
+                    <span class="stat-bonus-total" data-key="{{ $key }}" data-value="{{ $bonusStat }}">{{ $bonusStat > 0 ? '+' : '' }}{{ $bonusStat }}</span>
+                    <span class="stat-value stat-points drop-target {{ $abilites[$key] > 0 ? 'filled' : '' }}"
                           id="stat-{{ $key }}" data-key="{{ $key }}"
                           draggable="{{ $abilites[$key] > 0 ? 'true' : 'false' }}"
                           ondragstart="onStatDragStart(event, '{{ $key }}')"
@@ -31,8 +29,6 @@
                           ondragleave="onSlotDragLeave(event, this)"
                           ondrop="onSlotDrop(event, this)"
                           onclick="clearSlot('{{ $key }}')">{{ $abilites[$key] > 0 ? $abilites[$key] : 'X' }}</span>
-                    <span class="stat-bonus">+{{ $bonusParAptitude[$key] }}</span>
-                    <span class="stat-value stat-total stat-computed" data-key="{{ $key }}" data-bonus="{{ $bonusParAptitude[$key] }}">{{ $abilites[$key] > 0 ? (int) $abilites[$key] + $bonusParAptitude[$key] : 'X' }}</span>
                     <input type="hidden" name="{{ $key }}" id="input-{{ $key }}" value="{{ $abilites[$key] }}">
                 </div>
             @endforeach

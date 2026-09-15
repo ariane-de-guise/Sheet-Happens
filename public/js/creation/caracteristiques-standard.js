@@ -28,7 +28,6 @@ function updateSlotDisplay(key) {
 
     if (!value || value <= 0) {
         slot.textContent = 'X';
-        document.querySelector('.stat-computed[data-key="' + key + '"]')?.replaceChildren('X');
         slot.classList.remove('filled');
         slot.draggable = false;
         input.value = 0;
@@ -36,8 +35,6 @@ function updateSlotDisplay(key) {
     }
 
     slot.textContent = value;
-    const total = document.querySelector('.stat-computed[data-key="' + key + '"]');
-    total.textContent = value + parseInt(total.dataset.bonus || '0');
     slot.classList.add('filled');
     slot.draggable = true;
     input.value = value;

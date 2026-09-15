@@ -42,6 +42,11 @@ class CreationPersonnageController extends Controller
                 'charisme' => 8,
             ],
             'dice_pool' => null,
+            // Certaines races (Humain Variant, Demi-elfe) accordent des
+            // bonus "au choix" plutôt que fixes : le joueur décide lui-même
+            // à quelle(s) caractéristique(s) les appliquer. Structure :
+            // ['race' => ['force', 'charisme'], 'classe' => [...]].
+            'bonus_choix' => [],
             'competences' => [],
             'historique_id' => null,
             'ideal_id' => null,
@@ -271,6 +276,29 @@ class CreationPersonnageController extends Controller
 
     protected const ABILITES_KEYS = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'];
 
+    /**
+     * Repère, parmi la race, la sous-race et la classe du personnage, celles
+     * qui accordent un bonus "au choix" (ex. Humain Variant : 2 bonus de +1
+     * à répartir librement) plutôt qu'un bonus fixe. Retourne, pour chaque
+     * source concernée, sa configuration ['nombre' => int, 'bonus' => int].
+     */
+    protected function bonusAuChoixDisponibles(array $data): array
+    {
+        $race = Race::find($data['race_id']);
+        $sousRace = ! empty($data['sous_race_id']) ? SousRace::find($data['sous_race_id']) : null;
+        $classe = Classe::find($data['classe_id']);
+
+        $sources = [];
+        foreach (['race' => $race, 'sous_race' => $sousRace, 'classe' => $classe] as $cle => $modele) {
+            $auChoix = data_get($modele, 'bonus_aptitudes.au_choix');
+            if (is_array($auChoix) && ! empty($auChoix['nombre']) && ! empty($auChoix['bonus'])) {
+                $sources[$cle] = $auChoix;
+            }
+        }
+
+        return $sources;
+    }
+
     public function stepCaracteristiques(): View|RedirectResponse
     {
         $data = $this->getData();
@@ -286,10 +314,14 @@ class CreationPersonnageController extends Controller
             'standardArray' => static::STANDARD_ARRAY,
             'race' => $race = Race::find($data['race_id']),
             'sousRace' => $sousRace = $data['sous_race_id'] ? SousRace::find($data['sous_race_id']) : null,
+            'classe' => $classe = Classe::find($data['classe_id']),
             'bonusAptitudes' => [
                 'race' => $race?->bonus_aptitudes ?? [],
                 'sous_race' => $sousRace?->bonus_aptitudes ?? [],
+                'classe' => $classe?->bonus_aptitudes ?? [],
             ],
+            'auChoixDisponibles' => $this->bonusAuChoixDisponibles($data),
+            'bonusChoix' => $data['bonus_choix'] ?? [],
             'currentStep' => 4,
             'progress' => $this->getProgress(),
         ]);
@@ -372,10 +404,35 @@ class CreationPersonnageController extends Controller
             }
         }
 
+        // Bonus "au choix" (Humain Variant, Demi-elfe, ...) : le joueur doit
+        // indiquer, pour chaque source concernée, exactement "nombre"
+        // caractéristiques distinctes parmi les 6 (voir
+        // bonusAuChoixDisponibles() et abilitesAvecBonus() qui applique
+        // ensuite ces bonus sur le personnage final).
+        $auChoixDisponibles = $this->bonusAuChoixDisponibles($data);
+        $bonusChoix = [];
+
+        foreach ($auChoixDisponibles as $source => $config) {
+            $nombre = (int) $config['nombre'];
+            $choix = array_values(array_filter((array) $request->input("bonus_choix_$source", [])));
+
+            if (
+                count($choix) !== $nombre
+                || count(array_unique($choix)) !== $nombre
+                || array_diff($choix, static::ABILITES_KEYS)
+            ) {
+                return redirect()->back()
+                    ->with('error', "Vous devez choisir $nombre caractéristiques différentes pour le bonus au choix.");
+            }
+
+            $bonusChoix[$source] = $choix;
+        }
+
         // Les valeurs de la session restent les valeurs attribuées par le
-        // joueur. Les bonus raciaux sont ajoutés uniquement au personnage
+        // joueur. Les bonus (race, sous-race, classe, et les bonus "au
+        // choix" une fois assignés) sont ajoutés uniquement au personnage
         // final afin de ne pas fausser la répartition ni son coût.
-        $this->saveData(['abilites' => $abilites]);
+        $this->saveData(['abilites' => $abilites, 'bonus_choix' => $bonusChoix]);
 
         return redirect()->route('creation.competences');
     }
@@ -679,7 +736,7 @@ class CreationPersonnageController extends Controller
         $attachement = $data['attachement_id'] ? Attachement::find($data['attachement_id']) : null;
         $personnalite = $data['personnalite_id'] ? Personnalite::find($data['personnalite_id']) : null;
 
-        $abilites = $this->abilitesAvecBonusRaciaux($data['abilites'], $data);
+        $abilites = $this->abilitesAvecBonus($data['abilites'], $data);
         $pv = $this->calculatePV($abilites, $classe);
 
         // Le personnage final cumule les compétences choisies pour la
@@ -720,16 +777,31 @@ class CreationPersonnageController extends Controller
         return 10 + $conMod;
     }
 
-    protected function abilitesAvecBonusRaciaux(array $abilites, array $data): array
+    protected function abilitesAvecBonus(array $abilites, array $data): array
     {
         $race = Race::find($data['race_id']);
         $sousRace = ! empty($data['sous_race_id']) ? SousRace::find($data['sous_race_id']) : null;
+        $classe = Classe::find($data['classe_id']);
 
         foreach ($abilites as $key => &$score) {
             $score += (int) data_get($race, "bonus_aptitudes.$key", 0);
             $score += (int) data_get($sousRace, "bonus_aptitudes.$key", 0);
+            $score += (int) data_get($classe, "bonus_aptitudes.$key", 0);
         }
         unset($score);
+
+        // Bonus "au choix" : la caractéristique concrète est celle choisie
+        // par le joueur à l'étape des caractéristiques (voir
+        // saveCaracteristiques()), pas une caractéristique fixe déclarée
+        // sur la race/sous-race/classe.
+        $auChoixDisponibles = $this->bonusAuChoixDisponibles($data);
+        foreach ($auChoixDisponibles as $source => $config) {
+            foreach ($data['bonus_choix'][$source] ?? [] as $key) {
+                if (array_key_exists($key, $abilites)) {
+                    $abilites[$key] += (int) $config['bonus'];
+                }
+            }
+        }
 
         return $abilites;
     }
@@ -754,7 +826,7 @@ class CreationPersonnageController extends Controller
         // saveContexte() pour la vérification anti-doublon en amont).
         $competencesFinal = array_values(array_unique(array_merge($data['competences'] ?? [], $historique?->competences ?? [])));
 
-        $abilites = $this->abilitesAvecBonusRaciaux($data['abilites'], $data);
+        $abilites = $this->abilitesAvecBonus($data['abilites'], $data);
 
         $payload = [
             'utilisateur_id' => auth()->id(),
