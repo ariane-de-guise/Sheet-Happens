@@ -70,7 +70,7 @@
             <div class="title">Compétences</div>
             <div class="value">{{ implode(', ', $competencesFinal) }}</div>
             <div class="value mt-2" style="font-style: italic;">
-                Classe : {{ implode(', ', $data['competences']) }} — Historique : {{ implode(', ', $historique->competences ?? []) }}
+                Classe : {{ implode(', ', $data['competences']) }} — Historique : {{ implode(', ', $historique?->competences ?? []) }}
             </div>
         </div>
 
