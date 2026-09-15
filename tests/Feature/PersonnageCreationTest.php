@@ -807,6 +807,49 @@ class PersonnageCreationTest extends TestCase
             ]);
     }
 
+    // Cliquer sur "Retour" depuis l'étape contexte ne doit pas exiger que
+    // l'étape soit complète (contrairement à "Suivant"), et ne doit surtout
+    // pas effacer ce qui a déjà été rempli/sélectionné : avant ce
+    // correctif, rien n'était sauvegardé tant que "Suivant" n'avait pas été
+    // soumis avec succès, donc revenir en arrière puis ravancer perdait
+    // tous les choix faits sur cette page.
+    public function test_le_bouton_retour_du_contexte_sauvegarde_les_choix_partiels_sans_exiger_les_champs_obligatoires(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaCompetences();
+        $identifiants = $this->getIdentifiantsHistoriqueValide();
+
+        $response = $this->post('/personnages/creer/contexte', [
+            'direction' => 'back',
+            'nom' => 'Aragorn',
+            'description' => 'Roi du Gondor',
+            'historique_id' => $identifiants['historique_id'],
+            'ideal_id' => $identifiants['ideal_id'],
+            // Défaut, attachement et personnalité volontairement non
+            // remplis : l'étape n'est pas terminée, mais on doit quand même
+            // pouvoir reculer.
+        ]);
+
+        $response->assertSessionDoesntHaveErrors();
+        $response->assertRedirect(route('creation.competences'));
+
+        $donnees = session('personnage_creation');
+        $this->assertSame('Aragorn', $donnees['nom']);
+        $this->assertSame('Roi du Gondor', $donnees['description']);
+        $this->assertSame($identifiants['historique_id'], $donnees['historique_id']);
+        $this->assertSame($identifiants['ideal_id'], $donnees['ideal_id']);
+        $this->assertNull($donnees['defaut_id']);
+        $this->assertNull($donnees['attachement_id']);
+        $this->assertNull($donnees['personnalite_id']);
+
+        // Revenir sur l'étape contexte doit maintenant réafficher les choix
+        // déjà faits plutôt qu'un formulaire vide.
+        $this->get('/personnages/creer/contexte')
+            ->assertOk()
+            ->assertSee('Aragorn', false)
+            ->assertSee('value="'.$identifiants['historique_id'].'" selected', false);
+    }
+
     // En 5e, si l'historique choisi accorde une compétence déjà choisie pour
     // la classe, les deux ne se cumulent pas : il faut reprendre un choix
     // différent pour la classe plutôt que de perdre silencieusement une

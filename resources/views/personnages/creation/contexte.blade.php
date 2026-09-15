@@ -173,8 +173,8 @@
             </div>
 
             <div class="btn-group-row">
-                <a href="{{ route('creation.competences') }}" class="btn btn-secondary">Retour</a>
-                <button type="submit" class="btn btn-primary">Suivant</button>
+                <button type="submit" name="direction" value="back" formnovalidate class="btn btn-secondary">Retour</button>
+                <button type="submit" name="direction" value="next" class="btn btn-primary">Suivant</button>
             </div>
         </form>
     </div>

@@ -11,7 +11,6 @@ use App\Models\Personnalite;
 use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\SousRace;
-use App\Models\Utilisateur;
 use App\Services\PersonnageCreationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -492,6 +491,35 @@ class CreationPersonnageController extends Controller
     {
         $data = $this->getData();
 
+        // Le bouton "Retour" ramène le joueur à l'étape des compétences sans
+        // que cette étape-ci soit terminée : les champs "required" ne
+        // peuvent donc pas être exigés ici. On enregistre malgré tout, de
+        // façon permissive, ce qui a déjà été rempli/sélectionné, pour que
+        // revenir en arrière puis ravancer n'efface pas ces choix (avant ce
+        // correctif, rien n'était sauvegardé tant que "Suivant" n'avait pas
+        // été soumis avec succès, donc un aller-retour perdait tout).
+        if ($request->input('direction') === 'back') {
+            $idFields = ['historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id'];
+            $request->merge(collect($idFields)->mapWithKeys(
+                fn ($field) => [$field => $request->filled($field) ? $request->input($field) : null]
+            )->all());
+
+            $backValidated = $request->validate([
+                'nom' => 'nullable|string|max:100',
+                'description' => 'nullable|string',
+                'historique_id' => 'nullable|integer|exists:historiques,id',
+                'ideal_id' => 'nullable|integer|exists:ideaux,id',
+                'defaut_id' => 'nullable|integer|exists:defauts,id',
+                'attachement_id' => 'nullable|integer|exists:attachements,id',
+                'personnalite_id' => 'nullable|integer|exists:personnalites,id',
+                'outil' => 'nullable|string',
+            ]);
+
+            $this->saveData($backValidated);
+
+            return redirect()->route('creation.competences');
+        }
+
         $validated = $request->validate([
             'nom' => 'required|string|max:100',
             'description' => 'nullable|string',
@@ -686,7 +714,7 @@ class CreationPersonnageController extends Controller
         if ($classe && $classe->de_de_vie) {
             $de = (int) str_replace('d', '', $classe->de_de_vie);
 
-            return max($de, $conMod) + $conMod;
+            return max(1, $de + $conMod);
         }
 
         return 10 + $conMod;
@@ -729,7 +757,7 @@ class CreationPersonnageController extends Controller
         $abilites = $this->abilitesAvecBonusRaciaux($data['abilites'], $data);
 
         $payload = [
-            'utilisateur_id' => auth()->id() ?? Utilisateur::query()->firstOrFail()->getKey(),
+            'utilisateur_id' => auth()->id(),
             'race_id' => $data['race_id'],
             'sous_race_id' => $data['sous_race_id'],
             'classe_id' => $data['classe_id'],

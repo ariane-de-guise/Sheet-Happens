@@ -25,19 +25,6 @@ class ClassesSeeder extends Seeder
             ],
 
             [
-                'nom' => 'Combattant',
-                'de_de_vie' => '10',
-                'description' => 'Un combattant qui a une maîtrise inégalée des armes et des armures, ainsi qu’une connaissance approfondie des compétences de combat.',
-                'niveau_sous_classe' => 3,
-                'competences_disponibles' => ['Acrobaties', 'Dressage', 'Athlétisme', 'Histoire', 'Intuition', 'Intimidation', 'Perception', 'Survie'],
-                'nombre_competences' => 2,
-                'sous_classes' => [
-                    ['nom' => 'Maitre de Bataille', 'description' => 'Combattant qui emploient des techniques martiales transmises de génération en génération.'],
-                    ['nom' => 'Champion', 'description' => 'Combattant à la puissance physique brute est affûtée à une perfection mortelle.'],
-                    ['nom' => 'Chevalier Surnaturel', 'description' => 'Combattant mémorisant des sort pour la bataille.'],
-                ],
-            ],
-            [
                 'nom' => 'Clerc',
                 'de_de_vie' => '8',
                 'description' => 'Un prêtre qui puise sa puissance dans sa divinité.',

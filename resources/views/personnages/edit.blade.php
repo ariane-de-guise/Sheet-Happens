@@ -462,7 +462,7 @@
                     <label class="form-label">Langues (max {{ 2 + (int)floor(($personnage->niveau - 1) / 3) }})</label>
                     <div class="checkbox-grid">
                         @php
-                            $currentLangues = old('langues', []);
+                            $currentLangues = old('langues', $personnage->langues ?? []);
                         @endphp
                         @foreach($langues as $lang)
                             <label class="checkbox-item">

@@ -883,6 +883,7 @@ input.stat-base-value[type="number"] {
 .summary-card .value {
     font-size: 0.9rem;
     color: #e8d5b5;
+    overflow-wrap: anywhere;
 }
 
 /* Alertes */
