@@ -20,9 +20,7 @@ class RaceFactory extends Factory
             'vitesse' => 30,
             'type_creature' => 'Humanoide',
             'description' => fake()->sentence(),
-            'bonus_abilite1' => 'force',
-            'bonus_abilite2' => null,
-            'bonus_abilite3' => null,
+            'bonus_aptitudes' => ['force' => 1],
         ];
     }
 }

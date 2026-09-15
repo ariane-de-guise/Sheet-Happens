@@ -10,36 +10,6 @@ class RacesSeeder extends Seeder
 {
     public function run(): void
     {
-        $bonusToAptitudes = static function (array $bonusFields): array {
-            $keys = [
-                'force' => 'force',
-                'dextérité' => 'dexterite',
-                'dexterite' => 'dexterite',
-                'constitution' => 'constitution',
-                'intelligence' => 'intelligence',
-                'sagesse' => 'sagesse',
-                'charisme' => 'charisme',
-            ];
-            $bonuses = [];
-
-            foreach ($bonusFields as $bonus) {
-                $bonus = mb_strtolower(trim((string) $bonus));
-                if ($bonus === 'tous') {
-                    foreach ($keys as $key) {
-                        $bonuses[$key] = ($bonuses[$key] ?? 0) + 1;
-                    }
-                    continue;
-                }
-
-                if (isset($keys[$bonus])) {
-                    $key = $keys[$bonus];
-                    $bonuses[$key] = ($bonuses[$key] ?? 0) + 1;
-                }
-            }
-
-            return $bonuses;
-        };
-
         $races = [
             [
                 'nom' => 'Humain',
@@ -49,7 +19,7 @@ class RacesSeeder extends Seeder
                 'langues' => ['Commun'],
                 'description' => 'Les humains sont les plus nombreux et les plus diversifiés des peuples de l\'Île des Héros.',
                 'sous_races' => [],
-                'bonus_abilite1' => 'tous',
+                'bonus_aptitudes' => ['force' => 1, 'dexterite' => 1, 'constitution' => 1, 'intelligence' => 1, 'sagesse' => 1, 'charisme' => 1],
             ],
             [
                 'nom' => 'Humain, Variant',
@@ -59,7 +29,7 @@ class RacesSeeder extends Seeder
                 'langues' => ['Commun'],
                 'description' => 'Les humains sont les plus nombreux et les plus diversifiés des peuples de l\'Île des Héros.',
                 'sous_races' => [],
-                'bonus_abilite1' => 'au choix',
+                'bonus_aptitudes' => ['au_choix' => ['nombre' => 2, 'bonus' => 1]],
             ],
             [
                 'nom' => 'Elfe',
@@ -69,11 +39,11 @@ class RacesSeeder extends Seeder
                 'langues' => ['Commun', 'Elfe'],
                 'description' => 'Les elfes sont gracieux, immortels et profondément liés à la magie.',
                 'sous_races' => [
-                    ['nom' => 'Elfe Sombre', 'description' => 'Elfe fin à la peau obsidienne banni de la surface.', 'bonus_abilite1' => 'Charisme'],
-                    ['nom' => 'Elfe des bois', 'description' => 'Elfe furtif et rapide de la forêt.', 'bonus_abilite1' => 'Sagesse'],
-                    ['nom' => 'Haut Elfe', 'description' => 'Elfe à l\'esprit vif maitrisant une base de magie.', 'bonus_abilite1' => 'Intelligence'],
+                    ['nom' => 'Elfe Sombre', 'description' => 'Elfe fin à la peau obsidienne banni de la surface.', 'bonus_aptitudes' => ['charisme' => 1]],
+                    ['nom' => 'Elfe des bois', 'description' => 'Elfe furtif et rapide de la forêt.', 'bonus_aptitudes' => ['sagesse' => 1]],
+                    ['nom' => 'Haut Elfe', 'description' => 'Elfe à l\'esprit vif maitrisant une base de magie.', 'bonus_aptitudes' => ['intelligence' => 1]],
                 ],
-                'bonus_abilite1' => 'Dextérité',
+                'bonus_aptitudes' => ['dexterite' => 2],
             ],
             [
                 'nom' => 'Nain',
@@ -83,10 +53,10 @@ class RacesSeeder extends Seeder
                 'langues' => ['Commun', 'Nain'],
                 'description' => 'Les nains sont robustes, têtus et excellents artisans.',
                 'sous_races' => [
-                    ['nom' => 'Nain de montagne', 'description' => 'Nain fort et robuste habitué à la vie difficile.', 'bonus_abilite1' => 'Force', 'bonus_abilite2' => 'Force'],
-                    ['nom' => 'Nain de la colline', 'description' => 'Nain résilient aux sens vif.', 'bonus_abilite1' => 'Intelligence'],
+                    ['nom' => 'Nain de montagne', 'description' => 'Nain fort et robuste habitué à la vie difficile.', 'bonus_aptitudes' => ['force' => 2]],
+                    ['nom' => 'Nain de la colline', 'description' => 'Nain résilient aux sens vif.', 'bonus_aptitudes' => ['sagesse' => 1]],
                 ],
-                'bonus_abilite1' => 'Constitution',
+                'bonus_aptitudes' => ['constitution' => 2],
             ],
             [
                 'nom' => 'Halfelin',
@@ -96,10 +66,10 @@ class RacesSeeder extends Seeder
                 'langues' => ['Commun', 'Halfling'],
                 'description' => 'Les halfelins sont petits, chanceux et aimables.',
                 'sous_races' => [
-                    ['nom' => 'Halfelin pied-roux', 'description' => 'Halfelin corpulent resistant dit descendant de Nain', 'bonus_abilite1' => 'Constitution'],
-                    ['nom' => 'Halfelin pied-vif', 'description' => 'Halfelin sympathique qui a soif de voyage.', 'bonus_abilite1' => 'Charisme'],
+                    ['nom' => 'Halfelin pied-roux', 'description' => 'Halfelin corpulent resistant dit descendant de Nain', 'bonus_aptitudes' => ['constitution' => 1]],
+                    ['nom' => 'Halfelin pied-vif', 'description' => 'Halfelin sympathique qui a soif de voyage.', 'bonus_aptitudes' => ['charisme' => 1]],
                 ],
-                'bonus_abilite1' => 'Dextérité',
+                'bonus_aptitudes' => ['dexterite' => 2],
             ],
             [
                 'nom' => 'Demi-elfe',
@@ -109,9 +79,7 @@ class RacesSeeder extends Seeder
                 'langues' => ['Commun', 'Elfe'],
                 'description' => 'Mi-humains, mi-elfes, ils combinent le meilleur des deux mondes.',
                 'sous_races' => [],
-                'bonus_abilite1' => 'Charisme',
-                'bonus_abilite2' => 'au choix',
-                'bonus_abilite3' => 'au choix',
+                'bonus_aptitudes' => ['charisme' => 2, 'au_choix' => ['nombre' => 2, 'bonus' => 1]],
             ],
             [
                 'nom' => 'Demi-orc',
@@ -121,8 +89,7 @@ class RacesSeeder extends Seeder
                 'langues' => ['Commun', 'Orc'],
                 'description' => 'Fort et résilient, le demi-orc est souvent méprisé mais loyal.',
                 'sous_races' => [],
-                'bonus_abilite1' => 'Force',
-                'bonus_abilite2' => 'Constitution',
+                'bonus_aptitudes' => ['force' => 2, 'constitution' => 1],
             ],
             [
                 'nom' => 'Drakéide',
@@ -143,8 +110,7 @@ class RacesSeeder extends Seeder
                     ['nom' => 'Drakéide Argent', 'description' => 'Drakéide, respirant de la glace'],
                     ['nom' => 'Drakéide Blanc', 'description' => 'Drakéide, respirant de la glace'],
                 ],
-                'bonus_abilite1' => 'Force',
-                'bonus_abilite2' => 'Charisme',
+                'bonus_aptitudes' => ['force' => 2, 'charisme' => 1],
             ],
             [
                 'nom' => 'Gnome',
@@ -154,10 +120,10 @@ class RacesSeeder extends Seeder
                 'langues' => ['Commun', 'Gnôme'],
                 'description' => 'Petits, inventifs et curieux, les gnômes adorent la magie et les machines.',
                 'sous_races' => [
-                    ['nom' => 'Gnome de la roche', 'description' => 'Magiciens rusés et excellents illusionnistes.', 'bonus_abilite1' => 'Constitution'],
-                    ['nom' => 'Gnome des forêts', 'description' => 'Sages et mystiques, protecteurs de la nature.', 'bonus_abilite1' => 'Dextérité'],
+                    ['nom' => 'Gnome de la roche', 'description' => 'Magiciens rusés et excellents illusionnistes.', 'bonus_aptitudes' => ['constitution' => 1]],
+                    ['nom' => 'Gnome des forêts', 'description' => 'Sages et mystiques, protecteurs de la nature.', 'bonus_aptitudes' => ['dexterite' => 1]],
                 ],
-                'bonus_abilite1' => 'Intelligence',
+                'bonus_aptitudes' => ['intelligence' => 2],
             ],
             [
                 'nom' => 'Tieffelin',
@@ -167,22 +133,15 @@ class RacesSeeder extends Seeder
                 'langues' => ['Commun', 'Abyssal'],
                 'description' => 'Marqués par le sang infernal, les tieffelins sont souvent craints mais résilients.',
                 'sous_races' => [
-                    ['nom' => 'Tieffelin de la Lignée d\'Asmodée', 'description' => 'Tieffelin liées à Nessus qui commande le pouvoir du feu et des ténèbres', 'bonus_abilite1' => 'Intelligence'],
+                    ['nom' => 'Tieffelin de la Lignée d\'Asmodée', 'description' => 'Tieffelin liées à Nessus qui commande le pouvoir du feu et des ténèbres', 'bonus_aptitudes' => ['intelligence' => 1]],
                 ],
-                'bonus_abilite1' => 'Charisme',
+                'bonus_aptitudes' => ['charisme' => 2],
             ],
         ];
 
         foreach ($races as $raceData) {
             $sousRaces = $raceData['sous_races'];
             unset($raceData['sous_races']);
-            $raceData['bonus_aptitudes'] = $bonusToAptitudes([
-                $raceData['bonus_abilite1'] ?? null,
-                $raceData['bonus_abilite2'] ?? null,
-                $raceData['bonus_abilite3'] ?? null,
-            ]);
-            unset($raceData['bonus_abilite1'], $raceData['bonus_abilite2'], $raceData['bonus_abilite3']);
-
             $race = Race::create($raceData);
 
             foreach ($sousRaces as $sr) {
@@ -190,10 +149,7 @@ class RacesSeeder extends Seeder
                     'race_id' => $race->id,
                     'nom' => $sr['nom'],
                     'description' => $sr['description'] ?? null,
-                    'bonus_aptitudes' => $bonusToAptitudes([
-                        $sr['bonus_abilite1'] ?? null,
-                        $sr['bonus_abilite2'] ?? null,
-                    ]),
+                    'bonus_aptitudes' => $sr['bonus_aptitudes'] ?? [],
                 ]);
             }
         }

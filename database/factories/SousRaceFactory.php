@@ -19,8 +19,7 @@ class SousRaceFactory extends Factory
             'race_id' => RaceFactory::new(),
             'nom' => fake()->unique()->word(),
             'description' => fake()->sentence(),
-            'bonus_abilite1' => 'dexterite',
-            'bonus_abilite2' => null,
+            'bonus_aptitudes' => ['dexterite' => 1],
         ];
     }
 

@@ -444,6 +444,7 @@ a:hover {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
+    min-width: 0;
 }
 
 .stats-list {
@@ -451,17 +452,50 @@ a:hover {
     border: 1px solid #c49a3c;
     border-radius: 12px;
     overflow: hidden;
+    min-width: 0;
 }
 
 .stat-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 70px 50px 70px auto;
+    column-gap: 0.4rem;
     align-items: center;
     padding: 0.6rem 0.9rem;
     border-bottom: 1px solid rgba(196, 154, 60, 0.2);
+    min-width: 0;
 }
 
 .stat-row:last-child {
     border-bottom: none;
+}
+
+.stat-columns-header {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 70px 50px 70px auto;
+    column-gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    color: #b8a9c9;
+    font-size: 0.7rem;
+    text-align: center;
+}
+
+.stat-columns-header span {
+    grid-row: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.stat-columns-header span:nth-child(1) {
+    grid-column: 3;
+}
+
+.stat-columns-header span:nth-child(2) {
+    grid-column: 4;
+    width: 50px;
+}
+
+.stat-columns-header span:nth-child(3) {
+    grid-column: 5;
 }
 
 .stat-icon {
@@ -474,9 +508,11 @@ a:hover {
 }
 
 .stat-name {
-    flex: 1;
+    grid-column: 2;
     font-size: 0.85rem;
     color: #e6b84d;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .stat-value {
@@ -494,8 +530,67 @@ a:hover {
     color: #e6b84d;
     font-size: 1rem;
     font-weight: 600;
-    margin: 0 0.5rem;
+    margin: 0;
     transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.stat-base-value {
+    grid-column: 3;
+    width: 70px;
+    height: 40px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem;
+    border: 0;
+    background: transparent;
+    color: #e6b84d;
+    text-align: center;
+    font-weight: 600;
+}
+
+.stat-bonus {
+    grid-column: 4;
+    min-width: 0;
+    width: 50px;
+    justify-self: center;
+    margin: 0;
+}
+
+.stat-points {
+    grid-column: 3;
+}
+
+.stat-total {
+    grid-column: 5;
+}
+
+.stat-total.stat-points {
+    grid-column: 3;
+}
+
+.stat-controls {
+    grid-column: 6;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.stat-bonus,
+.stat-total {
+    min-width: 42px;
+    margin: 0;
+    text-align: center;
+    font-weight: 600;
+}
+
+.stat-bonus {
+    color: #55c878;
+}
+
+.stat-total {
+    color: #e6b84d;
 }
 
 /* Number inputs (méthode "points") default to the browser's native
@@ -504,13 +599,13 @@ a:hover {
    same way as the rest of the field, throwing off the vertical alignment
    with the +/- buttons next to it. Remove it entirely since we already
    provide dedicated +/- buttons. */
-input.stat-value::-webkit-outer-spin-button,
-input.stat-value::-webkit-inner-spin-button {
+input.stat-base-value::-webkit-outer-spin-button,
+input.stat-base-value::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-input.stat-value[type="number"] {
+input.stat-base-value[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
 }
@@ -714,6 +809,7 @@ input.stat-value[type="number"] {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
+    min-width: 0;
 }
 
 .available-points {
@@ -882,5 +978,112 @@ input.stat-value[type="number"] {
 
     .title-main {
         font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 0.75rem;
+        align-items: flex-start;
+    }
+
+    .container {
+        padding: 0.75rem 0;
+    }
+
+    .card {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .title-section {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .progress-bar {
+        margin-bottom: 1.25rem;
+        transform: scale(0.9);
+        transform-origin: center;
+    }
+
+    .stat-row,
+    .stat-columns-header {
+        grid-template-columns: 28px minmax(0, 1fr) 44px 38px 48px auto;
+        column-gap: 0.25rem;
+        padding-left: 0.55rem;
+        padding-right: 0.55rem;
+    }
+
+    .stat-columns-header {
+        font-size: 0.55rem;
+    }
+
+    .stat-columns-header span:nth-child(2) {
+        width: 38px;
+    }
+
+    .stat-icon {
+        width: 28px;
+        height: 28px;
+        margin-right: 0;
+    }
+
+    .stat-name {
+        font-size: 0.75rem;
+    }
+
+    .stat-value,
+    .stat-base-value {
+        width: 100%;
+        height: 34px;
+        padding: 0 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .stat-bonus,
+    .stat-total {
+        font-size: 0.8rem;
+        min-width: 0;
+    }
+
+    .stat-bonus {
+        width: 38px;
+    }
+
+    .stat-controls {
+        gap: 0.15rem;
+    }
+
+    .btn-icon {
+        width: 28px;
+        height: 32px;
+        font-size: 0.95rem;
+    }
+
+    .btn-group-row {
+        flex-wrap: wrap;
+        margin-top: 1.25rem;
+    }
+
+    .btn-group-row > div {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .btn-group-row > .btn,
+    .btn-group-row > div .btn {
+        flex: 1 1 0;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .roll-actions {
+        flex-direction: column;
+    }
+
+    .roll-actions .btn {
+        flex-basis: auto;
+        width: 100%;
     }
 }

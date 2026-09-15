@@ -2,6 +2,11 @@
     @csrf
     <div class="stats-container">
         <div class="stats-list">
+            <div class="stat-columns-header">
+                <span>Points d'aptitudes</span>
+                <span>Bonus de race</span>
+                <span>Total</span>
+            </div>
             @php
                 $stats = [
                     'force' => 'Force',
@@ -17,13 +22,15 @@
                     <div class="stat-icon"></div>
                     <span class="stat-name">{{ $label }}</span>
                     <input type="number" name="{{ $key }}" value="{{ $abilites[$key] }}"
-                           min="8" max="15" class="stat-value" id="stat-{{ $key }}"
+                           min="8" max="15" class="stat-base-value" id="stat-{{ $key }}"
                            data-key="{{ $key }}">
+                    <span class="stat-bonus">+{{ $bonusParAptitude[$key] }}</span>
+                    <span class="stat-value stat-total" data-key="{{ $key }}" data-bonus="{{ $bonusParAptitude[$key] }}">{{ (int) $abilites[$key] + $bonusParAptitude[$key] }}</span>
                     <div class="stat-controls">
                         <button type="button" class="btn btn-primary btn-icon"
-                                onclick="modifierStat('{{ $key }}', 1)">+</button>
-                        <button type="button" class="btn btn-secondary btn-icon"
                                 onclick="modifierStat('{{ $key }}', -1)">-</button>
+                        <button type="button" class="btn btn-secondary btn-icon"
+                                onclick="modifierStat('{{ $key }}', 1)">+</button>
                     </div>
                 </div>
             @endforeach
@@ -64,7 +71,7 @@
 
     function getTotalCost() {
         let total = 0;
-        document.querySelectorAll('.stat-value').forEach(input => {
+        document.querySelectorAll('.stat-base-value').forEach(input => {
             total += getCost(parseInt(input.value) || 8);
         });
         return total;
@@ -77,6 +84,11 @@
         display.textContent = remaining;
         display.style.color = remaining < 0 ? '#e05555' : '#e6b84d';
         document.getElementById('btnSuivant').disabled = remaining !== 0;
+        document.querySelectorAll('.stat-total').forEach(total => {
+            const key = total.dataset.key;
+            const value = parseInt(document.getElementById('stat-' + key).value) || 8;
+            total.textContent = value + parseInt(total.dataset.bonus || '0');
+        });
     }
 
     function modifierStat(key, delta) {
@@ -94,7 +106,7 @@
         updateUI();
     }
 
-    document.querySelectorAll('.stat-value').forEach(input => {
+    document.querySelectorAll('.stat-base-value').forEach(input => {
         input.addEventListener('change', function() {
             let val = parseInt(this.value);
             if (isNaN(val)) val = 8;

@@ -285,8 +285,12 @@ class CreationPersonnageController extends Controller
             'abilites' => $data['abilites'],
             'dicePool' => $data['dice_pool'],
             'standardArray' => static::STANDARD_ARRAY,
-            'race' => Race::find($data['race_id']),
-            'sousRace' => $data['sous_race_id'] ? SousRace::find($data['sous_race_id']) : null,
+            'race' => $race = Race::find($data['race_id']),
+            'sousRace' => $sousRace = $data['sous_race_id'] ? SousRace::find($data['sous_race_id']) : null,
+            'bonusAptitudes' => [
+                'race' => $race?->bonus_aptitudes ?? [],
+                'sous_race' => $sousRace?->bonus_aptitudes ?? [],
+            ],
             'currentStep' => 4,
             'progress' => $this->getProgress(),
         ]);
@@ -369,14 +373,9 @@ class CreationPersonnageController extends Controller
             }
         }
 
-        $race = Race::find($data['race_id']);
-        $sousRace = $data['sous_race_id'] ? SousRace::find($data['sous_race_id']) : null;
-        foreach ($abilites as $key => &$score) {
-            $score += (int) data_get($race, "bonus_aptitudes.$key", 0);
-            $score += (int) data_get($sousRace, "bonus_aptitudes.$key", 0);
-        }
-        unset($score);
-
+        // Les valeurs de la session restent les valeurs attribuées par le
+        // joueur. Les bonus raciaux sont ajoutés uniquement au personnage
+        // final afin de ne pas fausser la répartition ni son coût.
         $this->saveData(['abilites' => $abilites]);
 
         return redirect()->route('creation.competences');
@@ -652,7 +651,7 @@ class CreationPersonnageController extends Controller
         $attachement = $data['attachement_id'] ? Attachement::find($data['attachement_id']) : null;
         $personnalite = $data['personnalite_id'] ? Personnalite::find($data['personnalite_id']) : null;
 
-        $abilites = $data['abilites'];
+        $abilites = $this->abilitesAvecBonusRaciaux($data['abilites'], $data);
         $pv = $this->calculatePV($abilites, $classe);
 
         // Le personnage final cumule les compétences choisies pour la
@@ -693,6 +692,20 @@ class CreationPersonnageController extends Controller
         return 10 + $conMod;
     }
 
+    protected function abilitesAvecBonusRaciaux(array $abilites, array $data): array
+    {
+        $race = Race::find($data['race_id']);
+        $sousRace = ! empty($data['sous_race_id']) ? SousRace::find($data['sous_race_id']) : null;
+
+        foreach ($abilites as $key => &$score) {
+            $score += (int) data_get($race, "bonus_aptitudes.$key", 0);
+            $score += (int) data_get($sousRace, "bonus_aptitudes.$key", 0);
+        }
+        unset($score);
+
+        return $abilites;
+    }
+
     public function finalize(Request $request, PersonnageCreationService $service): RedirectResponse
     {
         $data = $this->getData();
@@ -713,6 +726,8 @@ class CreationPersonnageController extends Controller
         // saveContexte() pour la vérification anti-doublon en amont).
         $competencesFinal = array_values(array_unique(array_merge($data['competences'] ?? [], $historique?->competences ?? [])));
 
+        $abilites = $this->abilitesAvecBonusRaciaux($data['abilites'], $data);
+
         $payload = [
             'utilisateur_id' => auth()->id() ?? Utilisateur::query()->firstOrFail()->getKey(),
             'race_id' => $data['race_id'],
@@ -724,13 +739,13 @@ class CreationPersonnageController extends Controller
             'defaut_id' => $data['defaut_id'] ?? null,
             'attachement_id' => $data['attachement_id'] ?? null,
             'personnalite_id' => $data['personnalite_id'] ?? null,
-            'abilites' => $data['abilites'],
+            'abilites' => $abilites,
             'competences' => $competencesFinal,
             'nom' => $data['nom'],
             'niveau' => $niveau,
             'alignement' => $data['alignement'],
             'description' => $data['description'],
-            'point_de_vie' => $this->calculatePV($data['abilites'], Classe::find($data['classe_id'])),
+            'point_de_vie' => $this->calculatePV($abilites, Classe::find($data['classe_id'])),
             'outil' => $data['outil'],
             'langues' => $data['langues'],
             'equipement' => $data['equipement'],
