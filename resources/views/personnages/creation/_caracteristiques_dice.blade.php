@@ -1,5 +1,7 @@
 <form action="{{ route('creation.caracteristiques.save') }}" method="POST" id="mainForm">
     @csrf
+    <p class="drag-hint mb-2">4d6, on garde les 3 meilleurs — 6 lancers au total. Glissez ensuite chaque résultat sur la caractéristique de votre choix (ou glissez une valeur déjà placée vers le pool pour l'annuler).</p>
+
     <div class="stats-container">
         <div class="stats-list">
             @php
@@ -16,19 +18,36 @@
                 <div class="stat-row">
                     <div class="stat-icon"></div>
                     <span class="stat-name">{{ $label }}</span>
-                    <span class="stat-value" id="stat-{{ $key }}">{{ $abilites[$key] > 0 ? $abilites[$key] : '0' }}</span>
+                    <span class="stat-value drop-target {{ $abilites[$key] > 0 ? 'filled' : '' }}"
+                          id="stat-{{ $key }}" data-key="{{ $key }}"
+                          draggable="{{ $abilites[$key] > 0 ? 'true' : 'false' }}"
+                          ondragstart="onStatDragStart(event, '{{ $key }}')"
+                          ondragend="onStatDragEnd('{{ $key }}')"
+                          ondragover="onSlotDragOver(event, this)"
+                          ondragleave="onSlotDragLeave(event, this)"
+                          ondrop="onSlotDrop(event, this)"
+                          onclick="clearSlot('{{ $key }}')">{{ $abilites[$key] > 0 ? $abilites[$key] : '0' }}</span>
                     <input type="hidden" name="{{ $key }}" id="input-{{ $key }}" value="{{ $abilites[$key] }}">
                 </div>
             @endforeach
         </div>
 
-        <div class="dice-container">
-            @foreach($stats as $key => $label)
-                <button type="button" class="dice-btn" onclick="rollDice('{{ $key }}')" id="btn-{{ $key }}">
-                    {{ $abilites[$key] > 0 ? 'Relancer' : 'Dé' }}
-                </button>
-            @endforeach
+        <div>
+            <div class="label mb-1" style="color:#e6b84d;">Résultats des lancers</div>
+            <div class="value-pool" id="valuePool"
+                 ondragover="onPoolDragOver(event)"
+                 ondragleave="onPoolDragLeave(event)"
+                 ondrop="onPoolDrop(event)"></div>
         </div>
+    </div>
+
+    <div class="roll-actions">
+        <button type="button" class="btn btn-primary" id="btnRoll" onclick="rollDice()">
+            {{ $dicePool ? 'Relancer les dés' : 'Lancer les dés' }}
+        </button>
+        <button type="button" class="btn btn-secondary" id="btnResetAssignments" onclick="resetAssignments()">
+            Réinitialiser les choix
+        </button>
     </div>
 
     <div class="btn-group-row">
@@ -37,60 +56,15 @@
     </div>
 </form>
 
-@if(session('rolled'))
-    @push('scripts')
-    <script>
-        const rolledStat = document.getElementById('stat-{{ session('rolled') }}');
-        rolledStat.style.transition = 'transform 0.3s';
-        rolledStat.style.transform = 'scale(1.3)';
-        setTimeout(() => { rolledStat.style.transform = 'scale(1)'; }, 300);
-    </script>
-    @endpush
-@endif
-
 @push('scripts')
-<script>
-    const statsOrder = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'];
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
-
-    function rollDice(abilite) {
-        fetch('{{ route('creation.roll') }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ abilite: abilite })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.value) {
-                document.getElementById('stat-' + abilite).textContent = data.value;
-                document.getElementById('input-' + abilite).value = data.value;
-
-                const btn = document.getElementById('btn-' + abilite);
-                btn.textContent = 'Relancer';
-
-                const statEl = document.getElementById('stat-' + abilite);
-                statEl.style.transition = 'transform 0.3s';
-                statEl.style.transform = 'scale(1.3)';
-                setTimeout(() => { statEl.style.transform = 'scale(1)'; }, 300);
-
-                checkComplete();
-            }
-        })
-        .catch(err => console.error('Error rolling dice:', err));
-    }
-
-    function checkComplete() {
-        const allRolled = statsOrder.every(s => {
-            const val = parseInt(document.getElementById('stat-' + s).textContent);
-            return val > 0;
-        });
-        document.getElementById('btnSuivant').disabled = !allRolled;
-    }
-
-    checkComplete();
-</script>
+    <script>
+        // Données injectées par le serveur pour cette page ; toute la logique
+        // vit dans un fichier séparé (public/js/creation/caracteristiques-dice.js).
+        window.CaracteristiquesDiceData = {
+            abilites: @json($abilites),
+            dicePool: @json($dicePool ?? []),
+            rollUrl: '{{ route('creation.roll') }}',
+        };
+    </script>
+    <script src="{{ asset('js/creation/caracteristiques-dice.js') }}"></script>
 @endpush

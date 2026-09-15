@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'taille',
     'vitesse',
     'type_creature',
+    'langues',
     'description',
     'bonus_abilite1',
     'bonus_abilite2',
@@ -18,6 +19,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Race extends Model
 {
+    protected function casts(): array
+    {
+        return ['langues' => 'array'];
+    }
+
     public function sousRaces(): HasMany
     {
         return $this->hasMany(SousRace::class);

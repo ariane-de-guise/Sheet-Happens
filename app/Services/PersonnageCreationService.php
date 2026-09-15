@@ -12,9 +12,9 @@ use App\Models\SousRace;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Validation\ValidationException;
 
-class PersonnageCreationService
+readonly class PersonnageCreationService
 {
-    public function __construct(private readonly DatabaseManager $database) {}
+    public function __construct(private DatabaseManager $database) {}
 
     public function create(array $data): Personnage
     {
@@ -44,7 +44,16 @@ class PersonnageCreationService
                 'alignement' => $data['alignement'] ?? null,
                 'description' => $data['description'] ?? null,
                 'point_de_vie' => $data['point_de_vie'],
+                'maitrise' => $data['maitrise'] ?? null,
+                'outil' => $data['outil'] ?? null,
+                'langues' => $data['langues'] ?? [],
+                'equipement' => $data['equipement'] ?? [],
             ])->load(['race', 'sousRace', 'classe', 'sousClasse', 'historique', 'ideal', 'defaut', 'attachement', 'personnalite', 'abilites', 'listeCompetence']);
+            // 'maitrise', 'outil', 'langues' et 'equipement' ne sont pas des
+            // relations Eloquent mais de simples colonnes du modèle
+            // Personnage : elles sont déjà présentes sur l'instance
+            // retournée par create(), inutile (et invalide) de les charger
+            // avec load().
         });
     }
 

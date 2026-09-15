@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Historique;
 use App\Models\Utilisateur;
 use Database\Factories\ClasseFactory;
 use Database\Factories\RaceFactory;
 use Database\Factories\SousClasseFactory;
 use Database\Factories\SousRaceFactory;
+use Database\Seeders\HistoriquesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -75,8 +77,14 @@ class PersonnageCreationTest extends TestCase
         $this->assertSame($sousRace->id, session('personnage_creation')['sous_race_id']);
     }
 
-    public function test_l_enregistrement_de_la_race_neutralise_une_sous_race_incoherente(): void
+    public function test_l_enregistrement_de_la_race_conserve_une_sous_race_valide_malgre_des_types_mixtes(): void
     {
+        // Un vrai formulaire HTML envoie toutes ses valeurs sous forme de
+        // chaînes de caractères. La règle "exists" (comparaison SQL, typage
+        // souple) confirme déjà que la sous-race appartient à la race
+        // envoyée ; le contrôleur ne doit pas perdre ce choix à cause d'une
+        // comparaison stricte (int vs string) entre l'id validé et celui
+        // renvoyé par Eloquent.
         $this->utilisateurConnecte();
         $race = RaceFactory::new()->create();
         $sousRace = SousRaceFactory::new()->pourRace($race)->create();
@@ -87,7 +95,7 @@ class PersonnageCreationTest extends TestCase
         ]);
 
         $response->assertRedirect(route('creation.classe'));
-        $this->assertNull(session('personnage_creation')['sous_race_id']);
+        $this->assertSame($sousRace->id, session('personnage_creation')['sous_race_id']);
     }
 
     public function test_l_enregistrement_de_la_race_echoue_sans_race_valide(): void
@@ -96,6 +104,16 @@ class PersonnageCreationTest extends TestCase
 
         $this->post('/personnages/creer/race', [])
             ->assertSessionHasErrors(['race_id']);
+    }
+
+    public function test_l_enregistrement_de_la_race_exige_une_sous_race_si_la_race_en_propose(): void
+    {
+        $this->utilisateurConnecte();
+        $race = RaceFactory::new()->create();
+        SousRaceFactory::new()->pourRace($race)->create();
+
+        $this->post('/personnages/creer/race', ['race_id' => $race->id])
+            ->assertSessionHasErrors(['sous_race_id']);
     }
 
     // --- Étape Classe ---
@@ -147,13 +165,12 @@ class PersonnageCreationTest extends TestCase
         $this->assertSame($sousClasse->id, session('personnage_creation')['sous_classe_id']);
     }
 
-    public function test_l_enregistrement_de_la_classe_neutralise_une_sous_classe_en_cas_d_incoherence_de_type(): void
+    public function test_l_enregistrement_de_la_classe_conserve_une_sous_classe_valide_malgre_des_types_mixtes(): void
     {
-        // Même situation que pour la race : la règle "exists" compare via
-        // SQL (typage souple) alors que le contrôleur compare ensuite avec
-        // `!==` (typage strict). Envoyer classe_id sous forme de chaîne fait
-        // passer la validation tout en déclenchant la neutralisation
-        // manuelle de la sous-classe dans le contrôleur.
+        // Même situation que pour la race : un vrai formulaire HTML envoie
+        // classe_id sous forme de chaîne. La règle "exists" confirme déjà
+        // que la sous-classe appartient à la classe envoyée ; ça ne doit
+        // pas être perdu à cause d'une comparaison stricte (int vs string).
         $this->utilisateurConnecte();
         $classe = ClasseFactory::new()->create();
         $sousClasse = SousClasseFactory::new()->pourClasse($classe)->create();
@@ -164,7 +181,7 @@ class PersonnageCreationTest extends TestCase
         ]);
 
         $response->assertRedirect(route('creation.methode'));
-        $this->assertNull(session('personnage_creation')['sous_classe_id']);
+        $this->assertSame($sousClasse->id, session('personnage_creation')['sous_classe_id']);
     }
 
     public function test_changer_de_classe_neutralise_une_sous_classe_incoherente(): void
@@ -185,6 +202,32 @@ class PersonnageCreationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['sous_classe_id']);
+    }
+
+    public function test_l_enregistrement_de_la_classe_exige_une_sous_classe_disponible_des_le_niveau_1(): void
+    {
+        $this->utilisateurConnecte();
+        $race = RaceFactory::new()->create();
+        $this->post('/personnages/creer/race', ['race_id' => $race->id]);
+        $classe = ClasseFactory::new()->create(['niveau_sous_classe' => 1]);
+        SousClasseFactory::new()->pourClasse($classe)->create();
+
+        $this->post('/personnages/creer/classe', ['classe_id' => $classe->id])
+            ->assertSessionHasErrors(['sous_classe_id']);
+    }
+
+    public function test_l_enregistrement_de_la_classe_n_exige_pas_une_sous_classe_indisponible_au_niveau_1(): void
+    {
+        $this->utilisateurConnecte();
+        $race = RaceFactory::new()->create();
+        $this->post('/personnages/creer/race', ['race_id' => $race->id]);
+        $classe = ClasseFactory::new()->create(['niveau_sous_classe' => 2]);
+        SousClasseFactory::new()->pourClasse($classe)->create();
+
+        $response = $this->post('/personnages/creer/classe', ['classe_id' => $classe->id]);
+
+        $response->assertRedirect(route('creation.methode'));
+        $this->assertNull(session('personnage_creation')['sous_classe_id']);
     }
 
     // --- Étape Méthode ---
@@ -333,6 +376,57 @@ class PersonnageCreationTest extends TestCase
         $response->assertRedirect(route('creation.competences'));
     }
 
+    public function test_l_enregistrement_des_caracteristiques_en_methode_standard_refuse_une_repartition_incorrecte(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaMethode('standard');
+
+        $response = $this
+            ->withHeader('referer', route('creation.caracteristiques'))
+            ->post('/personnages/creer/caracteristiques', [
+                'force' => 15, 'dexterite' => 14, 'constitution' => 13,
+                'intelligence' => 12, 'sagesse' => 10, 'charisme' => 9,
+            ]);
+
+        $response->assertRedirect(route('creation.caracteristiques'));
+        $response->assertSessionHas('error');
+    }
+
+    public function test_l_enregistrement_des_caracteristiques_en_methode_dice_refuse_sans_avoir_lance_les_des(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaMethode('dice');
+
+        $response = $this->post('/personnages/creer/caracteristiques', [
+            'force' => 15, 'dexterite' => 14, 'constitution' => 13,
+            'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
+        ]);
+
+        $response->assertRedirect(route('creation.caracteristiques'));
+        $response->assertSessionHas('error');
+    }
+
+    public function test_l_enregistrement_des_caracteristiques_en_methode_dice_refuse_une_repartition_incorrecte(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaMethode('dice');
+        $this->post('/personnages/creer/caracteristiques/roller', []);
+        $pool = session('personnage_creation')['dice_pool'];
+
+        // On modifie une valeur pour qu'elle ne corresponde plus au lancer.
+        $valeurs = [
+            'force' => $pool[0], 'dexterite' => $pool[1], 'constitution' => $pool[2],
+            'intelligence' => $pool[3], 'sagesse' => $pool[4], 'charisme' => $pool[5] + 1,
+        ];
+
+        $response = $this
+            ->withHeader('referer', route('creation.caracteristiques'))
+            ->post('/personnages/creer/caracteristiques', $valeurs);
+
+        $response->assertRedirect(route('creation.caracteristiques'));
+        $response->assertSessionHas('error');
+    }
+
     /**
      * Trouve une combinaison de 6 valeurs (parmi les clés de la table de
      * coûts) dont la somme des coûts est exactement égale à la cible.
@@ -370,52 +464,7 @@ class PersonnageCreationTest extends TestCase
 
     // --- Jet de dés ---
 
-    public function test_le_jet_de_des_met_a_jour_une_abilite_valide(): void
-    {
-        $this->utilisateurConnecte();
-        $this->progresserJusquaMethode('dice');
-
-        $response = $this->post('/personnages/creer/caracteristiques/roller', ['abilite' => 'force']);
-
-        $response->assertRedirect();
-        $response->assertSessionHas('rolled', 'force');
-        $valeur = session('personnage_creation')['abilites']['force'];
-        $this->assertGreaterThanOrEqual(3, $valeur);
-        $this->assertLessThanOrEqual(18, $valeur);
-    }
-
-    public function test_le_jet_de_des_en_json_retourne_la_valeur(): void
-    {
-        $this->utilisateurConnecte();
-        $this->progresserJusquaMethode('dice');
-
-        $response = $this->postJson('/personnages/creer/caracteristiques/roller', ['abilite' => 'dexterite']);
-
-        $response->assertOk()->assertJsonStructure(['value', 'abilite']);
-    }
-
-    public function test_le_jet_de_des_refuse_une_abilite_invalide(): void
-    {
-        $this->utilisateurConnecte();
-        $this->progresserJusquaMethode('dice');
-
-        $response = $this->post('/personnages/creer/caracteristiques/roller', ['abilite' => 'invalide']);
-
-        $response->assertRedirect();
-        $response->assertSessionMissing('rolled');
-    }
-
-    public function test_le_jet_de_des_refuse_une_abilite_invalide_en_json(): void
-    {
-        $this->utilisateurConnecte();
-        $this->progresserJusquaMethode('dice');
-
-        $response = $this->postJson('/personnages/creer/caracteristiques/roller', ['abilite' => 'invalide']);
-
-        $response->assertStatus(400)->assertJson(['error' => 'Abilite invalide']);
-    }
-
-    public function test_le_jet_de_des_refuse_une_absence_d_abilite(): void
+    public function test_le_jet_de_des_genere_six_valeurs_valides(): void
     {
         $this->utilisateurConnecte();
         $this->progresserJusquaMethode('dice');
@@ -423,6 +472,41 @@ class PersonnageCreationTest extends TestCase
         $response = $this->post('/personnages/creer/caracteristiques/roller', []);
 
         $response->assertRedirect();
+        $rolls = session('personnage_creation')['dice_pool'];
+        $this->assertCount(6, $rolls);
+        foreach ($rolls as $valeur) {
+            $this->assertGreaterThanOrEqual(3, $valeur);
+            $this->assertLessThanOrEqual(18, $valeur);
+        }
+    }
+
+    public function test_le_jet_de_des_reinitialise_les_abilites_deja_attribuees(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaMethode('dice');
+
+        $this->post('/personnages/creer/caracteristiques', [
+            'force' => 15, 'dexterite' => 14, 'constitution' => 13,
+            'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
+        ]);
+
+        $this->post('/personnages/creer/caracteristiques/roller', []);
+
+        $abilites = session('personnage_creation')['abilites'];
+        foreach ($abilites as $valeur) {
+            $this->assertSame(0, $valeur);
+        }
+    }
+
+    public function test_le_jet_de_des_en_json_retourne_les_six_resultats(): void
+    {
+        $this->utilisateurConnecte();
+        $this->progresserJusquaMethode('dice');
+
+        $response = $this->postJson('/personnages/creer/caracteristiques/roller', []);
+
+        $response->assertOk()->assertJsonStructure(['rolls']);
+        $this->assertCount(6, $response->json('rolls'));
     }
 
     // --- Étape Compétences ---
@@ -485,24 +569,33 @@ class PersonnageCreationTest extends TestCase
         ]);
     }
 
-    private function getPayloadContexteValide(array $surcharges = []): array
+    // La maîtrise vient avec son propre équipement et détermine
+    // l'alignement ; la race détermine les langues parlées : ces valeurs
+    // sont désormais dérivées par le contrôleur et ne font plus partie du
+    // payload envoyé par le joueur (voir CreationPersonnageController::
+    // saveContexte()).
+    private function getIdentifiantsHistoriqueValide(): array
     {
-        (new \Database\Seeders\HistoriquesSeeder())->run();
-        $historique = \App\Models\Historique::first();
+        (new HistoriquesSeeder)->run();
+        $historique = Historique::first();
 
-        return array_merge([
-            'nom' => 'Aragorn',
-            'alignement' => 'Loyal bon',
+        return [
             'historique_id' => $historique->id,
             'ideal_id' => $historique->ideaux()->first()->id,
             'defaut_id' => $historique->defauts()->first()->id,
             'attachement_id' => $historique->attachements()->first()->id,
             'personnalite_id' => $historique->personnalites()->first()->id,
+        ];
+    }
+
+    private function getPayloadContexteValide(array $surcharges = []): array
+    {
+        return array_merge([
+            'nom' => 'Aragorn',
+            'maitrise' => 'Soldat',
             'outil' => 'Aucun',
-            'langues' => ['Commun', 'Elfe'],
-            'equipements' => ['Épée'],
             'description' => 'Roi du Gondor',
-        ], $surcharges);
+        ], $this->getIdentifiantsHistoriqueValide(), $surcharges);
     }
 
     public function test_l_etape_contexte_est_accessible(): void
@@ -513,6 +606,14 @@ class PersonnageCreationTest extends TestCase
         $this->get('/personnages/creer/contexte')->assertOk();
     }
 
+    public function test_l_etape_contexte_redirige_si_aucune_race_selectionnee(): void
+    {
+        $this->utilisateurConnecte();
+
+        $this->get('/personnages/creer/contexte')
+            ->assertRedirect(route('creation.race'));
+    }
+
     public function test_on_peut_enregistrer_le_contexte_avec_loutil_aucun(): void
     {
         $this->utilisateurConnecte();
@@ -520,6 +621,7 @@ class PersonnageCreationTest extends TestCase
 
         $response = $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
             'outil' => 'Aucun',
+            'maitrise' => 'Soldat',
         ]));
 
         $response->assertRedirect(route('creation.confirmation'));
@@ -533,12 +635,14 @@ class PersonnageCreationTest extends TestCase
 
         $response = $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
             'outil' => 'Kit de joueur',
+            'maitrise' => 'Noble',
         ]));
 
         $response->assertRedirect(route('creation.confirmation'));
         $donnees = session('personnage_creation');
         $this->assertSame('Kit de joueur', $donnees['outil']);
-        $this->assertSame(['Épée'], $donnees['equipement']);
+        $this->assertSame('Noble', $donnees['maitrise']);
+        $this->assertSame(['Épée', 'Livre', 'Harpe'], $donnees['equipement']);
     }
 
     public function test_l_enregistrement_du_contexte_exige_les_champs_obligatoires(): void
@@ -548,9 +652,8 @@ class PersonnageCreationTest extends TestCase
 
         $this->post('/personnages/creer/contexte', [])
             ->assertSessionHasErrors([
-                'nom', 'alignement', 'historique_id', 'ideal_id',
+                'nom', 'maitrise', 'historique_id', 'ideal_id',
                 'defaut_id', 'attachement_id', 'personnalite_id',
-                'outil', 'langues', 'equipements'
             ]);
     }
 
@@ -602,9 +705,7 @@ class PersonnageCreationTest extends TestCase
             'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
         ]);
         $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
-        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
-            'nom' => 'Aragorn',
-        ]));
+        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide());
 
         $this->get('/personnages/creer/confirmation')
             ->assertOk()
@@ -625,9 +726,7 @@ class PersonnageCreationTest extends TestCase
             'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
         ]);
         $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
-        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
-            'nom' => 'Sans classe',
-        ]));
+        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide(['nom' => 'Sans classe']));
 
         $this->get('/personnages/creer/confirmation')->assertOk();
     }
@@ -672,9 +771,7 @@ class PersonnageCreationTest extends TestCase
             'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
         ]);
         $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
-        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
-            'nom' => 'Aragorn',
-        ]));
+        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide());
 
         $this->post('/personnages/creer');
 
@@ -749,5 +846,33 @@ class PersonnageCreationTest extends TestCase
         $response->assertOk()
             ->assertJsonCount(1)
             ->assertJsonFragment(['id' => $sousRace->id]);
+    }
+
+    // --- API détails d'un historique ---
+
+    public function test_get_historique_details_retourne_lhistorique_avec_ses_relations(): void
+    {
+        $this->utilisateurConnecte();
+        (new HistoriquesSeeder)->run();
+        $historique = Historique::first();
+
+        $response = $this->getJson("/api/historiques/{$historique->id}");
+
+        $response->assertOk()
+            ->assertJsonFragment(['id' => $historique->id, 'nom' => $historique->nom])
+            ->assertJsonFragment(['id' => $historique->ideaux()->first()->id])
+            ->assertJsonFragment(['id' => $historique->defauts()->first()->id])
+            ->assertJsonFragment(['id' => $historique->attachements()->first()->id])
+            ->assertJsonFragment(['id' => $historique->personnalites()->first()->id]);
+    }
+
+    public function test_get_historique_details_retourne_404_si_introuvable(): void
+    {
+        $this->utilisateurConnecte();
+
+        $response = $this->getJson('/api/historiques/999999');
+
+        $response->assertStatus(404)
+            ->assertJson(['error' => 'Historique introuvable']);
     }
 }
