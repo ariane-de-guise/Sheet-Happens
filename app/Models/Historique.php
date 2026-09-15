@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['nom', 'description', 'or_depart', 'competences', 'langues', 'equipement_depart'])]
+#[Fillable(['nom', 'description', 'or_depart', 'competences', 'langues', 'equipement_depart', 'outils_fixes', 'outils_disponibles'])]
 class Historique extends Model
 {
     protected $table = 'historiques';
@@ -17,6 +17,8 @@ class Historique extends Model
             'competences' => 'array',
             'langues' => 'array',
             'equipement_depart' => 'array',
+            'outils_fixes' => 'array',
+            'outils_disponibles' => 'array',
         ];
     }
 

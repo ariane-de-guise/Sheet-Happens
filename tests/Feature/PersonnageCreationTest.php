@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Classe;
 use App\Models\Historique;
 use App\Models\Utilisateur;
 use Database\Factories\ClasseFactory;
@@ -559,6 +560,77 @@ class PersonnageCreationTest extends TestCase
             ->assertSessionHasErrors(['competences']);
     }
 
+    // En 5e, chaque classe propose sa propre liste de compétences (et un
+    // nombre de choix qui lui est propre, ex. 4 pour le Roublard au lieu de
+    // 2) : ces trois tests vérifient que l'étape respecte bien la classe
+    // choisie plus tôt dans l'assistant, plutôt que d'offrir un choix libre
+    // parmi toutes les compétences du jeu.
+    private function progresserJusquaCaracteristiquesAvecClasse(Classe $classe): void
+    {
+        $race = RaceFactory::new()->create();
+        $this->post('/personnages/creer/race', ['race_id' => $race->id]);
+        $this->post('/personnages/creer/classe', ['classe_id' => $classe->id]);
+        $this->post('/personnages/creer/methode', ['methode' => 'standard']);
+        $this->post('/personnages/creer/caracteristiques', [
+            'force' => 15, 'dexterite' => 14, 'constitution' => 13,
+            'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
+        ]);
+    }
+
+    public function test_l_etape_competences_n_offre_que_les_competences_de_la_classe(): void
+    {
+        $this->utilisateurConnecte();
+        $classe = ClasseFactory::new()->create([
+            'competences_disponibles' => ['Arcanes', 'Histoire', 'Intuition', 'Investigation', 'Médecine', 'Religion'],
+            'nombre_competences' => 2,
+        ]);
+        $this->progresserJusquaCaracteristiquesAvecClasse($classe);
+
+        $this->get('/personnages/creer/competences')
+            ->assertOk()
+            ->assertViewHas('competencesDisponibles', ['Arcanes', 'Histoire', 'Intuition', 'Investigation', 'Médecine', 'Religion'])
+            ->assertDontSee('Athlétisme');
+    }
+
+    public function test_on_ne_peut_pas_choisir_une_competence_hors_de_la_liste_de_la_classe(): void
+    {
+        $this->utilisateurConnecte();
+        $classe = ClasseFactory::new()->create([
+            'competences_disponibles' => ['Arcanes', 'Histoire', 'Intuition', 'Investigation', 'Médecine', 'Religion'],
+            'nombre_competences' => 2,
+        ]);
+        $this->progresserJusquaCaracteristiquesAvecClasse($classe);
+
+        // "Athlétisme" n'est pas dans la liste du Magicien : ce n'est pas
+        // une compétence que sa classe lui permet de choisir.
+        $this->post('/personnages/creer/competences', ['competences' => ['Arcanes', 'Athlétisme']])
+            ->assertSessionHasErrors(['competences.1']);
+    }
+
+    public function test_le_nombre_de_competences_exige_suit_la_classe(): void
+    {
+        $this->utilisateurConnecte();
+        // Le Roublard choisit 4 compétences en 5e, pas 2.
+        $classe = ClasseFactory::new()->create([
+            'competences_disponibles' => ['Acrobaties', 'Athlétisme', 'Art de la duplicité', 'Intuition', 'Intimidation', 'Investigation', 'Perception', 'Performance', 'Persuasion', 'Escamotage', 'Discrétion'],
+            'nombre_competences' => 4,
+        ]);
+        $this->progresserJusquaCaracteristiquesAvecClasse($classe);
+
+        $this->post('/personnages/creer/competences', ['competences' => ['Acrobaties', 'Discrétion']])
+            ->assertSessionHasErrors(['competences']);
+
+        $response = $this->post('/personnages/creer/competences', [
+            'competences' => ['Acrobaties', 'Discrétion', 'Escamotage', 'Perception'],
+        ]);
+
+        $response->assertRedirect(route('creation.contexte'));
+        $this->assertSame(
+            ['Acrobaties', 'Discrétion', 'Escamotage', 'Perception'],
+            array_values(session('personnage_creation')['competences'])
+        );
+    }
+
     // --- Étape Contexte ---
 
     private function progresserJusquaCompetences(): void
@@ -569,11 +641,11 @@ class PersonnageCreationTest extends TestCase
         ]);
     }
 
-    // La maîtrise vient avec son propre équipement et détermine
-    // l'alignement ; la race détermine les langues parlées : ces valeurs
-    // sont désormais dérivées par le contrôleur et ne font plus partie du
-    // payload envoyé par le joueur (voir CreationPersonnageController::
-    // saveContexte()).
+    // L'historique choisi vient avec son propre équipement de départ, et
+    // l'idéal choisi détermine l'alignement ; la race détermine les langues
+    // parlées : ces valeurs sont désormais dérivées par le contrôleur et ne
+    // font plus partie du payload envoyé par le joueur (voir
+    // CreationPersonnageController::saveContexte()).
     private function getIdentifiantsHistoriqueValide(): array
     {
         (new HistoriquesSeeder)->run();
@@ -592,7 +664,6 @@ class PersonnageCreationTest extends TestCase
     {
         return array_merge([
             'nom' => 'Aragorn',
-            'maitrise' => 'Soldat',
             'outil' => 'Aucun',
             'description' => 'Roi du Gondor',
         ], $this->getIdentifiantsHistoriqueValide(), $surcharges);
@@ -621,28 +692,107 @@ class PersonnageCreationTest extends TestCase
 
         $response = $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
             'outil' => 'Aucun',
-            'maitrise' => 'Soldat',
         ]));
 
         $response->assertRedirect(route('creation.confirmation'));
         $this->assertNull(session('personnage_creation')['outil']);
     }
 
-    public function test_on_peut_enregistrer_le_contexte_avec_un_outil_specifique(): void
+    public function test_un_outil_envoye_pour_un_historique_sans_choix_est_ignore(): void
     {
         $this->utilisateurConnecte();
         $this->progresserJusquaCompetences();
 
         $response = $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
             'outil' => 'Kit de joueur',
-            'maitrise' => 'Noble',
         ]));
+
+        // L'historique par défaut de getIdentifiantsHistoriqueValide()
+        // (Acolyte) n'offre aucun choix d'outil en 5e : toute valeur envoyée
+        // pour "outil" est donc ignorée et le personnage n'en reçoit aucun,
+        // plutôt que d'accepter un outil qui ne fait partie d'aucune liste.
+        $response->assertRedirect(route('creation.confirmation'));
+        $this->assertNull(session('personnage_creation')['outil']);
+    }
+
+    // En 5e, l'outil de départ dépend de l'historique : certains proposent
+    // une liste précise dans laquelle choisir (ex. Criminel : un type de
+    // jeu).
+    public function test_on_peut_choisir_un_outil_parmi_ceux_offerts_par_l_historique(): void
+    {
+        $this->utilisateurConnecte();
+        (new HistoriquesSeeder)->run();
+        $this->progresserJusquaCompetences();
+        $criminel = Historique::where('nom', 'Criminel')->firstOrFail();
+
+        $response = $this->post('/personnages/creer/contexte', [
+            'nom' => 'Aragorn',
+            'outil' => 'Jeu de dés',
+            'historique_id' => $criminel->id,
+            'ideal_id' => $criminel->ideaux()->first()->id,
+            'defaut_id' => $criminel->defauts()->first()->id,
+            'attachement_id' => $criminel->attachements()->first()->id,
+            'personnalite_id' => $criminel->personnalites()->first()->id,
+        ]);
 
         $response->assertRedirect(route('creation.confirmation'));
         $donnees = session('personnage_creation');
-        $this->assertSame('Kit de joueur', $donnees['outil']);
-        $this->assertSame('Noble', $donnees['maitrise']);
-        $this->assertSame(['Épée', 'Livre', 'Harpe'], $donnees['equipement']);
+
+        $this->assertSame('Jeu de dés', $donnees['outil']);
+        $this->assertSame($criminel->equipement_depart, $donnees['equipement']);
+    }
+
+    // Certains historiques imposent au contraire un outil précis sans
+    // aucun choix (ex. l'Ermite reçoit toujours un kit d'herboriste) : il
+    // est alors fusionné avec l'équipement de départ plutôt que stocké
+    // dans "outil", qui reste vide.
+    public function test_un_outil_impose_par_l_historique_est_ajoute_a_l_equipement_sans_etre_un_choix(): void
+    {
+        $this->utilisateurConnecte();
+        (new HistoriquesSeeder)->run();
+        $this->progresserJusquaCompetences();
+        $ermite = Historique::where('nom', 'Ermite')->firstOrFail();
+
+        $response = $this->post('/personnages/creer/contexte', [
+            'nom' => 'Aragorn',
+            'historique_id' => $ermite->id,
+            'ideal_id' => $ermite->ideaux()->first()->id,
+            'defaut_id' => $ermite->defauts()->first()->id,
+            'attachement_id' => $ermite->attachements()->first()->id,
+            'personnalite_id' => $ermite->personnalites()->first()->id,
+        ]);
+
+        $response->assertRedirect(route('creation.confirmation'));
+        $donnees = session('personnage_creation');
+
+        $this->assertNull($donnees['outil']);
+        $this->assertContains('Kit d\'herboriste', $donnees['equipement']);
+        $this->assertSame(
+            array_values(array_merge($ermite->equipement_depart, $ermite->outils_fixes)),
+            $donnees['equipement']
+        );
+    }
+
+    public function test_on_ne_peut_pas_choisir_un_outil_hors_de_la_liste_de_l_historique(): void
+    {
+        $this->utilisateurConnecte();
+        (new HistoriquesSeeder)->run();
+        $this->progresserJusquaCompetences();
+        $criminel = Historique::where('nom', 'Criminel')->firstOrFail();
+
+        $response = $this->post('/personnages/creer/contexte', [
+            'nom' => 'Aragorn',
+            // "Kit de potier" est un outil d'artisan, pas un jeu : il ne
+            // fait pas partie des outils offerts par le Criminel.
+            'outil' => 'Kit de potier',
+            'historique_id' => $criminel->id,
+            'ideal_id' => $criminel->ideaux()->first()->id,
+            'defaut_id' => $criminel->defauts()->first()->id,
+            'attachement_id' => $criminel->attachements()->first()->id,
+            'personnalite_id' => $criminel->personnalites()->first()->id,
+        ]);
+
+        $response->assertSessionHasErrors(['outil']);
     }
 
     public function test_l_enregistrement_du_contexte_exige_les_champs_obligatoires(): void
@@ -652,9 +802,137 @@ class PersonnageCreationTest extends TestCase
 
         $this->post('/personnages/creer/contexte', [])
             ->assertSessionHasErrors([
-                'nom', 'maitrise', 'historique_id', 'ideal_id',
+                'nom', 'historique_id', 'ideal_id',
                 'defaut_id', 'attachement_id', 'personnalite_id',
             ]);
+    }
+
+    // En 5e, si l'historique choisi accorde une compétence déjà choisie pour
+    // la classe, les deux ne se cumulent pas : il faut reprendre un choix
+    // différent pour la classe plutôt que de perdre silencieusement une
+    // maîtrise.
+    public function test_le_contexte_refuse_un_historique_qui_fait_doublon_avec_les_competences_de_classe(): void
+    {
+        $this->utilisateurConnecte();
+        (new HistoriquesSeeder)->run();
+        // "Athlétisme" est choisi pour la classe (voir progresserJusquaCompetences)
+        // et l'historique Soldat accorde justement Athlétisme + Intimidation.
+        $this->progresserJusquaCompetences();
+        $soldat = Historique::where('nom', 'Soldat')->firstOrFail();
+
+        $response = $this->post('/personnages/creer/contexte', [
+            'nom' => 'Aragorn',
+            'outil' => 'Aucun',
+            'historique_id' => $soldat->id,
+            'ideal_id' => $soldat->ideaux()->first()->id,
+            'defaut_id' => $soldat->defauts()->first()->id,
+            'attachement_id' => $soldat->attachements()->first()->id,
+            'personnalite_id' => $soldat->personnalites()->first()->id,
+        ]);
+
+        $response->assertRedirect(route('creation.competences'));
+        $this->assertStringContainsString('Athlétisme', session('error'));
+        // Rien n'a été écrasé : la classe garde ses compétences choisies,
+        // l'historique n'a pas été enregistré.
+        $this->assertSame(['Athlétisme', 'Perception'], array_values(session('personnage_creation')['competences']));
+        $this->assertNull(session('personnage_creation')['historique_id']);
+    }
+
+    // L'alignement final combine désormais les 4 traits choisis (idéal,
+    // défaut, attachement, personnalité) au lieu de ne dépendre que de
+    // l'idéal : chaque trait tagué "vote" sur les deux axes et les votes
+    // s'additionnent (voir CreationPersonnageController::calculateAlignement).
+    public function test_l_alignement_final_combine_les_votes_de_plusieurs_traits_sur_le_meme_axe(): void
+    {
+        $this->utilisateurConnecte();
+        (new HistoriquesSeeder)->run();
+        $this->progresserJusquaCompetences();
+
+        $criminel = Historique::where('nom', 'Criminel')->firstOrFail();
+        // Idéal "Liberté" (Chaotique Neutre) + défaut "Je ne peux résister
+        // à m'approprier..." (Chaotique) votent tous les deux Chaotique sur
+        // l'axe loi ; l'attachement "Je rembourse toujours mes dettes..."
+        // (Loyal) fait pencher une fois dans l'autre sens sans renverser la
+        // tendance (+1+1-1 = +1, toujours Chaotique). Aucun des 4 traits ne
+        // porte d'étiquette sur l'axe bien.
+        $ideal = $criminel->ideaux()->where('valeur', 'Liberté')->firstOrFail();
+        $defaut = $criminel->defauts()->where('valeur', 'like', '%approprier%')->firstOrFail();
+        $attachement = $criminel->attachements()->where('valeur', 'like', '%dettes%')->firstOrFail();
+        $personnalite = $criminel->personnalites()->where('valeur', 'like', '%plan de secours%')->firstOrFail();
+
+        $response = $this->post('/personnages/creer/contexte', [
+            'nom' => 'Aragorn',
+            'outil' => 'Jeu de dés',
+            'historique_id' => $criminel->id,
+            'ideal_id' => $ideal->id,
+            'defaut_id' => $defaut->id,
+            'attachement_id' => $attachement->id,
+            'personnalite_id' => $personnalite->id,
+        ]);
+
+        $response->assertRedirect(route('creation.confirmation'));
+        // idéal (Chaotique) + défaut (Chaotique) => Chaotique sur l'axe loi ;
+        // aucun des 4 traits ne porte d'étiquette sur l'axe bien => Neutre.
+        $this->assertSame('Chaotique Neutre', session('personnage_creation')['alignement']);
+    }
+
+    public function test_l_alignement_final_peut_s_annuler_sur_un_axe_et_rester_tranche_sur_l_autre(): void
+    {
+        $this->utilisateurConnecte();
+        (new HistoriquesSeeder)->run();
+        $this->progresserJusquaCompetences();
+
+        $criminel = Historique::where('nom', 'Criminel')->firstOrFail();
+        // Idéal "Liberté" (Chaotique) et attachement "Je rembourse toujours
+        // mes dettes..." (Loyal) s'annulent sur l'axe loi ; seule la
+        // personnalité "La plus infime insulte..." (Mauvais) vote sur l'axe
+        // bien.
+        $ideal = $criminel->ideaux()->where('valeur', 'Liberté')->firstOrFail();
+        $defaut = $criminel->defauts()->where('valeur', 'like', '%gentillesse%')->firstOrFail();
+        $attachement = $criminel->attachements()->where('valeur', 'like', '%dettes%')->firstOrFail();
+        $personnalite = $criminel->personnalites()->where('valeur', 'like', '%insulte%')->firstOrFail();
+
+        $response = $this->post('/personnages/creer/contexte', [
+            'nom' => 'Aragorn',
+            'outil' => 'Jeu de cartes',
+            'historique_id' => $criminel->id,
+            'ideal_id' => $ideal->id,
+            'defaut_id' => $defaut->id,
+            'attachement_id' => $attachement->id,
+            'personnalite_id' => $personnalite->id,
+        ]);
+
+        $response->assertRedirect(route('creation.confirmation'));
+        $this->assertSame('Neutre Mauvais', session('personnage_creation')['alignement']);
+    }
+
+    public function test_l_alignement_final_est_neutre_si_aucun_trait_choisi_ne_penche_d_un_cote(): void
+    {
+        $this->utilisateurConnecte();
+        (new HistoriquesSeeder)->run();
+        $this->progresserJusquaCompetences();
+
+        $artiste = Historique::where('nom', 'Artiste')->firstOrFail();
+        // "Renommée" est le seul idéal de l'Artiste sans étiquette
+        // Loyal/Chaotique/Bon/Mauvais, et les autres traits choisis n'en
+        // portent pas non plus.
+        $ideal = $artiste->ideaux()->where('valeur', 'Renommée')->firstOrFail();
+        $defaut = $artiste->defauts()->where('valeur', 'like', '%compliments%')->firstOrFail();
+        $attachement = $artiste->attachements()->where('valeur', 'like', '%admirateur%')->firstOrFail();
+        $personnalite = $artiste->personnalites()->where('valeur', 'like', '%centre absolu%')->firstOrFail();
+
+        $response = $this->post('/personnages/creer/contexte', [
+            'nom' => 'Aragorn',
+            'outil' => 'Luth',
+            'historique_id' => $artiste->id,
+            'ideal_id' => $ideal->id,
+            'defaut_id' => $defaut->id,
+            'attachement_id' => $attachement->id,
+            'personnalite_id' => $personnalite->id,
+        ]);
+
+        $response->assertRedirect(route('creation.confirmation'));
+        $this->assertSame('Neutre', session('personnage_creation')['alignement']);
     }
 
     // --- Étape Confirmation ---
@@ -746,6 +1024,26 @@ class PersonnageCreationTest extends TestCase
             'utilisateur_id' => $utilisateur->id,
         ]);
         $this->assertNull(session('personnage_creation'));
+    }
+
+    // Le personnage final cumule les compétences choisies pour sa classe et
+    // celles, fixes, accordées par son historique (ici Acolyte : Intuition
+    // et Religion — voir getIdentifiantsHistoriqueValide()) : ce ne sont
+    // jamais seulement les 2 compétences choisies à l'étape Compétences.
+    public function test_la_finalisation_cumule_les_competences_de_classe_et_d_historique(): void
+    {
+        $utilisateur = $this->utilisateurConnecte();
+        $this->progresserJusquaContexte();
+
+        $this->post('/personnages/creer');
+
+        $personnage = $utilisateur->personnages()->where('nom', 'Aragorn')->firstOrFail();
+        $personnage->load('listeCompetence');
+
+        $this->assertEqualsCanonicalizing(
+            ['Athlétisme', 'Perception', 'Intuition', 'Religion'],
+            $personnage->listeCompetence->competences
+        );
     }
 
     public function test_la_finalisation_retire_une_sous_classe_devenue_incompatible(): void

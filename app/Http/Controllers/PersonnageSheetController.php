@@ -61,10 +61,10 @@ class PersonnageSheetController extends Controller
 
         $allCompetences = [
             'Acrobaties', 'Arcanes', 'Athlétisme', 'Art de la duplicité',
-            'Artisanat', 'Attention', 'Dissimulation', 'Histoire',
-            'Intimidation', 'Insight', 'Médecine', 'Nature',
-            'Perception', 'Performance', 'Persuasion', 'Religion',
-            'Sapience animale', 'Survie',
+            'Discrétion', 'Dressage', 'Escamotage', 'Histoire',
+            'Intimidation', 'Intuition', 'Investigation', 'Médecine',
+            'Nature', 'Perception', 'Performance', 'Persuasion',
+            'Religion', 'Survie',
         ];
 
         $langues = [
@@ -79,11 +79,6 @@ class PersonnageSheetController extends Controller
             'Harpe', 'Livre', 'Épée', 'Arc court',
             'Bouclier', 'Armure de cuir', 'Sac à dos',
             'Kit d\'explorateur', 'Lanternes', 'Cordes',
-        ];
-
-        $maitrises = [
-            'Religieux', 'Marchand', 'Artisan', 'Noble',
-            'Soldat', 'Roublard', 'Erfge', 'Hors-la-loi',
         ];
 
         $outils = [

@@ -21,7 +21,9 @@
         </div>
 
         <h2 class="title-section text-center">Compétences</h2>
-        <p class="text-muted text-center mb-3">Choisissez {{ $nombreCompetences }} compétences</p>
+        <p class="text-muted text-center mb-3">
+            Choisissez {{ $nombreCompetences }} compétences{{ $classe ? ' parmi celles offertes par votre classe (' . $classe->nom . ')' : '' }}
+        </p>
 
         @if(session('error'))
             <div class="alert alert-error">{{ session('error') }}</div>
