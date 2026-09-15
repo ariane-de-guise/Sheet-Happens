@@ -9,8 +9,9 @@
         </div>
 
         <div class="progress-bar">
-            <div class="progress-line"></div>
-            <div class="progress-fill" style="width: 0%;"></div>
+            <div class="progress-line">
+                <div class="progress-fill" style="width: 0%;"></div>
+            </div>
             @for($i = 1; $i <= 6; $i++)
                 <div class="progress-step {{ $i === 1 ? 'active' : '' }}">
                     {{ $i }}

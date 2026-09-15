@@ -382,7 +382,8 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 2rem;
+    width: fit-content;
+    margin: 0 auto 2rem;
     position: relative;
 }
 
@@ -399,12 +400,11 @@ a:hover {
 
 .progress-fill {
     position: absolute;
-    top: 50%;
-    left: 2.5rem;
-    height: 2px;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
     background: #e6b84d;
-    transform: translateY(-50%);
-    z-index: 1;
     transition: width 0.3s ease;
 }
 

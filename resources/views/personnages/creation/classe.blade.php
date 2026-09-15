@@ -9,8 +9,9 @@
         </div>
 
         <div class="progress-bar">
-            <div class="progress-line"></div>
-            <div class="progress-fill" style="width: 16.6%;"></div>
+            <div class="progress-line">
+                <div class="progress-fill" style="width: 20%;"></div>
+            </div>
             <div class="progress-step completed">1</div>
             <div class="progress-step active">2</div>
             <div class="progress-step">3</div>
