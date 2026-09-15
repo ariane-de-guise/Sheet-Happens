@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classe;
+use App\Models\Historique;
+use App\Models\Ideal;
+use App\Models\Defaut;
+use App\Models\Attachement;
+use App\Models\Personnalite;
 use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\SousRace;
-use App\Models\User;
+use App\Models\Utilisateur;
 use App\Services\PersonnageCreationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -38,7 +43,11 @@ class CreationPersonnageController extends Controller
                 'charisme' => 8,
             ],
             'competences' => [],
-            'maitrise' => null,
+            'historique_id' => null,
+            'ideal_id' => null,
+            'defaut_id' => null,
+            'attachement_id' => null,
+            'personnalite_id' => null,
             'outil' => null,
             'langues' => [],
             'equipement' => [],
@@ -380,10 +389,8 @@ class CreationPersonnageController extends Controller
     {
         $data = $this->getData();
 
-        $maitrises = [
-            'Religieux', 'Marchand', 'Artisan', 'Noble',
-            'Soldat', 'Roublard', 'Erfge', 'Hors-la-loi',
-        ];
+        $historiques = Historique::with(['ideaux', 'defauts', 'attachements', 'personnalites'])->get();
+        $selectedHistoriqueModel = $data['historique_id'] ? $historiques->firstWhere('id', $data['historique_id']) : null;
 
         $outils = [
             'Aucun', 'Kit de calligraphe', 'Kit de charpentier',
@@ -406,11 +413,16 @@ class CreationPersonnageController extends Controller
         ];
 
         return view('personnages.creation.contexte', [
-            'maitrises' => $maitrises,
+            'historiques' => $historiques,
+            'selectedHistoriqueModel' => $selectedHistoriqueModel,
             'outils' => $outils,
             'langues' => $langues,
             'equipements' => $equipements,
-            'selectedMaitrise' => $data['maitrise'],
+            'selectedHistorique' => $data['historique_id'],
+            'selectedIdeal' => $data['ideal_id'],
+            'selectedDefaut' => $data['defaut_id'],
+            'selectedAttachement' => $data['attachement_id'],
+            'selectedPersonnalite' => $data['personnalite_id'],
             'selectedOutil' => $data['outil'],
             'selectedLangues' => $data['langues'] ?? [],
             'selectedEquipements' => $data['equipement'] ?? [],
@@ -422,24 +434,32 @@ class CreationPersonnageController extends Controller
     public function saveContexte(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'maitrise' => 'nullable|string|max:50',
-            'outil' => 'nullable|string|max:50',
-            'langues' => 'nullable|array|min:2',
-            'langues.*' => 'string|max:50',
-            'equipements' => 'nullable|array',
-            'equipements.*' => 'string|max:50',
             'nom' => 'required|string|max:100',
-            'alignement' => 'nullable|string|max:50',
+            'alignement' => 'required|string|max:50',
             'description' => 'nullable|string',
+            'historique_id' => 'required|integer|exists:historiques,id',
+            'ideal_id' => 'required|integer|exists:ideaux,id',
+            'defaut_id' => 'required|integer|exists:defauts,id',
+            'attachement_id' => 'required|integer|exists:attachements,id',
+            'personnalite_id' => 'required|integer|exists:personnalites,id',
+            'outil' => 'required|string|max:50',
+            'langues' => 'required|array|size:2',
+            'langues.*' => 'string|max:50',
+            'equipements' => 'required|array|min:1',
+            'equipements.*' => 'string|max:50',
         ]);
 
         $this->saveData([
-            'maitrise' => $validated['maitrise'] ?? null,
-            'outil' => $validated['outil'] === 'Aucun' ? null : ($validated['outil'] ?? null),
-            'langues' => $validated['langues'] ?? [],
-            'equipement' => $validated['equipements'] ?? [],
+            'historique_id' => $validated['historique_id'],
+            'ideal_id' => $validated['ideal_id'],
+            'defaut_id' => $validated['defaut_id'],
+            'attachement_id' => $validated['attachement_id'],
+            'personnalite_id' => $validated['personnalite_id'],
+            'outil' => $validated['outil'] === 'Aucun' ? null : $validated['outil'],
+            'langues' => $validated['langues'],
+            'equipement' => $validated['equipements'],
             'nom' => $validated['nom'],
-            'alignement' => $validated['alignement'] ?? null,
+            'alignement' => $validated['alignement'],
             'description' => $validated['description'] ?? null,
         ]);
 
@@ -458,6 +478,11 @@ class CreationPersonnageController extends Controller
         $sousRace = $data['sous_race_id'] ? SousRace::find($data['sous_race_id']) : null;
         $classe = Classe::find($data['classe_id']);
         $sousClasse = $data['sous_classe_id'] ? SousClasse::find($data['sous_classe_id']) : null;
+        $historique = $data['historique_id'] ? Historique::find($data['historique_id']) : null;
+        $ideal = $data['ideal_id'] ? Ideal::find($data['ideal_id']) : null;
+        $defaut = $data['defaut_id'] ? Defaut::find($data['defaut_id']) : null;
+        $attachement = $data['attachement_id'] ? Attachement::find($data['attachement_id']) : null;
+        $personnalite = $data['personnalite_id'] ? Personnalite::find($data['personnalite_id']) : null;
 
         $abilites = $data['abilites'];
         $pv = $this->calculatePV($abilites, $classe);
@@ -468,6 +493,11 @@ class CreationPersonnageController extends Controller
             'sousRace' => $sousRace,
             'classe' => $classe,
             'sousClasse' => $sousClasse,
+            'historique' => $historique,
+            'ideal' => $ideal,
+            'defaut' => $defaut,
+            'attachement' => $attachement,
+            'personnalite' => $personnalite,
             'abilites' => $abilites,
             'pv' => $pv,
             'currentStep' => 6,
@@ -503,11 +533,16 @@ class CreationPersonnageController extends Controller
         }
 
         $payload = [
-            'utilisateur_id' => auth()->id() ?? User::query()->firstOrFail()->getKey(),
+            'utilisateur_id' => auth()->id() ?? Utilisateur::query()->firstOrFail()->getKey(),
             'race_id' => $data['race_id'],
             'sous_race_id' => $data['sous_race_id'],
             'classe_id' => $data['classe_id'],
             'sous_classe_id' => $data['sous_classe_id'],
+            'historique_id' => $data['historique_id'] ?? null,
+            'ideal_id' => $data['ideal_id'] ?? null,
+            'defaut_id' => $data['defaut_id'] ?? null,
+            'attachement_id' => $data['attachement_id'] ?? null,
+            'personnalite_id' => $data['personnalite_id'] ?? null,
             'abilites' => $data['abilites'],
             'competences' => $data['competences'],
             'nom' => $data['nom'],
@@ -545,5 +580,16 @@ class CreationPersonnageController extends Controller
         $sousRaces = SousRace::where('race_id', $raceId)->get();
 
         return response()->json($sousRaces);
+    }
+
+    public function getHistoriqueDetails($historiqueId): JsonResponse
+    {
+        $historique = Historique::with(['ideaux', 'defauts', 'attachements', 'personnalites'])->find($historiqueId);
+
+        if (!$historique) {
+            return response()->json(['error' => 'Historique introuvable'], 404);
+        }
+
+        return response()->json($historique);
     }
 }

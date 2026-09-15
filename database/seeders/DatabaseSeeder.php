@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RacesSeeder::class,
             ClassesSeeder::class,
+            HistoriquesSeeder::class,
         ]);
     }
 }

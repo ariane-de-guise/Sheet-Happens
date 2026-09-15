@@ -90,6 +90,25 @@
                 </div>
 
                 <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1rem;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: #e6b84d; margin-bottom: 0.5rem;">Historique & Contexte</div>
+                    @if($personnage->historique)
+                        <div style="font-size: 0.8rem; color: #b8a9c9;"><strong>Historique:</strong> {{ $personnage->historique->nom }}</div>
+                    @endif
+                    @if($personnage->ideal)
+                        <div style="font-size: 0.8rem; color: #b8a9c9;"><strong>Idéal:</strong> {{ $personnage->ideal->valeur }}</div>
+                    @endif
+                    @if($personnage->defaut)
+                        <div style="font-size: 0.8rem; color: #b8a9c9;"><strong>Défaut:</strong> {{ $personnage->defaut->valeur }}</div>
+                    @endif
+                    @if($personnage->attachement)
+                        <div style="font-size: 0.8rem; color: #b8a9c9;"><strong>Attachement:</strong> {{ $personnage->attachement->valeur }}</div>
+                    @endif
+                    @if($personnage->personnalite)
+                        <div style="font-size: 0.8rem; color: #b8a9c9;"><strong>Personnalité:</strong> {{ $personnage->personnalite->valeur }}</div>
+                    @endif
+                </div>
+
+                <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1rem;">
                     <div style="font-size: 0.85rem; font-weight: 600; color: #e6b84d; margin-bottom: 0.5rem;">Détails</div>
                     <div style="font-size: 0.8rem; color: #b8a9c9;">PV: {{ $personnage->point_de_vie }}</div>
                     @if($personnage->race->vitesse)

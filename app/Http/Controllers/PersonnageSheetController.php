@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classe;
+use App\Models\Historique;
 use App\Models\Personnage;
 use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\SousRace;
-use App\Models\User;
+use App\Models\Utilisateur;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,7 @@ class PersonnageSheetController extends Controller
 {
     public function index(): View
     {
-        $userId = auth()->id() ?? User::query()->value('id');
+        $userId = auth()->id() ?? Utilisateur::query()->value('id');
         $personnages = Personnage::query()
             ->when($userId, fn ($query) => $query->where('utilisateur_id', $userId))
             ->with(['race', 'classe', 'abilites'])
@@ -33,7 +34,11 @@ class PersonnageSheetController extends Controller
     {
         $this->authorizeOwner($personnage);
 
-        $personnage->load(['race', 'sousRace', 'classe', 'sousClasse', 'abilites', 'listeCompetence']);
+        $personnage->load([
+            'race', 'sousRace', 'classe', 'sousClasse',
+            'abilites', 'listeCompetence',
+            'historique', 'ideal', 'defaut', 'attachement', 'personnalite',
+        ]);
 
         return view('personnages.show', [
             'personnage' => $personnage,
@@ -44,10 +49,15 @@ class PersonnageSheetController extends Controller
     {
         $this->authorizeOwner($personnage);
 
-        $personnage->load(['race', 'sousRace', 'classe', 'sousClasse', 'abilites', 'listeCompetence']);
+        $personnage->load([
+            'race', 'sousRace', 'classe', 'sousClasse',
+            'abilites', 'listeCompetence',
+            'historique', 'ideal', 'defaut', 'attachement', 'personnalite',
+        ]);
 
         $races = Race::with('sousRaces')->get();
         $classes = Classe::with('sousClasses')->get();
+        $historiques = Historique::with(['ideaux', 'defauts', 'attachements', 'personnalites'])->get();
 
         $allCompetences = [
             'Acrobaties', 'Arcanes', 'Athlétisme', 'Art de la duplicité',
@@ -86,10 +96,10 @@ class PersonnageSheetController extends Controller
             'personnage' => $personnage,
             'races' => $races,
             'classes' => $classes,
+            'historiques' => $historiques,
             'allCompetences' => $allCompetences,
             'langues' => $langues,
             'equipements' => $equipements,
-            'maitrises' => $maitrises,
             'outils' => $outils,
         ]);
     }
@@ -139,7 +149,11 @@ class PersonnageSheetController extends Controller
             'langues.*' => 'string|max:50',
             'equipements' => 'nullable|array',
             'equipements.*' => 'string|max:50',
-            'maitrise' => 'nullable|string|max:50',
+            'historique_id' => 'nullable|integer|exists:historiques,id',
+            'ideal_id' => 'nullable|integer|exists:ideaux,id',
+            'defaut_id' => 'nullable|integer|exists:defauts,id',
+            'attachement_id' => 'nullable|integer|exists:attachements,id',
+            'personnalite_id' => 'nullable|integer|exists:personnalites,id',
             'outil' => 'nullable|string|max:50',
         ], [
             'competences.max' => "Vous ne pouvez avoir que $maxCompetences compétence(s) à ce niveau.",
@@ -169,6 +183,11 @@ class PersonnageSheetController extends Controller
             'sous_race_id' => $sousRaceId,
             'classe_id' => $validated['classe_id'],
             'sous_classe_id' => $sousClasseId,
+            'historique_id' => $validated['historique_id'] ?? null,
+            'ideal_id' => $validated['ideal_id'] ?? null,
+            'defaut_id' => $validated['defaut_id'] ?? null,
+            'attachement_id' => $validated['attachement_id'] ?? null,
+            'personnalite_id' => $validated['personnalite_id'] ?? null,
             'niveau' => $validated['niveau'],
             'alignement' => $validated['alignement'] ?? null,
             'description' => $validated['description'] ?? null,

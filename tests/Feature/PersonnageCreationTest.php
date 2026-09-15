@@ -485,6 +485,26 @@ class PersonnageCreationTest extends TestCase
         ]);
     }
 
+    private function getPayloadContexteValide(array $surcharges = []): array
+    {
+        (new \Database\Seeders\HistoriquesSeeder())->run();
+        $historique = \App\Models\Historique::first();
+
+        return array_merge([
+            'nom' => 'Aragorn',
+            'alignement' => 'Loyal bon',
+            'historique_id' => $historique->id,
+            'ideal_id' => $historique->ideaux()->first()->id,
+            'defaut_id' => $historique->defauts()->first()->id,
+            'attachement_id' => $historique->attachements()->first()->id,
+            'personnalite_id' => $historique->personnalites()->first()->id,
+            'outil' => 'Aucun',
+            'langues' => ['Commun', 'Elfe'],
+            'equipements' => ['Épée'],
+            'description' => 'Roi du Gondor',
+        ], $surcharges);
+    }
+
     public function test_l_etape_contexte_est_accessible(): void
     {
         $this->utilisateurConnecte();
@@ -498,11 +518,9 @@ class PersonnageCreationTest extends TestCase
         $this->utilisateurConnecte();
         $this->progresserJusquaCompetences();
 
-        $response = $this->post('/personnages/creer/contexte', [
-            'nom' => 'Aragorn',
+        $response = $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
             'outil' => 'Aucun',
-            'langues' => ['Commun', 'Elfe'],
-        ]);
+        ]));
 
         $response->assertRedirect(route('creation.confirmation'));
         $this->assertNull(session('personnage_creation')['outil']);
@@ -513,30 +531,27 @@ class PersonnageCreationTest extends TestCase
         $this->utilisateurConnecte();
         $this->progresserJusquaCompetences();
 
-        $response = $this->post('/personnages/creer/contexte', [
-            'nom' => 'Aragorn',
+        $response = $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
             'outil' => 'Kit de joueur',
-            'maitrise' => 'Noble',
-            'langues' => ['Commun', 'Elfe'],
-            'equipements' => ['Épée'],
-            'alignement' => 'Loyal bon',
-            'description' => 'Roi du Gondor',
-        ]);
+        ]));
 
         $response->assertRedirect(route('creation.confirmation'));
         $donnees = session('personnage_creation');
         $this->assertSame('Kit de joueur', $donnees['outil']);
-        $this->assertSame('Noble', $donnees['maitrise']);
         $this->assertSame(['Épée'], $donnees['equipement']);
     }
 
-    public function test_l_enregistrement_du_contexte_exige_un_nom(): void
+    public function test_l_enregistrement_du_contexte_exige_les_champs_obligatoires(): void
     {
         $this->utilisateurConnecte();
         $this->progresserJusquaCompetences();
 
-        $this->post('/personnages/creer/contexte', ['langues' => ['Commun', 'Elfe']])
-            ->assertSessionHasErrors(['nom']);
+        $this->post('/personnages/creer/contexte', [])
+            ->assertSessionHasErrors([
+                'nom', 'alignement', 'historique_id', 'ideal_id',
+                'defaut_id', 'attachement_id', 'personnalite_id',
+                'outil', 'langues', 'equipements'
+            ]);
     }
 
     // --- Étape Confirmation ---
@@ -544,11 +559,7 @@ class PersonnageCreationTest extends TestCase
     private function progresserJusquaContexte(): void
     {
         $this->progresserJusquaCompetences();
-        $this->post('/personnages/creer/contexte', [
-            'nom' => 'Aragorn',
-            'outil' => 'Aucun',
-            'langues' => ['Commun', 'Elfe'],
-        ]);
+        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide());
     }
 
     public function test_l_etape_confirmation_redirige_si_aucun_nom(): void
@@ -591,9 +602,9 @@ class PersonnageCreationTest extends TestCase
             'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
         ]);
         $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
-        $this->post('/personnages/creer/contexte', [
-            'nom' => 'Aragorn', 'outil' => 'Aucun', 'langues' => ['Commun', 'Elfe'],
-        ]);
+        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
+            'nom' => 'Aragorn',
+        ]));
 
         $this->get('/personnages/creer/confirmation')
             ->assertOk()
@@ -614,9 +625,9 @@ class PersonnageCreationTest extends TestCase
             'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
         ]);
         $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
-        $this->post('/personnages/creer/contexte', [
-            'nom' => 'Sans classe', 'outil' => 'Aucun', 'langues' => ['Commun', 'Elfe'],
-        ]);
+        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
+            'nom' => 'Sans classe',
+        ]));
 
         $this->get('/personnages/creer/confirmation')->assertOk();
     }
@@ -661,9 +672,9 @@ class PersonnageCreationTest extends TestCase
             'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
         ]);
         $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
-        $this->post('/personnages/creer/contexte', [
-            'nom' => 'Aragorn', 'outil' => 'Aucun', 'langues' => ['Commun', 'Elfe'],
-        ]);
+        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide([
+            'nom' => 'Aragorn',
+        ]));
 
         $this->post('/personnages/creer');
 

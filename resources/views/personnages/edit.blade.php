@@ -384,15 +384,67 @@
             </div>
 
             <div class="sheet-section">
-                <div class="sheet-section-title">Contexte</div>
+                <div class="sheet-section-title">Historique & Contexte</div>
                 <div class="form-group">
-                    <label class="form-label">Maîtrise</label>
-                    <select name="maitrise" class="form-select-small">
-                        <option value="">-- Choisir --</option>
-                        @foreach($maitrises as $m)
-                            <option value="{{ $m }}" {{ old('maitrise') == $m ? 'selected' : '' }}>
-                                {{ $m }}
+                    <label class="form-label">Historique</label>
+                    <select name="historique_id" id="edit_historique_select" class="form-select-small" onchange="onEditHistoriqueChange(this.value)">
+                        <option value="">-- Choisir un historique --</option>
+                        @foreach($historiques as $h)
+                            <option value="{{ $h->id }}" {{ old('historique_id', $personnage->historique_id) == $h->id ? 'selected' : '' }}>
+                                {{ $h->nom }}
                             </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Idéal</label>
+                    <select name="ideal_id" id="edit_ideal_select" class="form-select-small">
+                        <option value="">-- Choisir un idéal --</option>
+                        @foreach($historiques as $h)
+                            @foreach($h->ideaux as $item)
+                                <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ old('ideal_id', $personnage->ideal_id) == $item->id ? 'selected' : '' }}>
+                                    {{ $item->valeur }}{{ $item->alignement ? ' (' . $item->alignement . ')' : '' }}
+                                </option>
+                            @endforeach
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Défaut</label>
+                    <select name="defaut_id" id="edit_defaut_select" class="form-select-small">
+                        <option value="">-- Choisir un défaut --</option>
+                        @foreach($historiques as $h)
+                            @foreach($h->defauts as $item)
+                                <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ old('defaut_id', $personnage->defaut_id) == $item->id ? 'selected' : '' }}>
+                                    {{ $item->valeur }}
+                                </option>
+                            @endforeach
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Attachement</label>
+                    <select name="attachement_id" id="edit_attachement_select" class="form-select-small">
+                        <option value="">-- Choisir un attachement --</option>
+                        @foreach($historiques as $h)
+                            @foreach($h->attachements as $item)
+                                <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ old('attachement_id', $personnage->attachement_id) == $item->id ? 'selected' : '' }}>
+                                    {{ $item->valeur }}
+                                </option>
+                            @endforeach
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Trait de personnalité</label>
+                    <select name="personnalite_id" id="edit_personnalite_select" class="form-select-small">
+                        <option value="">-- Choisir une personnalité --</option>
+                        @foreach($historiques as $h)
+                            @foreach($h->personnalites as $item)
+                                <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ old('personnalite_id', $personnage->personnalite_id) == $item->id ? 'selected' : '' }}>
+                                    {{ $item->valeur }}
+                                </option>
+                            @endforeach
                         @endforeach
                     </select>
                 </div>
@@ -449,6 +501,52 @@
 
 @push('scripts')
 <script>
+function filterEditOptions(selectId, historiqueId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    let hasSelectedVisible = false;
+
+    Array.from(select.options).forEach(opt => {
+        if (!opt.value) {
+            opt.hidden = false;
+            opt.disabled = false;
+            return;
+        }
+
+        const match = opt.dataset.historique == historiqueId;
+        opt.hidden = !match;
+        opt.disabled = !match;
+
+        if (match && opt.selected) {
+            hasSelectedVisible = true;
+        }
+    });
+
+    if (!hasSelectedVisible) {
+        select.value = '';
+    }
+}
+
+function onEditHistoriqueChange(historiqueId) {
+    filterEditOptions('edit_ideal_select', historiqueId);
+    filterEditOptions('edit_defaut_select', historiqueId);
+    filterEditOptions('edit_attachement_select', historiqueId);
+    filterEditOptions('edit_personnalite_select', historiqueId);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const histSel = document.getElementById('edit_historique_select');
+    if (histSel && histSel.value) {
+        onEditHistoriqueChange(histSel.value);
+    } else {
+        filterEditOptions('edit_ideal_select', '');
+        filterEditOptions('edit_defaut_select', '');
+        filterEditOptions('edit_attachement_select', '');
+        filterEditOptions('edit_personnalite_select', '');
+    }
+});
+
 function updateMod(input) {
     const key = input.name;
     const value = parseInt(input.value) || 10;
