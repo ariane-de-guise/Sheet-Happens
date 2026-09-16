@@ -26,6 +26,8 @@ class DatabaseSeeder extends Seeder
             RacesSeeder::class,
             ClassesSeeder::class,
             HistoriquesSeeder::class,
+            DegatSeeder::class,
+            SortSeeder::class,
         ]);
     }
 }
