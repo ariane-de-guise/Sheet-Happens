@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Race;
 use App\Models\Utilisateur;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -26,6 +27,8 @@ class DatabaseSeeder extends Seeder
             RacesSeeder::class,
             ClassesSeeder::class,
             HistoriquesSeeder::class,
+            TraitSeeder::class,
+            RaceTraitSeeder::class,
         ]);
     }
 }

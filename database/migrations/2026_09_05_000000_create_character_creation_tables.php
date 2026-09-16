@@ -80,10 +80,28 @@ return new class extends Migration
             $table->unsignedSmallInteger('point_de_vie')->default(1);
             $table->timestamps();
         });
+
+        Schema::create('traits', function (Blueprint $table) {
+            $table->id();
+            $table->string('nom');
+            $table->unsignedTinyInteger('niveau');
+            $table->text('description')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('race_trait', function (Blueprint $table) {
+            $table->foreignId('race_id')->constrained('races')->cascadeOnDelete();
+            $table->foreignId('trait_id')->constrained('traits')->cascadeOnDelete();
+            $table->timestamps();
+
+            $table->primary(['race_id', 'trait_id']);
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('race_trait');
+        Schema::dropIfExists('traits');
         Schema::dropIfExists('personnages');
         Schema::dropIfExists('listes_competences');
         Schema::dropIfExists('abilites');
