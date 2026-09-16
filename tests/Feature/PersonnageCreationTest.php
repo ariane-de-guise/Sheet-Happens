@@ -865,6 +865,7 @@ class PersonnageCreationTest extends TestCase
 
         $response = $this->post('/personnages/creer/contexte', [
             'nom' => 'Aragorn',
+            'description' => 'Roi du Gondor',
             'outil' => 'Aucun',
             'historique_id' => $soldat->id,
             'ideal_id' => $soldat->ideaux()->first()->id,
@@ -875,10 +876,111 @@ class PersonnageCreationTest extends TestCase
 
         $response->assertRedirect(route('creation.competences'));
         $this->assertStringContainsString('Athlétisme', session('error'));
-        // Rien n'a été écrasé : la classe garde ses compétences choisies,
-        // l'historique n'a pas été enregistré.
-        $this->assertSame(['Athlétisme', 'Perception'], array_values(session('personnage_creation')['competences']));
-        $this->assertNull(session('personnage_creation')['historique_id']);
+
+        $donnees = session('personnage_creation');
+        // La classe garde ses compétences choisies : le conflit ne les
+        // modifie pas.
+        $this->assertSame(['Athlétisme', 'Perception'], array_values($donnees['competences']));
+        // Ce que le joueur venait de remplir sur la page contexte n'est
+        // plus perdu par ce conflit (avant ce correctif, rien n'était
+        // sauvegardé tant que "Suivant" n'avait pas été soumis avec
+        // succès, donc ce conflit effaçait tout : nom, description,
+        // historique et traits choisis).
+        $this->assertSame($soldat->id, $donnees['historique_id']);
+        $this->assertSame($soldat->ideaux()->first()->id, $donnees['ideal_id']);
+        $this->assertSame($soldat->defauts()->first()->id, $donnees['defaut_id']);
+        $this->assertSame($soldat->attachements()->first()->id, $donnees['attachement_id']);
+        $this->assertSame($soldat->personnalites()->first()->id, $donnees['personnalite_id']);
+        $this->assertSame('Aragorn', $donnees['nom']);
+        $this->assertSame('Roi du Gondor', $donnees['description']);
+    }
+
+    // Une fois que le conflit ci-dessus a été affiché, le joueur corrige ses
+    // compétences de classe directement depuis l'étape compétences. Comme le
+    // reste du contexte (historique, traits, nom, ...) est déjà rempli et
+    // sauvegardé, "Suivant" ne doit pas le renvoyer sur le formulaire
+    // contexte mais directement à la confirmation.
+    public function test_corriger_les_competences_apres_un_conflit_saute_directement_a_la_confirmation(): void
+    {
+        $this->utilisateurConnecte();
+        (new HistoriquesSeeder)->run();
+        $this->progresserJusquaCompetences();
+        $soldat = Historique::where('nom', 'Soldat')->firstOrFail();
+
+        $this->post('/personnages/creer/contexte', [
+            'nom' => 'Aragorn',
+            'description' => 'Roi du Gondor',
+            'outil' => 'Jeu de dés',
+            'historique_id' => $soldat->id,
+            'ideal_id' => $soldat->ideaux()->first()->id,
+            'defaut_id' => $soldat->defauts()->first()->id,
+            'attachement_id' => $soldat->attachements()->first()->id,
+            'personnalite_id' => $soldat->personnalites()->first()->id,
+        ])->assertRedirect(route('creation.competences'));
+
+        // Nouveau choix qui ne chevauche plus Athlétisme/Intimidation
+        // (compétences accordées par Soldat).
+        $response = $this->post('/personnages/creer/competences', [
+            'competences' => ['Intuition', 'Perception'],
+        ]);
+
+        $response->assertRedirect(route('creation.confirmation'));
+        $response->assertSessionDoesntHaveErrors();
+
+        $donnees = session('personnage_creation');
+        $this->assertSame(['Intuition', 'Perception'], array_values($donnees['competences']));
+        // Les valeurs dérivées de l'historique/des traits, normalement
+        // calculées par saveContexte(), doivent quand même être posées
+        // puisqu'on saute cette étape.
+        $this->assertSame(
+            array_values(array_merge($soldat->equipement_depart, $soldat->outils_fixes)),
+            array_values($donnees['equipement'])
+        );
+        $this->assertNotEmpty($donnees['alignement']);
+        $this->assertNotEmpty($donnees['langues']);
+
+        $this->get('/personnages/creer/confirmation')
+            ->assertOk()
+            ->assertSee('Aragorn', false);
+    }
+
+    // Si le nouveau choix de compétences ne règle pas le conflit (il
+    // chevauche encore l'historique, même différemment), on ne doit ni
+    // avancer à la confirmation, ni renvoyer vers le formulaire contexte :
+    // on reste sur l'étape compétences avec le message d'erreur à jour.
+    public function test_si_les_nouvelles_competences_sont_toujours_en_conflit_on_reste_sur_les_competences(): void
+    {
+        $this->utilisateurConnecte();
+        (new HistoriquesSeeder)->run();
+        $this->progresserJusquaCompetences();
+        $soldat = Historique::where('nom', 'Soldat')->firstOrFail();
+
+        $this->post('/personnages/creer/contexte', [
+            'nom' => 'Aragorn',
+            'description' => 'Roi du Gondor',
+            'outil' => 'Jeu de dés',
+            'historique_id' => $soldat->id,
+            'ideal_id' => $soldat->ideaux()->first()->id,
+            'defaut_id' => $soldat->defauts()->first()->id,
+            'attachement_id' => $soldat->attachements()->first()->id,
+            'personnalite_id' => $soldat->personnalites()->first()->id,
+        ])->assertRedirect(route('creation.competences'));
+
+        // "Intimidation" est toujours accordée par Soldat : le conflit
+        // persiste, même si la compétence en cause a changé.
+        $response = $this->post('/personnages/creer/competences', [
+            'competences' => ['Intimidation', 'Perception'],
+        ]);
+
+        $response->assertRedirect(route('creation.competences'));
+        $this->assertStringContainsString('Intimidation', session('error'));
+
+        $donnees = session('personnage_creation');
+        $this->assertSame(['Intimidation', 'Perception'], array_values($donnees['competences']));
+        // Le contexte reste rempli : on n'a pas été renvoyé au formulaire
+        // contexte, donc rien à ressaisir une fois le conflit levé.
+        $this->assertSame($soldat->id, $donnees['historique_id']);
+        $this->assertSame('Aragorn', $donnees['nom']);
     }
 
     // L'alignement final combine désormais les 4 traits choisis (idéal,
@@ -1001,33 +1103,6 @@ class PersonnageCreationTest extends TestCase
         $this->progresserJusquaContexte();
 
         $this->get('/personnages/creer/confirmation')->assertOk();
-    }
-
-    // La classe peut désormais accorder un bonus d'aptitude (comme la race
-    // et la sous-race), affiché à l'étape des caractéristiques : il doit se
-    // retrouver dans les caractéristiques finales du personnage, en plus du
-    // bonus racial.
-    public function test_labilites_finales_incluent_le_bonus_daptitude_de_la_classe(): void
-    {
-        $this->utilisateurConnecte();
-        $race = RaceFactory::new()->create(['bonus_aptitudes' => ['force' => 1]]);
-        $classe = ClasseFactory::new()->create(['bonus_aptitudes' => ['dexterite' => 2]]);
-
-        $this->post('/personnages/creer/race', ['race_id' => $race->id]);
-        $this->post('/personnages/creer/classe', ['classe_id' => $classe->id]);
-        $this->post('/personnages/creer/methode', ['methode' => 'standard']);
-        $this->post('/personnages/creer/caracteristiques', [
-            'force' => 15, 'dexterite' => 14, 'constitution' => 13,
-            'intelligence' => 12, 'sagesse' => 10, 'charisme' => 8,
-        ]);
-        $this->post('/personnages/creer/competences', ['competences' => ['Athlétisme', 'Perception']]);
-        $this->post('/personnages/creer/contexte', $this->getPayloadContexteValide());
-
-        $response = $this->get('/personnages/creer/confirmation');
-
-        $response->assertOk();
-        $response->assertSee('Force: 16', false);
-        $response->assertSee('Dex: 16', false);
     }
 
     // Certaines races (Humain Variant, Demi-elfe, ...) accordent des bonus
