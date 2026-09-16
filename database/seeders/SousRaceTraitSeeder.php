@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\SousRace;
 use App\Models\TraitModel;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class SousRaceTraitSeeder extends Seeder
@@ -15,43 +14,43 @@ class SousRaceTraitSeeder extends Seeder
             // --- Drakéides (Ascendances) ---
             'Drakéide Argent' => [
                 'Arme de souffle (Froid)',
-                'Résistance aux dégâts (Froid)'
+                'Résistance aux dégâts (Froid)',
             ],
             'Drakéide Blanc' => [
                 'Arme de souffle (Froid)',
-                'Résistance aux dégâts (Froid)'
+                'Résistance aux dégâts (Froid)',
             ],
             'Drakéide Bleu' => [
                 'Arme de souffle (Foudre)',
-                'Résistance aux dégâts (Foudre)'
+                'Résistance aux dégâts (Foudre)',
             ],
             'Drakéide Bronze' => [
                 'Arme de souffle (Foudre)',
-                'Résistance aux dégâts (Foudre)'
+                'Résistance aux dégâts (Foudre)',
             ],
             'Drakéide Cuivre' => [
                 'Arme de souffle (Acide)',
-                'Résistance aux dégâts (Acide)'
+                'Résistance aux dégâts (Acide)',
             ],
             'Drakéide Laitons' => [
                 'Arme de souffle (Feu)',
-                'Résistance aux dégâts (Feu)'
+                'Résistance aux dégâts (Feu)',
             ],
             'Drakéide Noir' => [
                 'Arme de souffle (Acide)',
-                'Résistance aux dégâts (Acide)'
+                'Résistance aux dégâts (Acide)',
             ],
             'Drakéide Or' => [
                 'Arme de souffle (Feu)',
-                'Résistance aux dégâts (Feu)'
+                'Résistance aux dégâts (Feu)',
             ],
             'Drakéide Rouge' => [
                 'Arme de souffle (Feu)',
-                'Résistance aux dégâts (Feu)'
+                'Résistance aux dégâts (Feu)',
             ],
             'Drakéide Vert' => [
                 'Arme de souffle (Poison)',
-                'Résistance aux dégâts (Poison)'
+                'Résistance aux dégâts (Poison)',
             ],
 
             // --- Elfes ---
@@ -121,7 +120,7 @@ class SousRaceTraitSeeder extends Seeder
             if ($missingTraitNames !== []) {
                 throw new \RuntimeException(
                     "Les traits suivants sont absents du seeder des traits pour la sous-race {$sousRaceName} : "
-                    . implode(', ', $missingTraitNames)
+                    .implode(', ', $missingTraitNames)
                 );
             }
 

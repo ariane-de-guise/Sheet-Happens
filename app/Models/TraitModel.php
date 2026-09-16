@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class TraitModel extends Model
 {
-
     /**
      * Nom de la table associée au modèle.
      * Requis car Laravel déduirait "trait_models" au pluriel.

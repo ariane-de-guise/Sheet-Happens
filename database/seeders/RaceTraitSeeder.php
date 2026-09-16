@@ -82,7 +82,7 @@ class RaceTraitSeeder extends Seeder
             if ($missingTraitNames !== []) {
                 throw new \RuntimeException(
                     'Les traits suivants sont absents du seeder des traits : '
-                    . implode(', ', $missingTraitNames)
+                    .implode(', ', $missingTraitNames)
                 );
             }
 
