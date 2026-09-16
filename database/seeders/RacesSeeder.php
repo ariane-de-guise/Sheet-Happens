@@ -130,7 +130,7 @@ class RacesSeeder extends Seeder
                 'taille' => 'Moyenne',
                 'vitesse' => 30,
                 'type_creature' => 'Humanoïde',
-                'langues' => ['Commun', 'Abyssal'],
+                'langues' => ['Commun', 'Infernal'],
                 'description' => 'Marqués par le sang infernal, les tieffelins sont souvent craints mais résilients.',
                 'sous_races' => [
                     ['nom' => 'Tieffelin de la Lignée d\'Asmodée', 'description' => 'Tieffelin liées à Nessus qui commande le pouvoir du feu et des ténèbres', 'bonus_aptitudes' => ['intelligence' => 1]],
