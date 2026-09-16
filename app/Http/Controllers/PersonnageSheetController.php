@@ -49,9 +49,11 @@ class PersonnageSheetController extends Controller
             'jetsDeSauvegarde' => $this->fiche->jetsDeSauvegarde($personnage),
             'competences' => $this->fiche->competences($personnage),
             'perceptionPassive' => $this->fiche->perceptionPassive($personnage),
-            'traits' => $this->fiche->traits($personnage),
             'actions' => $this->fiche->actions($personnage),
         ]);
+        // Section "Traits" volontairement vide pour l'instant (à faire plus
+        // tard) : voir FicheDePersonnageService::traits(), déjà prête et
+        // testée, en attendant d'être branchée sur la vue.
     }
 
     public function inventaire(Personnage $personnage): View
@@ -62,6 +64,7 @@ class PersonnageSheetController extends Controller
 
         return view('personnages.inventaire', [
             'personnage' => $personnage,
+            'equipementClasse' => $this->fiche->equipementClasse($personnage),
         ]);
     }
 

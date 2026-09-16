@@ -90,6 +90,15 @@ class FicheDePersonnageService
         'Arc court' => ['degats' => '1d6', 'type' => 'perforant', 'caracteristique' => 'dexterite'],
     ];
 
+    /**
+     * Parmi les choix d'équipement de départ proposés à la création (voir
+     * PersonnageSheetController::edit()), ceux qui relèvent de l'armure /
+     * de l'équipement de combat (armes, bouclier, armure) plutôt que des
+     * objets divers. Utilisé pour répartir l'inventaire du personnage en
+     * deux sections sur la page d'inventaire.
+     */
+    private const ARMURE = ['Épée', 'Arc court', 'Bouclier', 'Armure de cuir'];
+
     public function modificateur(int $score): int
     {
         return (int) floor(($score - 10) / 2);
@@ -229,6 +238,29 @@ class FicheDePersonnageService
         }
 
         return $resultat;
+    }
+
+    /**
+     * Répartit l'équipement porté du personnage entre armure/équipement de
+     * combat et objets divers, pour la page d'inventaire.
+     *
+     * @return array{armure: array<int, string>, objets: array<int, string>}
+     */
+    public function equipementClasse(Personnage $personnage): array
+    {
+        $equipement = $personnage->equipement ?? [];
+
+        $armure = [];
+        $objets = [];
+        foreach ($equipement as $item) {
+            if (in_array($item, self::ARMURE, true)) {
+                $armure[] = $item;
+            } else {
+                $objets[] = $item;
+            }
+        }
+
+        return ['armure' => $armure, 'objets' => $objets];
     }
 
     /**

@@ -184,30 +184,37 @@
                             </div>
                         @endforeach
                     </div>
+
+                    <div style="border-top: 1px solid rgba(196, 154, 60, 0.35); margin-top: 0.75rem; padding-top: 0.75rem;">
+                        <div style="font-size: 0.8rem; font-weight: 600; color: #e6b84d; margin-bottom: 0.35rem;">Langues et outils</div>
+                        <div class="sheet-row">
+                            <span>Langues</span>
+                            <span class="valeur">{{ $personnage->langues && count($personnage->langues) > 0 ? implode(', ', $personnage->langues) : 'Aucune' }}</span>
+                        </div>
+                        <div class="sheet-row">
+                            <span>Outil</span>
+                            <span class="valeur">{{ $personnage->outil ?? 'Aucun' }}</span>
+                        </div>
+                    </div>
                 </div>
 
-                {{-- Traits (bonus et capacités) --}}
+                {{-- Traits (bonus et capacités) : contenu à venir --}}
                 <div class="sheet-box mb-3">
                     <div class="sheet-box-title">Traits</div>
-                    @forelse($traits as $trait)
-                        <div class="mb-2">
-                            <div style="font-size: 0.85rem; color: #e6b84d; font-weight: 600;">{{ $trait['label'] }}</div>
-                            <div class="text-muted" style="font-size: 0.8rem;">{{ $trait['texte'] }}</div>
-                        </div>
-                    @empty
-                        <div class="text-muted" style="font-size: 0.85rem;">Aucun trait enregistré.</div>
-                    @endforelse
                 </div>
 
                 {{-- Actions : sorts ou attaques selon la classe --}}
                 <div class="sheet-box mb-3">
                     <div class="sheet-box-title">Actions</div>
+                    @if($personnage->sousClasse)
+                        <div class="text-muted mb-2" style="font-size: 0.8rem;">Sous-classe : {{ $personnage->sousClasse->nom }}</div>
+                    @endif
                     @if($actions['type'] === 'sorts')
                         @php $incantation = $actions['incantation']; @endphp
                         <div class="text-muted mb-2" style="font-size: 0.8rem;">
                             {{ $personnage->classe->nom }} incante avec {{ $incantation['caracteristique'] }}.
                         </div>
-                        <div class="sheet-row"><span>DD de sauvegarde des sorts</span><span class="valeur">{{ $incantation['dd'] }}</span></div>
+                        <div class="sheet-row"><span>Jet de sauvegarde de tes sorts</span><span class="valeur">{{ $incantation['dd'] }}</span></div>
                         <div class="sheet-row"><span>Bonus d'attaque de sorts</span><span class="valeur">+{{ $incantation['bonusAttaque'] }}</span></div>
                     @else
                         @forelse($actions['attaques'] as $attaque)
@@ -242,10 +249,10 @@
                     @endif
                 </div>
 
-                {{-- Équipement porté --}}
+                {{-- Inventaire --}}
                 <div class="sheet-box">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span class="sheet-box-title" style="margin-bottom: 0;">Équipement porté</span>
+                        <span class="sheet-box-title" style="margin-bottom: 0;">Inventaire</span>
                         <a href="{{ route('personnages.inventaire', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
                     </div>
                     @if($personnage->equipement && count($personnage->equipement) > 0)
