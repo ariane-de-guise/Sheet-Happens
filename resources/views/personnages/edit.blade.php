@@ -235,6 +235,21 @@
 
 @section('content')
 <div class="sheet-container">
+    @if ($errors->any())
+        <div class="alert alert-danger" role="alert">
+            <strong>La sauvegarde a échoué.</strong>
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="{{ route('personnages.update', $personnage) }}" method="POST" id="editForm">
+        @csrf
+        @method('PATCH')
+
     <div class="sheet-header">
         <div class="sheet-header-left">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
@@ -247,29 +262,16 @@
         <div class="sheet-header-right">
             <div class="stat-block">
                 <div class="stat-block-label">Niveau</div>
-                <form action="{{ route('personnages.update', $personnage) }}" method="POST" style="display:inline;">
-                    @csrf
-                    @method('PATCH')
-                    <input type="number" name="niveau" value="{{ $personnage->niveau }}" min="1" max="20"
-                        onchange="this.form.submit()" style="width:45px;">
-                </form>
+                <input type="number" name="niveau" value="{{ old('niveau', $personnage->niveau) }}" min="1" max="20"
+                    style="width:45px;">
             </div>
             <div class="stat-block">
                 <div class="stat-block-label">PV</div>
-                <form action="{{ route('personnages.update', $personnage) }}" method="POST" style="display:inline;">
-                    @csrf
-                    @method('PATCH')
-                    <input type="number" name="point_de_vie" value="{{ $personnage->point_de_vie }}" min="1"
-                        onchange="this.form.submit()" style="width:55px;">
-                </form>
+                <input type="number" name="point_de_vie" value="{{ old('point_de_vie', $personnage->point_de_vie) }}" min="1"
+                    style="width:55px;">
             </div>
         </div>
     </div>
-
-    <form action="{{ route('personnages.update', $personnage) }}" method="POST" id="editForm">
-        @csrf
-        @method('PATCH')
-        <input type="hidden" name="niveau" value="{{ $personnage->niveau }}">
 
         <div class="sheet-section">
             <div class="sheet-section-title">Identité</div>
@@ -357,7 +359,7 @@
                     @endphp
                     <div class="ability-box">
                         <div class="ability-name">{{ $label }}</div>
-                        <input type="number" name="{{ $key }}" value="{{ $value }}" min="1" max="30"
+                        <input type="number" name="{{ $key }}" value="{{ $value }}" min="1" max="20"
                             class="ability-input"
                             oninput="updateMod(this)">
                         <div class="ability-mod" id="mod-{{ $key }}">{{ $modStr }}</div>
@@ -368,15 +370,26 @@
 
         <div class="sheet-grid-2">
             <div class="sheet-section">
-                <div class="sheet-section-title">Compétences (max {{ 2 + (int)floor(($personnage->niveau - 1) / 2) }})</div>
+                <div class="sheet-section-title">Compétences de classe (max {{ $personnage->classe->nombre_competences ?? 2 }})</div>
+                @if($personnage->historique?->competences)
+                    <div class="text-muted" style="font-size: 0.8rem; margin-bottom: 0.75rem;">
+                        Compétences d’historique incluses et non modifiables : {{ implode(', ', $personnage->historique->competences) }}
+                    </div>
+                @endif
                 <div class="checkbox-grid">
                     @php
                         $currentCompetences = old('competences', $personnage->listeCompetence->competences ?? []);
+                        $competencesHistorique = $personnage->historique?->competences ?? [];
                     @endphp
                     @foreach($allCompetences as $comp)
+                        @php $estAccordeeParHistorique = in_array($comp, $competencesHistorique, true); @endphp
                         <label class="checkbox-item">
                             <input type="checkbox" name="competences[]" value="{{ $comp }}"
-                                {{ in_array($comp, $currentCompetences) ? 'checked' : '' }}>
+                                {{ in_array($comp, $currentCompetences, true) ? 'checked' : '' }}
+                                {{ $estAccordeeParHistorique ? 'disabled' : '' }}>
+                            @if($estAccordeeParHistorique)
+                                <input type="hidden" name="competences[]" value="{{ $comp }}">
+                            @endif
                             {{ $comp }}
                         </label>
                     @endforeach
@@ -452,7 +465,7 @@
                     <label class="form-label">Outil</label>
                     <select name="outil" class="form-select-small">
                         @foreach($outils as $o)
-                            <option value="{{ $o }}" {{ old('outil') == $o ? 'selected' : '' }}>
+                            <option value="{{ $o }}" {{ old('outil', $personnage->outil) == $o ? 'selected' : '' }}>
                                 {{ $o }}
                             </option>
                         @endforeach
@@ -477,7 +490,7 @@
                     <label class="form-label">Équipement</label>
                     <div class="checkbox-grid">
                         @php
-                            $currentEquipements = old('equipements', []);
+                            $currentEquipements = old('equipements', $personnage->equipement ?? []);
                         @endphp
                         @foreach($equipements as $eq)
                             <label class="checkbox-item">
