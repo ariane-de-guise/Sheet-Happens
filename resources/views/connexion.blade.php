@@ -17,7 +17,7 @@
     </p>
     @enderror
 
-    <form action="/connexion" method="POST">
+    <form action="{{ route('connexion.store') }}" method="POST">
         @csrf
         <div>
             <label for="courriel">Adresse courriel :</label>
@@ -61,7 +61,7 @@
     </form>
 
     <p style="margin-top: 1.5rem; text-align: center; color: var(--texte-secondaire);">
-        Pas encore de compte ? <a href="/inscription">Créez-en un</a>
+        Pas encore de compte ? <a href="{{ route('utilisateurs.create') }}">Créez-en un</a>
     </p>
 </main>
 

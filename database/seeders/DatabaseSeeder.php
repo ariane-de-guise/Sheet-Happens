@@ -21,5 +21,11 @@ class DatabaseSeeder extends Seeder
             'courriel' => 'test@example.com',
             'mot_de_passe' => 'test',
         ]);
+
+        $this->call([
+            RacesSeeder::class,
+            ClassesSeeder::class,
+            HistoriquesSeeder::class,
+        ]);
     }
 }

@@ -1,17 +1,11 @@
-@import '../../node_modules/tailwindcss/dist/lib.d.mts';
-
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
-
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
-}
+/* Cette feuille de style est chargée directement en tant que fichier CSS
+   statique (voir layouts/app.blade.php) et n'est pas compilée par
+   Tailwind/Vite : les directives Tailwind (@import, @source, @theme) ont
+   été retirées ici car elles ne sont pas comprises par le navigateur et
+   déclenchaient une requête 404 inutile. */
 
 :root {
-    /* Palette sombre avec reflets mauves plus marqués */
+    /* Palette sombre avec reflets mauves */
     --fond: #141124;
     --surface: #1e1933;
     --champ-fond: #171329;
@@ -22,7 +16,7 @@
     --primaire-survol: #c4b5fd;
     --primaire-halo: rgba(167, 139, 250, 0.25);
 
-    /* Orange tirant vers le jaune (ambre / or chaud) */
+    /* Orange / ambre */
     --secondaire: #f59e0b;
     --secondaire-survol: #fbbf24;
     --secondaire-halo: rgba(245, 158, 11, 0.3);
@@ -56,6 +50,19 @@ body {
     padding: 1.5rem;
 }
 
+.container {
+    /* `width: 100%` is required here: body is a flex container, and a flex
+       item with only `max-width` shrinks to fit its content instead of
+       stretching to that max-width. Without it, any CSS grid inside using
+       `repeat(auto-fill, ...)` cannot see a real available width and
+       collapses to a single narrow column, which is what made the whole
+       character creation flow look cramped/"mobile" on desktop. */
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
 main {
     width: 100%;
     max-width: 420px;
@@ -63,16 +70,73 @@ main {
     padding: 2.5rem;
     border-radius: var(--rayon);
     border: 1px solid var(--bordure);
-    box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.6), 0 0 40px -10px rgba(167, 139, 250, 0.12);
+    box-shadow:
+        0 20px 30px -10px rgba(0, 0, 0, 0.6),
+        0 0 40px -10px rgba(167, 139, 250, 0.12);
 }
 
-h1, h2, h3 {
+.card {
+    background: rgba(15, 5, 30, 0.85);
+    border: 1px solid #c49a3c;
+    border-radius: 16px;
+    padding: 2rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-gold {
+    color: #e6b84d;
+}
+
+.text-white {
+    color: #f5f5f5;
+}
+
+.text-muted {
+    color: #b8a9c9;
+}
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
+
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+
+h1,
+h2,
+h3 {
     color: var(--primaire);
     margin-bottom: 1.75rem;
     font-size: 1.75rem;
     font-weight: 700;
     letter-spacing: -0.025em;
 }
+
+.title-main {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #e6b84d;
+    margin-bottom: 1rem;
+}
+
+.title-section {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #e6b84d;
+    margin-bottom: 1.5rem;
+}
+
+.subtitle {
+    font-size: 1.1rem;
+    color: #f5f5f5;
+    margin-bottom: 2rem;
+}
+
+/* Formulaires */
 
 form {
     display: flex;
@@ -113,6 +177,51 @@ input:focus {
     box-shadow: 0 0 0 3px var(--primaire-halo);
 }
 
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #e6b84d;
+    margin-bottom: 0.35rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 8px;
+    color: #e8d5b5;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.form-input:focus {
+    border-color: #e6b84d;
+}
+
+.form-select {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 8px;
+    color: #e8d5b5;
+    font-size: 0.95rem;
+    outline: none;
+    cursor: pointer;
+}
+
+.form-select:focus {
+    border-color: #e6b84d;
+}
+
+/* Boutons */
+
 button {
     margin-top: 0.75rem;
     padding: 0.85rem 1.25rem;
@@ -123,7 +232,10 @@ button {
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.05s ease;
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.05s ease;
 }
 
 button:hover {
@@ -135,6 +247,75 @@ button:active {
     transform: scale(0.99);
 }
 
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 2rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: #e6b84d;
+    color: #1a0533;
+    border-color: #e6b84d;
+}
+
+.btn-primary:hover {
+    background: #f0c963;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: rgba(20, 10, 40, 0.9);
+    color: #e8d5b5;
+    border-color: #c49a3c;
+}
+
+.btn-secondary:hover {
+    background: rgba(30, 15, 55, 0.95);
+}
+
+.btn-option {
+    background: rgba(60, 15, 90, 0.8);
+    color: #e6b84d;
+    border-color: #c49a3c;
+    padding: 1rem 1.5rem;
+    font-size: 1.05rem;
+    flex: 1;
+}
+
+.btn-option:hover {
+    background: rgba(80, 25, 120, 0.9);
+    border-color: #e6b84d;
+}
+
+.btn-small {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    border-radius: 6px;
+}
+
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    margin-top: 0;
+    padding: 0;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Liens */
+
 a {
     color: var(--secondaire);
     text-decoration: none;
@@ -145,4 +326,743 @@ a {
 a:hover {
     color: var(--secondaire-survol);
     text-decoration: underline;
+}
+
+/* Cartes */
+
+.grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.card-choice {
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 12px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 110px;
+}
+
+.card-choice:hover {
+    border-color: #e6b84d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(230, 184, 77, 0.15);
+}
+
+.card-choice.selected {
+    border-color: #e6b84d;
+    border-width: 2px;
+    background: rgba(40, 15, 70, 0.95);
+    box-shadow: 0 0 12px rgba(230, 184, 77, 0.25);
+}
+
+.card-choice .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e6b84d;
+}
+
+.card-choice .card-desc {
+    font-size: 0.8rem;
+    color: #b8a9c9;
+    margin-top: 0.35rem;
+}
+
+/* Barre de progression */
+
+.progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    margin: 0 auto 2rem;
+    position: relative;
+}
+
+.progress-line {
+    position: absolute;
+    top: 50%;
+    left: 2.5rem;
+    right: 2.5rem;
+    height: 2px;
+    background: rgba(196, 154, 60, 0.3);
+    transform: translateY(-50%);
+    z-index: 0;
+}
+
+.progress-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: #e6b84d;
+    transition: width 0.3s ease;
+}
+
+.progress-step {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(25, 10, 50, 0.9);
+    border: 2px solid #c49a3c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #b8a9c9;
+    z-index: 2;
+    position: relative;
+    margin: 0 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.progress-step.active {
+    background: #e6b84d;
+    border-color: #e6b84d;
+    color: #1a0533;
+}
+
+.progress-step.completed {
+    background: rgba(230, 184, 77, 0.4);
+    border-color: #e6b84d;
+    color: #e6b84d;
+}
+
+/* Statistiques */
+
+.stats-container {
+    /* 2 colonnes comme dans la maquette : stats-list à gauche, aide/pool à
+       droite. Les lignes ne montrent plus qu'icône + nom + valeur +
+       contrôles (les bonus ne sont plus affichés par ligne, voir
+       .stats-bonus-mention), ce qui laisse largement assez de place à la
+       colonne des noms pour ne jamais couper un mot au milieu. */
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    min-width: 0;
+}
+
+.stats-list {
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 12px;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.stat-row {
+    display: grid;
+    grid-template-columns: 32px minmax(90px, 1fr) 32px 70px auto;
+    column-gap: 0.4rem;
+    align-items: center;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid rgba(196, 154, 60, 0.2);
+    min-width: 0;
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e6b84d;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.stat-name {
+    grid-column: 2;
+    font-size: 0.85rem;
+    color: #e6b84d;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Petit badge "+X / 0 / -X" (bonus total de la caractéristique, incluant
+   les bonus "au choix" déjà assignés) : en vert quand positif, gris/neutre
+   sinon, jamais dans une grosse boîte séparée comme avant. */
+.stat-bonus-total {
+    grid-column: 3;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #7a8a7a;
+}
+
+.stat-bonus-total[data-value^="-"] {
+    color: #e07a7a;
+}
+
+.stat-bonus-total:not([data-value="0"]):not([data-value^="-"]) {
+    color: #55c878;
+}
+
+.stat-value {
+    width: 70px;
+    height: 40px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 0.5rem;
+    background: rgba(60, 15, 90, 0.8);
+    border: 1px solid #c49a3c;
+    border-radius: 6px;
+    color: #e6b84d;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.stat-base-value {
+    grid-column: 4;
+    width: 70px;
+    height: 40px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem;
+    border: 0;
+    background: transparent;
+    color: #e6b84d;
+    text-align: center;
+    font-weight: 600;
+}
+
+.stat-points {
+    grid-column: 4;
+}
+
+.stat-controls {
+    grid-column: 5;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Bonus (race/sous-race/classe) : mention compacte en haut de la boîte de
+   choix des caractéristiques (pas dans la maquette d'origine, ajoutée ici
+   à cet endroit plutôt qu'en gros encadrés séparés au-dessus de la carte).
+   Les bonus fixes ("Charisme +2") sont juste listés ; les bonus "au choix"
+   (ex. Humain Variant, Demi-elfe) demandent au joueur de choisir la
+   caractéristique via un select. */
+.stats-bonus-mention {
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid rgba(196, 154, 60, 0.35);
+    font-size: 0.8rem;
+    color: #b8a9c9;
+}
+
+.stats-bonus-mention .bonus-fixe {
+    color: #e6b84d;
+}
+
+.bonus-choix-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.bonus-choix-row select {
+    background: rgba(60, 15, 90, 0.8);
+    border: 1px solid #c49a3c;
+    border-radius: 6px;
+    color: #e6b84d;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+}
+
+/* Number inputs (méthode "points") default to the browser's native
+   up/down spinner, which renders as a light widget glued to the input's
+   right edge and clashes with the dark theme, plus it isn't reset the
+   same way as the rest of the field, throwing off the vertical alignment
+   with the +/- buttons next to it. Remove it entirely since we already
+   provide dedicated +/- buttons. */
+input.stat-base-value::-webkit-outer-spin-button,
+input.stat-base-value::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input.stat-base-value[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.stat-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.stat-value.drop-target {
+    cursor: pointer;
+}
+
+.stat-value.drop-target.drag-over {
+    border-color: #e6b84d;
+    background: rgba(230, 184, 77, 0.25);
+    transform: scale(1.05);
+}
+
+.stat-value.drop-target.filled {
+    border-color: #e6b84d;
+}
+
+/* Répartition standard / Lancer de dés : pool de valeurs à glisser */
+
+.value-pool {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 0.6rem;
+    min-height: 48px;
+    border-radius: 10px;
+    transition: outline-color 0.15s ease, background 0.15s ease;
+}
+
+.value-pool.drag-over {
+    outline: 2px dashed #e6b84d;
+    outline-offset: 6px;
+    background: rgba(230, 184, 77, 0.08);
+}
+
+.stat-value.drop-target[draggable="true"] {
+    cursor: grab;
+}
+
+.stat-value.drop-target.dragging {
+    opacity: 0.4;
+}
+
+.value-chip {
+    min-width: 64px;
+    padding: 0.55rem 0.9rem;
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 10px;
+    color: #e6b84d;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    cursor: grab;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.value-chip:hover {
+    border-color: #e6b84d;
+    background: rgba(40, 15, 70, 0.95);
+}
+
+.value-chip:active {
+    cursor: grabbing;
+}
+
+.value-chip.dragging {
+    opacity: 0.4;
+}
+
+.value-chip:disabled,
+.value-chip.is-used {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.roll-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.roll-actions .btn {
+    flex: 1 1 200px;
+}
+
+.drag-hint {
+    font-size: 0.8rem;
+    color: #b8a9c9;
+}
+
+.points-box {
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.points-box .label {
+    font-size: 0.9rem;
+    color: #e6b84d;
+    margin-bottom: 0.5rem;
+}
+
+.points-box .value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #e6b84d;
+}
+
+/* Aide */
+
+.help-box {
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.help-box .title {
+    font-size: 0.95rem;
+    color: #e6b84d;
+    margin-bottom: 0.5rem;
+}
+
+.help-box .content {
+    font-size: 0.8rem;
+    color: #b8a9c9;
+    line-height: 1.5;
+}
+
+/* Contexte */
+
+.context-section {
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.context-section .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.context-section .title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #e6b84d;
+}
+
+.context-section .items {
+    font-size: 0.85rem;
+    color: #e6b84d;
+    list-style: disc;
+    padding-left: 1.25rem;
+}
+
+.context-section .items li {
+    margin-bottom: 0.2rem;
+}
+
+.context-section .hint {
+    font-size: 0.8rem;
+    color: #b8a9c9;
+}
+
+/* Groupes */
+
+.btn-group-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    gap: 1rem;
+}
+
+.btn-group-row > div {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+}
+
+.standard-points-container {
+    /* Même raison que .stats-container ci-dessus. */
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    min-width: 0;
+}
+
+.available-points {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.point-option {
+    padding: 0.6rem 1rem;
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 10px;
+    color: #e6b84d;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.point-option:hover {
+    border-color: #e6b84d;
+    background: rgba(40, 15, 70, 0.95);
+}
+
+.point-option:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.dice-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dice-btn {
+    padding: 0.6rem 1rem;
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 10px;
+    color: #e6b84d;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.dice-btn:hover {
+    border-color: #e6b84d;
+    background: rgba(40, 15, 70, 0.95);
+}
+
+/* Résumé */
+
+.summary-card {
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.summary-card .title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e6b84d;
+    margin-bottom: 0.5rem;
+}
+
+.summary-card .value {
+    font-size: 0.9rem;
+    color: #e8d5b5;
+    overflow-wrap: anywhere;
+}
+
+/* Alertes */
+
+.alert {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.alert-error {
+    background: rgba(120, 30, 30, 0.8);
+    border: 1px solid #e05555;
+    color: #f5c6c6;
+}
+
+.alert-success {
+    background: rgba(30, 90, 30, 0.8);
+    border: 1px solid #55e055;
+    color: #c6f5c6;
+}
+
+/* Profil utilisateur */
+
+.profile-page {
+    min-height: calc(100vh - 4rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-card {
+    width: min(100%, 680px);
+}
+
+.profile-header {
+    margin-bottom: 2rem;
+}
+
+.profile-eyebrow {
+    color: #b8a9c9;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.5rem;
+}
+
+.profile-information {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.profile-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 1.25rem;
+    background: rgba(25, 10, 50, 0.75);
+    border: 1px solid #c49a3c;
+    border-radius: 10px;
+}
+
+.profile-label {
+    color: #b8a9c9;
+    font-size: 0.85rem;
+}
+
+.profile-value {
+    color: #f5f5f5;
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+}
+
+.profile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .grid-cards {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+
+    .title-main {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 0.75rem;
+        align-items: flex-start;
+    }
+
+    .container {
+        padding: 0.75rem 0;
+    }
+
+    .card {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .title-section {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .progress-bar {
+        margin-bottom: 1.25rem;
+        transform: scale(0.9);
+        transform-origin: center;
+    }
+
+    .stat-row {
+        grid-template-columns: 28px minmax(0, 1fr) 26px 44px auto;
+        column-gap: 0.25rem;
+        padding-left: 0.55rem;
+        padding-right: 0.55rem;
+    }
+
+    .stat-icon {
+        width: 28px;
+        height: 28px;
+        margin-right: 0;
+    }
+
+    .stat-name {
+        font-size: 0.75rem;
+    }
+
+    .stat-bonus-total {
+        font-size: 0.75rem;
+    }
+
+    .stat-value,
+    .stat-base-value {
+        width: 100%;
+        height: 34px;
+        padding: 0 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .stat-controls {
+        gap: 0.15rem;
+    }
+
+    .btn-icon {
+        width: 28px;
+        height: 32px;
+        font-size: 0.95rem;
+    }
+
+    .btn-group-row {
+        flex-wrap: wrap;
+        margin-top: 1.25rem;
+    }
+
+    .btn-group-row > div {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .btn-group-row > .btn,
+    .btn-group-row > div .btn {
+        flex: 1 1 0;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .roll-actions {
+        flex-direction: column;
+    }
+
+    .roll-actions .btn {
+        flex-basis: auto;
+        width: 100%;
+    }
 }

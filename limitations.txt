@@ -1,0 +1,155 @@
+LIMITATIONS ET PROGRESSION DES STATISTIQUES (NIVEAUX 1 À 5) - D&D 5E
+Classes : Barbare, Clerc, Guerrier, Magicien, Roublard
+
+Note globale sur les limitations de caractéristiques :
+Dans Donjons & Dragons 5e, les scores de caractéristiques (Force, Dextérité, Constitution, Intelligence, Sagesse, Charisme) sont limités à un maximum de 20 pour les joueurs (sauf objets magiques ou la capacité de niveau 20 du Barbare). 
+Le "Bonus de Maîtrise" dépend du niveau global du personnage : il est de +2 du niveau 1 au niveau 4, et passe à +3 au niveau 5.
+
+================================================================================
+1. BARBARE (Barbarian)
+Dés de vie : 1d12 par niveau
+Caractéristique principale : Force
+================================================================================
+Niveau 1 :
+- Bonus de Maîtrise : +2
+- Rage : 2 utilisations par jour, Dégâts de rage : +2
+- Capacités : Rage, Défense sans armure
+
+Niveau 2 :
+- Bonus de Maîtrise : +2
+- Rage : 2 utilisations par jour, Dégâts de rage : +2
+- Capacités : Attaque téméraire, Danger des sens
+
+Niveau 3 :
+- Bonus de Maîtrise : +2
+- Rage : 3 utilisations par jour, Dégâts de rage : +2
+- Capacités : Voie primitive (Choix de sous-classe), Danger des sens
+
+Niveau 4 :
+- Bonus de Maîtrise : +2
+- Rage : 3 utilisations par jour, Dégâts de rage : +2
+- Capacités : Amélioration de caractéristiques (+2 à une stat ou +1 à deux stats, max 20, OU un Don)
+
+Niveau 5 :
+- Bonus de Maîtrise : +3
+- Rage : 3 utilisations par jour, Dégâts de rage : +2
+- Capacités : Attaque supplémentaire, Déplacement rapide (+3 mètres)
+
+
+================================================================================
+2. CLERC (Cleric)
+Dés de vie : 1d8 par niveau
+Caractéristique principale : Sagesse
+================================================================================
+Niveau 1 :
+- Bonus de Maîtrise : +2
+- Magie : Sorts mineurs (3), Emplacements de sorts : 2 (Niv. 1)
+- Capacités : Incantation, Domaine divin (Choix de sous-classe)
+
+Niveau 2 :
+- Bonus de Maîtrise : +2
+- Magie : Sorts mineurs (3), Emplacements de sorts : 3 (Niv. 1)
+- Capacités : Canalisation d'énergie divine (1/repos), Capacité de domaine
+
+Niveau 3 :
+- Bonus de Maîtrise : +2
+- Magie : Sorts mineurs (3), Emplacements : 4 (Niv. 1), 2 (Niv. 2)
+- Capacités : -
+
+Niveau 4 :
+- Bonus de Maîtrise : +2
+- Magie : Sorts mineurs (4), Emplacements : 4 (Niv. 1), 3 (Niv. 2)
+- Capacités : Amélioration de caractéristiques (Max 20 ou Don)
+
+Niveau 5 :
+- Bonus de Maîtrise : +3
+- Magie : Sorts mineurs (4), Emplacements : 4 (Niv. 1), 3 (Niv. 2), 2 (Niv. 3)
+- Capacités : Détruire les morts-vivants (FP 1/2)
+
+
+================================================================================
+3. GUERRIER (Fighter)
+Dés de vie : 1d10 par niveau
+Caractéristique principale : Force ou Dextérité
+================================================================================
+Niveau 1 :
+- Bonus de Maîtrise : +2
+- Capacités : Style de combat, Second souffle (1d10 + niveau)
+
+Niveau 2 :
+- Bonus de Maîtrise : +2
+- Capacités : Sursaut d'activité (1 utilisation / repos)
+
+Niveau 3 :
+- Bonus de Maîtrise : +2
+- Capacités : Archétype martial (Choix de sous-classe)
+
+Niveau 4 :
+- Bonus de Maîtrise : +2
+- Capacités : Amélioration de caractéristiques (Max 20 ou Don)
+
+Niveau 5 :
+- Bonus de Maîtrise : +3
+- Capacités : Attaque supplémentaire (2 attaques au total lors de l'action Attaquer)
+
+
+================================================================================
+4. MAGICIEN (Wizard)
+Dés de vie : 1d6 par niveau
+Caractéristique principale : Intelligence
+================================================================================
+Niveau 1 :
+- Bonus de Maîtrise : +2
+- Magie : Sorts mineurs (3), Emplacements de sorts : 2 (Niv. 1)
+- Capacités : Incantation, Restauration arcanique (Régénération d'emplacements)
+
+Niveau 2 :
+- Bonus de Maîtrise : +2
+- Magie : Sorts mineurs (3), Emplacements de sorts : 3 (Niv. 1)
+- Capacités : Tradition arcanique (Choix de sous-classe)
+
+Niveau 3 :
+- Bonus de Maîtrise : +2
+- Magie : Sorts mineurs (3), Emplacements : 4 (Niv. 1), 2 (Niv. 2)
+- Capacités : Sorts de 2e niveau
+
+Niveau 4 :
+- Bonus de Maîtrise : +2
+- Magie : Sorts mineurs (4), Emplacements : 4 (Niv. 1), 3 (Niv. 2)
+- Capacités : Amélioration de caractéristiques (Max 20 ou Don)
+
+Niveau 5 :
+- Bonus de Maîtrise : +3
+- Magie : Sorts mineurs (4), Emplacements : 4 (Niv. 1), 3 (Niv. 2), 2 (Niv. 3)
+- Capacités : Sorts de 3e niveau (Ex: Boule de feu)
+
+
+================================================================================
+5. ROUBLARD (Rogue)
+Dés de vie : 1d8 par niveau
+Caractéristique principale : Dextérité
+================================================================================
+Niveau 1 :
+- Bonus de Maîtrise : +2
+- Dégâts d'Attaque Sournoise : 1d6
+- Capacités : Expertise (2 compétences), Attaque sournoise, Jargon des voleurs
+
+Niveau 2 :
+- Bonus de Maîtrise : +2
+- Dégâts d'Attaque Sournoise : 1d6
+- Capacités : Ruse (Action bonus pour se cacher, se désengager ou foncer)
+
+Niveau 3 :
+- Bonus de Maîtrise : +2
+- Dégâts d'Attaque Sournoise : 2d6
+- Capacités : Archétype de roublard (Choix de sous-classe)
+
+Niveau 4 :
+- Bonus de Maîtrise : +2
+- Dégâts d'Attaque Sournoise : 2d6
+- Capacités : Amélioration de caractéristiques (Max 20 ou Don)
+
+Niveau 5 :
+- Bonus de Maîtrise : +3
+- Dégâts d'Attaque Sournoise : 3d6
+- Capacités : Esquive instinctive (Réduire les dégâts reçus de moitié via réaction)

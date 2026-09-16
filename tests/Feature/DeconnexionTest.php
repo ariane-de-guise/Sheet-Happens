@@ -35,9 +35,10 @@ class DeconnexionTest extends TestCase
         ]);
 
         $this->actingAs($utilisateur)
-            ->get('/')
+            ->get('/personnages')
             ->assertSee('samuel@exemple.com')
-            ->assertSee('Déconnexion');
+            ->assertSee('Afficher le profil')
+            ->assertDontSee('Se déconnecter');
     }
 
     /**
