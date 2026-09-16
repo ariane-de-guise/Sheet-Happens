@@ -51,7 +51,7 @@
                         <span>0/300</span>
                     </div>
                     <div style="height: 6px; background: rgba(25, 10, 50, 0.9); border-radius: 3px; margin-top: 0.25rem; overflow: hidden;">
-                        <div style="width: 0%; height: 100%; background: #e6b84d; border-radius: 3px;"></div>
+                        <div style="width: 0; height: 100%; background: #e6b84d; border-radius: 3px;"></div>
                     </div>
                 </div>
             </div>
