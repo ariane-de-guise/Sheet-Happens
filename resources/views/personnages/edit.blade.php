@@ -250,7 +250,7 @@
                 <form action="{{ route('personnages.update', $personnage) }}" method="POST" style="display:inline;">
                     @csrf
                     @method('PATCH')
-                    <input type="number" name="niveau" value="{{ $personnage->niveau }}" min="1" max="20"
+                    <input type="number" name="niveau" value="{{ $personnage->niveau }}" min="1" max="5" readonly title="Le niveau se modifie avec la montée de niveau"
                         onchange="this.form.submit()" style="width:45px;">
                 </form>
             </div>

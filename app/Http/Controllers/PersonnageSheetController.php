@@ -128,7 +128,7 @@ class PersonnageSheetController extends Controller
                     return $query->where('classe_id', $request->input('classe_id'));
                 }),
             ],
-            'niveau' => 'required|integer|min:1|max:20',
+            'niveau' => ['required', 'integer', Rule::in([(int) $personnage->niveau])],
             'alignement' => 'nullable|string|max:50',
             'description' => 'nullable|string',
             'point_de_vie' => 'required|integer|min:1',

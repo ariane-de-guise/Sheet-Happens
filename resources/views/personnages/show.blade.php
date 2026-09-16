@@ -43,7 +43,14 @@
                             @endif
                         </div>
 
-                        <a href="{{ route('personnages.edit', $personnage) }}" class="btn btn-secondary btn-small">Modifier</a>
+                        <div style="display:flex; gap:.5rem;">
+                            @if($personnage->niveau < 5)
+                                <a href="{{ route('personnages.montee-niveau', $personnage) }}" class="btn btn-small" style="background:#e6b84d;color:#1a0533;font-weight:800;">✦ Monter de niveau</a>
+                            @else
+                                <span class="btn btn-small" style="background:#4d3d5d;color:#d7c9e3;cursor:default;">Niveau maximum</span>
+                            @endif
+                            <a href="{{ route('personnages.edit', $personnage) }}" class="btn btn-secondary btn-small">Modifier</a>
+                        </div>
                     </div>
 
                     <div style="font-size: 0.75rem; color: #b8a9c9; display: flex; justify-content: space-between; margin-top: 0.5rem;">
@@ -117,6 +124,19 @@
                     <div style="font-size: 0.8rem; color: #b8a9c9;">Niveau: {{ $personnage->niveau }}</div>
                 </div>
             </div>
+
+            @if(!empty($personnage->capacites) || !empty($personnage->feats))
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                <div style="background:rgba(25,10,50,.9);border:1px solid #c49a3c;border-radius:12px;padding:1rem;">
+                    <div style="font-size:.9rem;font-weight:600;color:#e6b84d;margin-bottom:.5rem;">Capacités acquises</div>
+                    @forelse($personnage->capacites ?? [] as $capacite)<div style="font-size:.8rem;color:#b8a9c9;">✦ {{ $capacite }}</div>@empty<div style="font-size:.8rem;color:#b8a9c9;">Aucune</div>@endforelse
+                </div>
+                <div style="background:rgba(25,10,50,.9);border:1px solid #c49a3c;border-radius:12px;padding:1rem;">
+                    <div style="font-size:.9rem;font-weight:600;color:#e6b84d;margin-bottom:.5rem;">Dons</div>
+                    @forelse($personnage->feats ?? [] as $feat)<div style="font-size:.8rem;color:#b8a9c9;">✦ {{ $feat }}</div>@empty<div style="font-size:.8rem;color:#b8a9c9;">Aucun</div>@endforelse
+                </div>
+            </div>
+            @endif
 
             <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
