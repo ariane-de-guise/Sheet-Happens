@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/personnages/{personnage}', [PersonnageSheetController::class, 'show'])->name('personnages.show');
     Route::get('/personnages/{personnage}/edit', [PersonnageSheetController::class, 'edit'])->name('personnages.edit');
     Route::patch('/personnages/{personnage}', [PersonnageSheetController::class, 'update'])->name('personnages.update');
+    Route::delete('/personnages/{personnage}', [PersonnageSheetController::class, 'destroy'])->name('personnages.destroy');
 
     Route::get('/api/sous-classes/{classeId}/{niveauMax?}', [CreationPersonnageController::class, 'getSousClasses'])->name('api.sous-classes');
     Route::get('/api/sous-races/{raceId}', [CreationPersonnageController::class, 'getSousRaces'])->name('api.sous-races');
