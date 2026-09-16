@@ -16,7 +16,7 @@
 
     <div>
         <div class="card" style="height: fit-content;">
-            
+
             <div style="display: flex; gap: 2rem; align-items: flex-start; margin-bottom: 2rem;">
                 <!-- Avatar & Level -->
                 <div style="position: relative;">
@@ -118,12 +118,23 @@
                 </div>
             </div>
 
-            <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 0.95rem; font-weight: 600; color: #e6b84d;">Équipements</span>
-                    <button class="btn btn-secondary btn-small"  @disabled($errors->any())>Tous voir (à venir)</button>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.95rem; font-weight: 600; color: #e6b84d;">Traits</span>
+                        <a href="{{ route('personnages.traits', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
+                    </div>
+                </div>
+
+                <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.95rem; font-weight: 600; color: #e6b84d;">Équipements</span>
+                        <button class="btn btn-secondary btn-small" @disabled($errors->any())>Tous voir (à venir)</button>
+                    </div>
                 </div>
             </div>
+
+
 
         </div>
     </div>
