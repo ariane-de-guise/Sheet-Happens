@@ -9,6 +9,7 @@ use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\SousRace;
 use App\Models\Utilisateur;
+use App\Services\FicheDePersonnageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,8 @@ use Illuminate\View\View;
 
 class PersonnageSheetController extends Controller
 {
+    public function __construct(private readonly FicheDePersonnageService $fiche) {}
+
     public function index(): View
     {
         $userId = auth()->id() ?? Utilisateur::query()->value('id');
@@ -41,6 +44,23 @@ class PersonnageSheetController extends Controller
         ]);
 
         return view('personnages.show', [
+            'personnage' => $personnage,
+            'bonusMaitrise' => $this->fiche->bonusMaitrise($personnage->niveau),
+            'jetsDeSauvegarde' => $this->fiche->jetsDeSauvegarde($personnage),
+            'competences' => $this->fiche->competences($personnage),
+            'perceptionPassive' => $this->fiche->perceptionPassive($personnage),
+            'traits' => $this->fiche->traits($personnage),
+            'actions' => $this->fiche->actions($personnage),
+        ]);
+    }
+
+    public function inventaire(Personnage $personnage): View
+    {
+        $this->authorizeOwner($personnage);
+
+        $personnage->load(['race', 'classe', 'historique']);
+
+        return view('personnages.inventaire', [
             'personnage' => $personnage,
         ]);
     }

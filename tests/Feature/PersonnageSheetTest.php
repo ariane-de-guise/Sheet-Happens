@@ -80,6 +80,113 @@ class PersonnageSheetTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_la_fiche_affiche_les_jets_de_sauvegarde_les_competences_et_les_pv(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['nom' => 'Guerrier']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+            'point_de_vie' => 27,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get("/personnages/{$personnage->id}")
+            ->assertOk()
+            ->assertSee('Jets de sauvegarde')
+            ->assertSee('Compétences')
+            ->assertSee('Points de vie')
+            ->assertSee('27')
+            ->assertSee('Bonus de maîtrise')
+            ->assertSee('Perception passive');
+    }
+
+    public function test_la_fiche_affiche_des_attaques_pour_une_classe_non_lanceuse_de_sorts(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['nom' => 'Guerrier']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+            'equipement' => ['Épée'],
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get("/personnages/{$personnage->id}")
+            ->assertOk()
+            ->assertSee('Actions')
+            ->assertSee('Épée')
+            ->assertSee('pour toucher');
+    }
+
+    public function test_la_fiche_affiche_des_sorts_pour_une_classe_lanceuse_de_sorts(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['nom' => 'Magicien']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get("/personnages/{$personnage->id}")
+            ->assertOk()
+            ->assertSee('Actions')
+            ->assertSee('DD de sauvegarde des sorts')
+            ->assertSee('attaque de sorts');
+    }
+
+    public function test_la_fiche_affiche_les_traits_et_l_equipement_porte_avec_un_lien_vers_l_inventaire(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create(['description' => 'Une race curieuse.']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
+            'equipement' => ['Sac à dos'],
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get("/personnages/{$personnage->id}")
+            ->assertOk()
+            ->assertSee('Traits')
+            ->assertSee('Une race curieuse.')
+            ->assertSee('Équipement porté')
+            ->assertSee('Sac à dos')
+            ->assertSee(route('personnages.inventaire', $personnage), false);
+    }
+
+    public function test_un_proprietaire_peut_consulter_l_inventaire_de_son_personnage(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'equipement' => ['Sac à dos', 'Cordes'],
+            'outil' => 'Kit de calligraphe',
+            'langues' => ['Commun', 'Elfe'],
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get("/personnages/{$personnage->id}/inventaire")
+            ->assertOk()
+            ->assertSee('Inventaire de '.$personnage->nom)
+            ->assertSee('Sac à dos')
+            ->assertSee('Cordes')
+            ->assertSee('Kit de calligraphe')
+            ->assertSee('Commun, Elfe');
+    }
+
+    public function test_un_autre_utilisateur_ne_peut_pas_consulter_l_inventaire(): void
+    {
+        $proprietaire = Utilisateur::factory()->create();
+        $autre = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $proprietaire->id]);
+
+        $this->actingAs($autre)
+            ->get("/personnages/{$personnage->id}/inventaire")
+            ->assertForbidden();
+    }
+
     public function test_un_proprietaire_peut_afficher_le_formulaire_edition(): void
     {
         $utilisateur = Utilisateur::factory()->create();
