@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             HistoriquesSeeder::class,
             TraitSeeder::class,
             RaceTraitSeeder::class,
+            SousRaceTraitSeeder::class,
         ]);
     }
 }

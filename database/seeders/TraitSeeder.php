@@ -11,9 +11,8 @@ class TraitSeeder extends Seeder
     {
         $traits = [
             // ==========================================
-            // NIVEAU 1 : TRAITS RACIAUX GÉNÉRAUX & SOUS-RACES
+            // NIVEAU 1 : TRAITS RACIAUX GÉNÉRAUX & SOUS-RACES (Existant)
             // ==========================================
-            // Sens & Résistances de base
             [
                 'nom' => 'Vision dans le noir',
                 'niveau' => 1,
@@ -200,7 +199,7 @@ class TraitSeeder extends Seeder
             ],
 
             // ==========================================
-            // NIVEAU 3 : SORTS ET POUVOIRS INNÉS DÉBLOQUÉS
+            // NIVEAU 3 : SORTS ET POUVOIRS INNÉS DÉBLOQUÉS (Existant)
             // ==========================================
             [
                 'nom' => 'Magie infernale : Représailles infernales',
@@ -239,7 +238,7 @@ class TraitSeeder extends Seeder
             ],
 
             // ==========================================
-            // NIVEAU 5 : SORTS ET POUVOIRS INNÉS DÉBLOQUÉS
+            // NIVEAU 5 : SORTS ET POUVOIRS INNÉS DÉBLOQUÉS (Existant)
             // ==========================================
             [
                 'nom' => 'Magie infernale : Ténèbres',
@@ -280,6 +279,98 @@ class TraitSeeder extends Seeder
                 'nom' => 'Création d’eau (Genasi d’Eau)',
                 'niveau' => 5,
                 'description' => 'Permet de lancer le sort Création ou destruction d’eau au niveau 2 une fois par repos long (Constitution comme caractéristique d’incantation).',
+            ],
+
+            // ==========================================
+            // AJOUTS SPÉCIFIQUES POUR LES SOUS-RACES
+            // ==========================================
+
+            // --- HAUT ELFE ---
+            [
+                'nom' => 'Sort mineur',
+                'niveau' => 1,
+                'description' => 'Vous connaissez un tour de magie de votre choix issu de la liste de sorts de magicien. L\'Intelligence est votre caractéristique d\'incantation pour ce sort.',
+            ],
+            [
+                'nom' => 'Langue supplémentaire',
+                'niveau' => 1,
+                'description' => 'Vous parlez, lisez et écrivez une langue supplémentaire de votre choix.',
+            ],
+
+            // --- NAIN DE MONTAGNE ---
+            [
+                'nom' => 'Entraînement au port des armures naines',
+                'niveau' => 1,
+                'description' => 'Vous maîtrisez les armures légères et intermédiaires.',
+            ],
+
+            // --- TIEFFELIN (Lignée d'Asmodée - correspondances exactes au seeder pivot) ---
+            [
+                'nom' => 'Héritage infernal : Thaumaturgie',
+                'niveau' => 1,
+                'description' => 'Vous connaissez le tour de magie thaumaturgie. Le Charisme est votre caractéristique d\'incantation.',
+            ],
+            [
+                'nom' => 'Héritage infernal : Représailles infernales',
+                'niveau' => 3,
+                'description' => 'Vous pouvez lancer le sort représailles infernales au niveau 2 une fois par repos long. Le Charisme est votre caractéristique d\'incantation.',
+            ],
+            [
+                'nom' => 'Héritage infernal : Ténèbres',
+                'niveau' => 5,
+                'description' => 'Vous pouvez lancer le sort ténèbres une fois par repos long. Le Charisme est votre caractéristique d\'incantation.',
+            ],
+
+            // --- DRAKÉIDES (Variantes spécifiques pour le pivot) ---
+            [
+                'nom' => 'Arme de souffle (Acide)',
+                'niveau' => 1,
+                'description' => 'Exhale une ligne de 1,5m par 9m (jet de sauvegarde de Dextérité) infligeant 2d6 dégâts d\'Acide. Recharge après un repos court ou long.',
+            ],
+            [
+                'nom' => 'Résistance aux dégâts (Acide)',
+                'niveau' => 1,
+                'description' => 'Vous avez la résistance aux dégâts d\'Acide.',
+            ],
+            [
+                'nom' => 'Arme de souffle (Foudre)',
+                'niveau' => 1,
+                'description' => 'Exhale une ligne de 1,5m par 9m (jet de sauvegarde de Dextérité) infligeant 2d6 dégâts de Foudre. Recharge après un repos court ou long.',
+            ],
+            [
+                'nom' => 'Résistance aux dégâts (Foudre)',
+                'niveau' => 1,
+                'description' => 'Vous avez la résistance aux dégâts de Foudre.',
+            ],
+            [
+                'nom' => 'Arme de souffle (Feu)',
+                'niveau' => 1,
+                'description' => 'Exhale un cône de 4,5m ou ligne de 1,5m par 9m (jet de sauvegarde de Dextérité) infligeant 2d6 dégâts de Feu. Recharge après un repos court ou long.',
+            ],
+            [
+                'nom' => 'Résistance aux dégâts (Feu)',
+                'niveau' => 1,
+                'description' => 'Vous avez la résistance aux dégâts de Feu.',
+            ],
+            [
+                'nom' => 'Arme de souffle (Poison)',
+                'niveau' => 1,
+                'description' => 'Exhale un cône de 4,5m (jet de sauvegarde de Constitution) infligeant 2d6 dégâts de Poison. Recharge après un repos court ou long.',
+            ],
+            [
+                'nom' => 'Résistance aux dégâts (Poison)',
+                'niveau' => 1,
+                'description' => 'Vous avez la résistance aux dégâts de Poison.',
+            ],
+            [
+                'nom' => 'Arme de souffle (Froid)',
+                'niveau' => 1,
+                'description' => 'Exhale un cône de 4,5m (jet de sauvegarde de Constitution) infligeant 2d6 dégâts de Froid. Recharge après un repos court ou long.',
+            ],
+            [
+                'nom' => 'Résistance aux dégâts (Froid)',
+                'niveau' => 1,
+                'description' => 'Vous avez la résistance aux dégâts de Froid.',
             ],
         ];
 

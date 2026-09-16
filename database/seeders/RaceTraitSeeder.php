@@ -31,6 +31,9 @@ class RaceTraitSeeder extends Seeder
             'Humain' => [
                 'Polyvalence des compétences',
             ],
+            'Humain, Variant' => [
+                'Polyvalence des compétences',
+            ],
             'Drakéide' => [
                 'Souffle draconique',
                 'Résistance draconique',
@@ -39,12 +42,12 @@ class RaceTraitSeeder extends Seeder
                 'Vision dans le noir',
                 'Ruse gnome',
             ],
-            'Demi-Elfe' => [
+            'Demi-elfe' => [
                 'Vision dans le noir',
                 'Ascendance féérique',
                 'Polyvalence des compétences',
             ],
-            'Demi-Orc' => [
+            'Demi-orc' => [
                 'Vision dans le noir',
                 'Mençant',
                 'Acharnement',
@@ -70,11 +73,20 @@ class RaceTraitSeeder extends Seeder
             $race = Race::where('nom', $raceName)->first();
 
             if (! $race) {
-                continue;
+                throw new \RuntimeException("La race « {$raceName} » est absente du seeder des races.");
             }
 
-            $traitIds = TraitModel::whereIn('nom', $traitNames)->pluck('id');
-            $race->traits()->syncWithoutDetaching($traitIds);
+            $traits = TraitModel::whereIn('nom', $traitNames)->get(['id', 'nom']);
+            $missingTraitNames = array_diff($traitNames, $traits->pluck('nom')->all());
+
+            if ($missingTraitNames !== []) {
+                throw new \RuntimeException(
+                    'Les traits suivants sont absents du seeder des traits : '
+                    . implode(', ', $missingTraitNames)
+                );
+            }
+
+            $race->traits()->syncWithoutDetaching($traits->pluck('id'));
         }
     }
 }

@@ -96,10 +96,20 @@ return new class extends Migration
 
             $table->primary(['race_id', 'trait_id']);
         });
+
+        Schema::create('sous_race_trait', function (Blueprint $table) {
+            $table->foreignId('sous_race_id')->constrained('sous_races')->cascadeOnDelete();
+            $table->foreignId('trait_id')->constrained('traits')->cascadeOnDelete();
+            $table->timestamps();
+
+            $table->primary(['sous_race_id', 'trait_id']);
+        });
+
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('sous_race_trait');
         Schema::dropIfExists('race_trait');
         Schema::dropIfExists('traits');
         Schema::dropIfExists('personnages');

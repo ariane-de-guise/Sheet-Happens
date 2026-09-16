@@ -137,6 +137,16 @@ class RacesSeeder extends Seeder
                 ],
                 'bonus_aptitudes' => ['charisme' => 2],
             ],
+            [
+                'nom' => 'Aasimar',
+                'taille' => 'Moyenne',
+                'vitesse' => 30,
+                'type_creature' => 'Humanoïde',
+                'langues' => ['Commun', 'Céleste'],
+                'description' => 'Les aasimar sont des humanoïdes touchés par une puissance céleste.',
+                'sous_races' => [],
+                'bonus_aptitudes' => ['charisme' => 2],
+            ],
         ];
 
         foreach ($races as $raceData) {
