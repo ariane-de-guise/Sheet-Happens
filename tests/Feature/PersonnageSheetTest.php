@@ -202,7 +202,7 @@ class PersonnageSheetTest extends TestCase
         $this->actingAs($utilisateur)
             ->get("/personnages/{$personnage->id}/inventaire")
             ->assertOk()
-            ->assertSee('Inventaire de ' . $personnage->nom)
+            ->assertSee('Inventaire de '.$personnage->nom)
             ->assertSee('Objets')
             ->assertSee('Sac à dos')
             ->assertSee('Cordes')
