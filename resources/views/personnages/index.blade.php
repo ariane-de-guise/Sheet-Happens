@@ -6,6 +6,10 @@
     <div class="card">
         <h1 class="title-main text-center mb-4">Mes personnages</h1>
 
+        @if(session('error'))
+            <div class="alert alert-error">{{ session('error') }}</div>
+        @endif
+
         @if($personnages->isEmpty())
             <p class="text-muted text-center mb-4">Vous n'avez pas encore de personnage.</p>
         @else
@@ -30,7 +34,14 @@
         @endif
 
         <div class="text-center">
-            <a href="{{ route('creation.race') }}" class="btn btn-primary mb-2">Créez un personnage</a>
+            <p class="text-muted mb-2">{{ $personnages->count() }} / {{ \App\Models\Personnage::MAX_PAR_UTILISATEUR }} personnages</p>
+            @if($personnages->count() >= \App\Models\Personnage::MAX_PAR_UTILISATEUR)
+                <button type="button" class="btn btn-primary mb-2" disabled title="Supprimez un personnage pour en créer un nouveau">
+                    Limite de personnages atteinte
+                </button>
+            @else
+                <a href="{{ route('creation.race') }}" class="btn btn-primary mb-2">Créez un personnage</a>
+            @endif
         </div>
     </div>
 

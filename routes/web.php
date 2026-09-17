@@ -34,7 +34,7 @@ Route::middleware('auth')->group(function () {
         return view('personnages.choixPersonnage');
     })->name('personnages.choix');
 
-    Route::prefix('personnages/creer')->group(function () {
+    Route::prefix('personnages/creer')->middleware('limite.personnages')->group(function () {
         Route::get('/', [CreationPersonnageController::class, 'stepRace'])->name('creation.race');
         Route::post('/race', [CreationPersonnageController::class, 'saveRace'])->name('creation.race.save');
 

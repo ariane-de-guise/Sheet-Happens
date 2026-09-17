@@ -261,6 +261,12 @@ button:active {
     text-decoration: none;
 }
 
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .btn-primary {
     background: #e6b84d;
     color: #1a0533;
