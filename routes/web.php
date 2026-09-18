@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CreationPersonnageController;
+use App\Http\Controllers\MonteeNiveauController;
 use App\Http\Controllers\PersonnageController;
 use App\Http\Controllers\PersonnageSheetController;
 use App\Http\Controllers\UtilisateurController;
@@ -57,6 +58,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/confirmation', [CreationPersonnageController::class, 'stepConfirmation'])->name('creation.confirmation');
         Route::post('/', [CreationPersonnageController::class, 'finalize'])->name('creation.finalize');
     });
+
+    Route::get('/personnages/{personnage}/montee-niveau', [MonteeNiveauController::class, 'show'])->name('personnages.montee-niveau');
+    Route::post('/personnages/{personnage}/montee-niveau/lancer-de-vie', [MonteeNiveauController::class, 'rollHitDie'])->name('personnages.montee-niveau.roll-hit-die');
+    Route::post('/personnages/{personnage}/montee-niveau', [MonteeNiveauController::class, 'store'])->name('personnages.montee-niveau.store');
 
     Route::get('/personnages/{personnage}', [PersonnageSheetController::class, 'show'])->name('personnages.show');
     Route::get('/personnages/{personnage}/inventaire', [PersonnageSheetController::class, 'inventaire'])->name('personnages.inventaire');

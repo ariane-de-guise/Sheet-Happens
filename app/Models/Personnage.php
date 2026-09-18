@@ -5,8 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'niveau', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'outil', 'langues', 'equipement'])]
+#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'niveau', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'outil', 'langues', 'equipement', 'capacites', 'feats'])]
 class Personnage extends Model
 {
     /**
@@ -21,6 +22,8 @@ class Personnage extends Model
         return [
             'langues' => 'array',
             'equipement' => 'array',
+            'capacites' => 'array',
+            'feats' => 'array',
         ];
     }
 
@@ -77,6 +80,11 @@ class Personnage extends Model
     public function abilites(): BelongsTo
     {
         return $this->belongsTo(Abilite::class, 'abilites_id');
+    }
+
+    public function monteesNiveau(): HasMany
+    {
+        return $this->hasMany(MonteeNiveau::class)->orderBy('niveau_arrivee');
     }
 
     public function listeCompetence(): BelongsTo

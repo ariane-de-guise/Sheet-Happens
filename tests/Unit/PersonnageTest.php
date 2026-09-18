@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\MonteeNiveau;
 use Database\Factories\ClasseFactory;
 use Database\Factories\PersonnageFactory;
 use Database\Factories\RaceFactory;
@@ -38,5 +39,31 @@ class PersonnageTest extends TestCase
         $this->assertTrue($personnage->sousClasse->is($sousClasse));
         $this->assertNotNull($personnage->abilites);
         $this->assertNotNull($personnage->listeCompetence);
+    }
+
+    public function test_un_personnage_possede_plusieurs_montees_de_niveau_ordonnees(): void
+    {
+        $personnage = PersonnageFactory::new()->create();
+
+        MonteeNiveau::create([
+            'personnage_id' => $personnage->id,
+            'niveau_depart' => 2,
+            'niveau_arrivee' => 3,
+            'choix' => [],
+            'changements' => [],
+        ]);
+
+        MonteeNiveau::create([
+            'personnage_id' => $personnage->id,
+            'niveau_depart' => 1,
+            'niveau_arrivee' => 2,
+            'choix' => [],
+            'changements' => [],
+        ]);
+
+        $montees = $personnage->monteesNiveau;
+
+        $this->assertCount(2, $montees);
+        $this->assertSame([2, 3], $montees->pluck('niveau_arrivee')->all());
     }
 }
