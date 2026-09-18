@@ -200,7 +200,10 @@
 
                 {{-- Traits (bonus et capacités) : contenu à venir --}}
                 <div class="sheet-box mb-3">
-                    <div class="sheet-box-title">Traits</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span class="sheet-box-title" style="margin-bottom: 0;">Traits</span>
+                        <a href="{{ route('personnages.traits', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
+                    </div>
                 </div>
 
                 {{-- Actions : sorts ou attaques selon la classe --}}

@@ -68,6 +68,25 @@ class PersonnageSheetController extends Controller
         ]);
     }
 
+    public function getTraits(Personnage $personnage): View
+    {
+        $this->authorizeOwner($personnage);
+
+        $personnage->load([
+            'race.traits', 'sousRace.traits',
+        ]);
+
+        $raceTraits = $personnage->race->traits;
+        $sousRaceTraits = $personnage->sousRace?->traits ?? collect();
+
+        return view('personnages.traits.index', [
+            'personnage' => $personnage,
+            'raceTraits' => $raceTraits,
+            'sousRaceTraits' => $sousRaceTraits,
+        ]);
+
+    }
+
     public function edit(Personnage $personnage): View
     {
         $this->authorizeOwner($personnage);
