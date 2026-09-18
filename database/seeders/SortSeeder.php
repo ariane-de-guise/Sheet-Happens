@@ -2391,6 +2391,19 @@ class SortSeeder extends Seeder
                 'Composants' => 'V, S, M',
                 'Degat' => 'Contondant',
             ],
+            [
+                'Nom' => 'Manteau du croisé',
+                'NomAnglais' => "Crusader's Mantle",
+                'Description' => "Une aura sacrée émane de toi dans un rayon de 9 pi. Pendant toute la durée du sort, les créatures alliées situées dans cette aura infligent 1d4 dégâts radiants supplémentaires lorsqu'elles touchent avec une attaque d'arme. Aux niveaux supérieurs : lorsque tu lances ce sort avec un emplacement de sort de niveau 4 ou supérieur, les dégâts supplémentaires augmentent de 1d4 pour chaque niveau d'emplacement au-delà du niveau 3.",
+                'Niveau' => 3,
+                'TempsActivation' => '1 action',
+                'Duree' => 'Concentration, jusqu\'à 1 minute',
+                'Ecole' => 'Évocation',
+                'Distance' => 'Personnel (rayon de 9 pi)',
+                'AttaqueSauvegarde' => 'Aucune',
+                'Composants' => 'V, S',
+                'Degat' => 'Radiant',
+            ],
 
         ];
 

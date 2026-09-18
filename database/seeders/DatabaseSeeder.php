@@ -28,6 +28,10 @@ class DatabaseSeeder extends Seeder
             HistoriquesSeeder::class,
             DegatSeeder::class,
             SortSeeder::class,
+            ClasseSortSeeder::class,
+            SousclasseSortSeeder::class,
+            LimiteMagieSeeder::class,
+            PersonnageSortSeeder::class,
         ]);
     }
 }
