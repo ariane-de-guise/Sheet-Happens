@@ -46,6 +46,15 @@
             flex-shrink: 0;
         }
 
+        /* Lignes à colonne unique (capacités, dons...) : pas de valeur à
+           droite à préserver, donc le texte doit pouvoir rétrécir et
+           passer à la ligne plutôt que déborder de la carte. */
+        .sheet-row > span:first-child:only-child {
+            flex-shrink: 1;
+            min-width: 0;
+            overflow-wrap: break-word;
+        }
+
         .sheet-row .maitrise-dot {
             display: inline-block;
             width: 8px;
@@ -228,31 +237,10 @@
                             <div
                                 style="
                                display: flex;
+                               flex-direction: column;
+                               align-items: flex-end;
                                gap: 0.5rem;
-                               flex-wrap: wrap;
                            ">
-                                <!-- Montée de niveau -->
-                                @if ($personnage->niveau < 5)
-                                    <a href="{{ route('personnages.montee-niveau', $personnage) }}" class="btn btn-small"
-                                        style="
-                                           background: #e6b84d;
-                                           color: #1a0533;
-                                           font-weight: 800;
-                                           text-align: center;
-                                           text-decoration: none;
-                                       ">
-                                        ✦ Monter de niveau
-                                    </a>
-                                @else
-                                    <span class="btn btn-small"
-                                        style="
-                                           background: #4d3d5d;
-                                           color: #d7c9e3;
-                                           cursor: default;
-                                       ">
-                                        Niveau maximum
-                                    </span>
-                                @endif
                                 <!-- Modifier -->
                                 <button type="button" class="btn btn-secondary btn-small" style="text-align: center;"
                                     onclick="window.location.href='{{ route('personnages.edit', $personnage) }}'">
@@ -284,7 +272,13 @@
                            margin-top: 0.5rem;
                        ">
                             <span>Expériences</span>
-                            <span>0/300</span>
+                            <span>
+                                @if ($seuilExperience !== null)
+                                    {{ $personnage->experience }}/{{ $seuilExperience }}
+                                @else
+                                    {{ $personnage->experience }} (niveau maximum)
+                                @endif
+                            </span>
                         </div>
                         <div
                             style="
@@ -296,13 +290,46 @@
                        ">
                             <div
                                 style="
-                               width: 0%;
+                               width: {{ $seuilExperience ? min(100, (int) floor($personnage->experience / $seuilExperience * 100)) : 100 }}%;
                                height: 100%;
                                background: #e6b84d;
                                border-radius: 3px;
                            ">
                             </div>
                         </div>
+                        @if ($seuilExperience !== null)
+                            <form action="{{ route('personnages.experience.ajouter', $personnage) }}" method="POST"
+                                style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+                                @csrf
+                                <input type="number" name="experience" min="1" max="1000000" required
+                                    placeholder="Points d'XP"
+                                    style="
+                                       flex: 1;
+                                       min-width: 0;
+                                       background: rgba(15, 5, 30, 0.9);
+                                       border: 1px solid #c49a3c;
+                                       border-radius: 6px;
+                                       color: #e8d5b5;
+                                       padding: 0.3rem 0.5rem;
+                                       font-size: 0.8rem;
+                                   ">
+                                <button type="submit" class="btn btn-small"
+                                    style="
+                                       background: #e6b84d;
+                                       color: #1a0533;
+                                       font-weight: 800;
+                                       text-align: center;
+                                       white-space: nowrap;
+                                   ">
+                                    ✦ Ajouter de l'expérience
+                                </button>
+                            </form>
+                            @error('experience')
+                                <div style="color: #e07a7a; font-size: 0.75rem; margin-top: 0.25rem;">
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        @endif
                     </div>
                 </div>
                 {{-- Caractéristiques, jets de sauvegarde, PV/vitesse/bonus --}}

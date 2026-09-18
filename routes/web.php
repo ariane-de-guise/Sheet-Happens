@@ -60,6 +60,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [CreationPersonnageController::class, 'finalize'])->name('creation.finalize');
     });
 
+    Route::post('/personnages/{personnage}/experience', [PersonnageSheetController::class, 'ajouterExperience'])->name('personnages.experience.ajouter');
+
     Route::get('/personnages/{personnage}/montee-niveau', [MonteeNiveauController::class, 'show'])->name('personnages.montee-niveau');
     Route::post('/personnages/{personnage}/montee-niveau/lancer-de-vie', [MonteeNiveauController::class, 'rollHitDie'])->name('personnages.montee-niveau.roll-hit-die');
     Route::post('/personnages/{personnage}/montee-niveau', [MonteeNiveauController::class, 'store'])->name('personnages.montee-niveau.store');

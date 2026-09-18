@@ -12,6 +12,7 @@ use App\Models\SousClasse;
 use App\Models\SousRace;
 use App\Models\Utilisateur;
 use App\Services\FicheDePersonnageService;
+use App\Services\MonteeNiveauService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +23,10 @@ use Illuminate\View\View;
 
 class PersonnageSheetController extends Controller
 {
-    public function __construct(private readonly FicheDePersonnageService $fiche) {}
+    public function __construct(
+        private readonly FicheDePersonnageService $fiche,
+        private readonly MonteeNiveauService $monteeNiveau,
+    ) {}
 
     public function index(): View
     {
@@ -56,6 +60,7 @@ class PersonnageSheetController extends Controller
             'perceptionPassive' => $this->fiche->perceptionPassive($personnage),
             'classeArmure' => $this->fiche->classeArmure($personnage),
             'actions' => $this->fiche->actions($personnage),
+            'seuilExperience' => $this->monteeNiveau->xpProchainNiveau($personnage),
         ]);
         // Section "Traits" volontairement vide pour l'instant (à faire plus
         // tard) : voir FicheDePersonnageService::traits(), déjà prête et
@@ -254,6 +259,32 @@ class PersonnageSheetController extends Controller
 
         return redirect()->route('personnages.show', $personnage)
             ->with('success', 'Photo mise à jour avec succès !');
+    }
+
+    /**
+     * Ajoute de l'expérience au personnage. S'il en a assez pour franchir
+     * le seuil de son niveau actuel, on l'envoie directement sur l'écran
+     * de montée de niveau pour qu'il y fasse ses choix (sous-classe,
+     * amélioration de caractéristiques/don, dé de vie), plutôt que de
+     * monter le niveau tout seul sans lui laisser la main.
+     */
+    public function ajouterExperience(Request $request, Personnage $personnage): RedirectResponse
+    {
+        $this->authorizeOwner($personnage);
+
+        $validated = $request->validate([
+            'experience' => 'required|integer|min:1|max:1000000',
+        ]);
+
+        $personnage->increment('experience', $validated['experience']);
+
+        if ($this->monteeNiveau->peutMonterDeNiveau($personnage)) {
+            return redirect()->route('personnages.montee-niveau', $personnage)
+                ->with('success', "{$personnage->nom} a assez d'expérience pour monter de niveau !");
+        }
+
+        return redirect()->route('personnages.show', $personnage)
+            ->with('success', "{$validated['experience']} points d'expérience ajoutés.");
     }
 
     /**
