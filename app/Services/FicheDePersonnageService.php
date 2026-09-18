@@ -154,7 +154,7 @@ class FicheDePersonnageService
     public function competences(Personnage $personnage): array
     {
         $abilites = $personnage->abilites;
-        $maitrisees = $personnage->listeCompetence->competences ?? [];
+        $maitrisees = $personnage->listeCompetence?->competences ?? [];
         $bonusMaitrise = $this->bonusMaitrise($personnage->niveau);
 
         $resultat = [];
