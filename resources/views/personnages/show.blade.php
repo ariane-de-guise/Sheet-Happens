@@ -38,9 +38,14 @@
         .sheet-row {
             display: flex;
             justify-content: space-between;
+            gap: 0.75rem;
             font-size: 0.8rem;
             color: #b8a9c9;
             padding: 0.2rem 0;
+        }
+
+        .sheet-row > span:first-child {
+            flex-shrink: 0;
         }
 
         .sheet-row .maitrise-dot {
@@ -60,6 +65,79 @@
         .sheet-row .valeur {
             color: #e8d5b5;
             font-weight: 600;
+            flex: 1;
+            min-width: 0;
+            text-align: right;
+        }
+
+        .avatar-label {
+            cursor: pointer;
+            display: block;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: rgba(15, 5, 30, 0.9);
+            border: 2px solid #c49a3c;
+            position: relative;
+        }
+
+        .avatar-label img {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Le logo par défaut contient déjà son propre médaillon circulaire :
+           le recadrer en "cover" le décentrait (marges transparentes
+           asymétriques dans le fichier source), il est donc affiché en
+           entier ("contain") plutôt que rogné. Une vraie photo de
+           personnage, elle, n'a pas ce médaillon et gagne à remplir tout
+           le cercle. */
+        .avatar-label img.avatar-photo {
+            object-fit: cover;
+        }
+
+        .avatar-label img.avatar-logo-defaut {
+            object-fit: contain;
+        }
+
+        .avatar-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(20, 5, 40, 0.7);
+            color: #e6b84d;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .avatar-label:hover .avatar-overlay {
+            opacity: 1;
+        }
+
+        .badge-ca {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #1a0533;
+            border: 2px solid #e6b84d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #e6b84d;
+            font-size: 0.65rem;
+            font-weight: 700;
+            line-height: 1.1;
         }
     </style>
 @endpush
@@ -80,9 +158,22 @@
             <div class="card" style="height: fit-content;">
 
                 <div style="display: flex; gap: 2rem; align-items: flex-start; margin-bottom: 2rem;">
-                    <!-- Avatar & Level -->
+                    <!-- Avatar, CA et Niveau -->
                     <div style="position: relative;">
-                        <div style="width: 120px; height: 120px; border-radius: 50%; background: #e6b84d;"></div>
+                        <form action="{{ route('personnages.photo', $personnage) }}" method="POST" enctype="multipart/form-data" style="margin: 0;">
+                            @csrf
+                            @method('PATCH')
+                            <label for="input-photo-personnage" class="avatar-label" title="Changer la photo">
+                                <img src="{{ $personnage->photo ? \Illuminate\Support\Facades\Storage::url($personnage->photo) : asset('images/logo_rmb.png') }}"
+                                     alt="Portrait de {{ $personnage->nom }}"
+                                     class="{{ $personnage->photo ? 'avatar-photo' : 'avatar-logo-defaut' }}">
+                                <span class="avatar-overlay">Changer<br>la photo</span>
+                            </label>
+                            <input type="file" id="input-photo-personnage" name="photo" accept="image/*" style="display: none;" onchange="this.form.submit()">
+                        </form>
+
+                        <div class="badge-ca">CA<br>{{ $classeArmure }}</div>
+
                         <div style="position: absolute; bottom: -5px; right: -5px; width: 45px; height: 45px; border-radius: 50%; background: #e6b84d; display: flex; align-items: center; justify-content: center; text-align: center; color: #1a0533; font-size: 0.7rem; font-weight: 600;">
                             Niveau<br>{{ $personnage->niveau }}
                         </div>
@@ -174,6 +265,7 @@
                     <div class="sheet-box">
                         <div class="sheet-box-title">PV, vitesse &amp; bonus</div>
                         <div class="sheet-row"><span>Points de vie</span><span class="valeur">{{ $personnage->point_de_vie }}</span></div>
+                        <div class="sheet-row"><span>Classe d'Armure</span><span class="valeur">{{ $classeArmure }}</span></div>
                         <div class="sheet-row"><span>Vitesse</span><span class="valeur">{{ $personnage->race->vitesse ? $personnage->race->vitesse . ' pi' : '—' }}</span></div>
                         <div class="sheet-row"><span>Bonus de maîtrise</span><span class="valeur">+{{ $bonusMaitrise }}</span></div>
                         <div class="sheet-row"><span>Perception passive</span><span class="valeur">{{ $perceptionPassive }}</span></div>
@@ -197,14 +289,10 @@
                     </div>
 
                     <div style="border-top: 1px solid rgba(196, 154, 60, 0.35); margin-top: 0.75rem; padding-top: 0.75rem;">
-                        <div style="font-size: 0.8rem; font-weight: 600; color: #e6b84d; margin-bottom: 0.35rem;">Langues et outils</div>
+                        <div style="font-size: 0.8rem; font-weight: 600; color: #e6b84d; margin-bottom: 0.35rem;">Langues</div>
                         <div class="sheet-row">
                             <span>Langues</span>
                             <span class="valeur">{{ $personnage->langues && count($personnage->langues) > 0 ? implode(', ', $personnage->langues) : 'Aucune' }}</span>
-                        </div>
-                        <div class="sheet-row">
-                            <span>Outil</span>
-                            <span class="valeur">{{ $personnage->outil ?? 'Aucun' }}</span>
                         </div>
                     </div>
                 </div>
@@ -267,11 +355,11 @@
                 <div class="sheet-box">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <span class="sheet-box-title" style="margin-bottom: 0;">Inventaire</span>
-                        <a href="{{ route('personnages.inventaire', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
+                        <a href="{{ route('personnages.inventaire.index', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
                     </div>
-                    @if($personnage->equipement && count($personnage->equipement) > 0)
+                    @if($personnage->objets->count() > 0)
                         <div class="text-muted" style="font-size: 0.85rem;">
-                            {{ implode(', ', $personnage->equipement) }}
+                            {{ $personnage->objets->map(fn($objet) => $objet->nom . ($objet->pivot->quantite > 1 ? ' x' . $objet->pivot->quantite : '') . ($objet->pivot->equipe ? ' (équipé)' : ''))->implode(', ') }}
                         </div>
                     @else
                         <div class="text-muted" style="font-size: 0.85rem;">Aucun équipement enregistré.</div>

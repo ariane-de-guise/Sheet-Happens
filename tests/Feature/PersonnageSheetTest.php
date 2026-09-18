@@ -5,11 +5,15 @@ namespace Tests\Feature;
 use App\Models\TraitModel;
 use App\Models\Utilisateur;
 use Database\Factories\ClasseFactory;
+use Database\Factories\ObjetFactory;
 use Database\Factories\PersonnageFactory;
+use Database\Factories\PersonnageObjetFactory;
 use Database\Factories\RaceFactory;
 use Database\Factories\SousClasseFactory;
 use Database\Factories\SousRaceFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PersonnageSheetTest extends TestCase
@@ -117,7 +121,6 @@ class PersonnageSheetTest extends TestCase
             'utilisateur_id' => $utilisateur->id,
             'classe_id' => $classe->id,
             'point_de_vie' => 27,
-            'outil' => 'Kit de calligraphe',
             'langues' => ['Commun', 'Elfe'],
         ]);
 
@@ -130,9 +133,7 @@ class PersonnageSheetTest extends TestCase
             ->assertSee('27')
             ->assertSee('Bonus de maîtrise')
             ->assertSee('Perception passive')
-            ->assertSee('Langues et outils')
-            ->assertSee('Commun, Elfe')
-            ->assertSee('Kit de calligraphe');
+            ->assertSee('Commun, Elfe');
     }
 
     public function test_la_fiche_affiche_des_attaques_pour_une_classe_non_lanceuse_de_sorts(): void
@@ -142,7 +143,11 @@ class PersonnageSheetTest extends TestCase
         $personnage = PersonnageFactory::new()->create([
             'utilisateur_id' => $utilisateur->id,
             'classe_id' => $classe->id,
-            'equipement' => ['Épée'],
+        ]);
+        $epee = ObjetFactory::new()->arme()->create(['nom' => 'Épée']);
+        PersonnageObjetFactory::new()->equipe()->create([
+            'personnage_id' => $personnage->id,
+            'objet_id' => $epee->id,
         ]);
 
         $this->actingAs($utilisateur)
@@ -207,9 +212,11 @@ class PersonnageSheetTest extends TestCase
     public function test_la_fiche_affiche_l_inventaire_avec_un_lien_vers_la_page_complete(): void
     {
         $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-            'equipement' => ['Sac à dos'],
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+        $sacADos = ObjetFactory::new()->create(['nom' => 'Sac à dos']);
+        PersonnageObjetFactory::new()->create([
+            'personnage_id' => $personnage->id,
+            'objet_id' => $sacADos->id,
         ]);
 
         $this->actingAs($utilisateur)
@@ -217,25 +224,30 @@ class PersonnageSheetTest extends TestCase
             ->assertOk()
             ->assertSee('Inventaire')
             ->assertSee('Sac à dos')
-            ->assertSee(route('personnages.inventaire', $personnage), false);
+            ->assertSee(route('personnages.inventaire.index', $personnage), false);
     }
 
     public function test_un_proprietaire_peut_consulter_l_inventaire_de_son_personnage(): void
     {
         $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-            'equipement' => ['Sac à dos', 'Cordes', 'Épée', 'Bouclier'],
-        ]);
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $sacADos = ObjetFactory::new()->create(['nom' => 'Sac à dos']);
+        $epee = ObjetFactory::new()->arme()->create(['nom' => 'Épée']);
+        $bouclier = ObjetFactory::new()->bouclier()->create(['nom' => 'Bouclier']);
+
+        foreach ([$sacADos, $epee, $bouclier] as $objet) {
+            PersonnageObjetFactory::new()->create([
+                'personnage_id' => $personnage->id,
+                'objet_id' => $objet->id,
+            ]);
+        }
 
         $this->actingAs($utilisateur)
             ->get("/personnages/{$personnage->id}/inventaire")
             ->assertOk()
             ->assertSee('Inventaire de '.$personnage->nom)
-            ->assertSee('Objets')
             ->assertSee('Sac à dos')
-            ->assertSee('Cordes')
-            ->assertSee('Armure (équipement)')
             ->assertSee('Épée')
             ->assertSee('Bouclier');
     }
@@ -490,5 +502,71 @@ class PersonnageSheetTest extends TestCase
             ->patch("/personnages/{$personnage->id}", $donnees);
 
         $response->assertSessionHasErrors(['langues']);
+    }
+
+    public function test_un_proprietaire_peut_changer_la_photo_de_son_personnage(): void
+    {
+        Storage::fake('public');
+
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+        $photo = UploadedFile::fake()->image('portrait.jpg');
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.photo', $personnage), ['photo' => $photo])
+            ->assertRedirect(route('personnages.show', $personnage));
+
+        $personnage->refresh();
+        $this->assertNotNull($personnage->photo);
+        Storage::disk('public')->assertExists($personnage->photo);
+    }
+
+    public function test_changer_la_photo_supprime_l_ancienne(): void
+    {
+        Storage::fake('public');
+
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $this->actingAs($utilisateur)->patch(route('personnages.photo', $personnage), [
+            'photo' => UploadedFile::fake()->image('premiere.jpg'),
+        ]);
+        $anciennePhoto = $personnage->refresh()->photo;
+
+        $this->actingAs($utilisateur)->patch(route('personnages.photo', $personnage), [
+            'photo' => UploadedFile::fake()->image('seconde.jpg'),
+        ]);
+
+        Storage::disk('public')->assertMissing($anciennePhoto);
+        Storage::disk('public')->assertExists($personnage->refresh()->photo);
+    }
+
+    public function test_une_photo_non_image_est_rejetee(): void
+    {
+        Storage::fake('public');
+
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.photo', $personnage), [
+                'photo' => UploadedFile::fake()->create('document.pdf', 100),
+            ])
+            ->assertSessionHasErrors('photo');
+    }
+
+    public function test_un_autre_utilisateur_ne_peut_pas_changer_la_photo(): void
+    {
+        Storage::fake('public');
+
+        $proprietaire = Utilisateur::factory()->create();
+        $autre = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $proprietaire->id]);
+
+        $this->actingAs($autre)
+            ->patch(route('personnages.photo', $personnage), [
+                'photo' => UploadedFile::fake()->image('portrait.jpg'),
+            ])
+            ->assertForbidden();
     }
 }

@@ -7,8 +7,8 @@ use App\Models\Personnage;
 /**
  * Calcule les valeurs dérivées affichées sur la fiche de personnage
  * (consultation en lecture seule) : modificateurs, bonus de maîtrise,
- * jets de sauvegarde, compétences, perception passive, et le contenu de
- * la section "Actions" (sorts ou attaques selon la classe).
+ * jets de sauvegarde, compétences, perception passive, Classe d'Armure, et
+ * le contenu de la section "Actions" (sorts ou attaques selon la classe).
  *
  * Le schéma actuel (table `classes`) ne stocke pas encore les jets de
  * sauvegarde maîtrisés ni la caractéristique d'incantation d'une classe :
@@ -17,9 +17,16 @@ use App\Models\Personnage;
  * classe tel qu'enregistré par ClassesSeeder. Une classe absente de ces
  * tables (donnée non encore modélisée) est traitée comme non-maîtrisée /
  * non-lanceuse de sorts plutôt que de faire échouer l'affichage.
+ *
+ * Les bonus d'objets équipés (InventaireService::bonusActifs()) sont
+ * ajoutés aux scores de caractéristiques ici, à l'affichage seulement :
+ * jamais écrits sur `abilites`, pour qu'ils disparaissent dès qu'un objet
+ * est déséquipé.
  */
 class FicheDePersonnageService
 {
+    public function __construct(private readonly InventaireService $inventaire) {}
+
     private const ABILITES = [
         'force' => 'Force',
         'dexterite' => 'Dextérité',
@@ -79,26 +86,6 @@ class FicheDePersonnageService
         'Survie' => 'sagesse',
     ];
 
-    /**
-     * Armes reconnues parmi les choix d'équipement de départ proposés à la
-     * création (voir PersonnageSheetController::edit()) : seules celles-ci
-     * peuvent alimenter la section "Actions" des classes non lanceuses de
-     * sorts, à partir de l'équipement réellement porté par le personnage.
-     */
-    private const ARMES = [
-        'Épée' => ['degats' => '1d8', 'type' => 'tranchant', 'caracteristique' => 'force'],
-        'Arc court' => ['degats' => '1d6', 'type' => 'perforant', 'caracteristique' => 'dexterite'],
-    ];
-
-    /**
-     * Parmi les choix d'équipement de départ proposés à la création (voir
-     * PersonnageSheetController::edit()), ceux qui relèvent de l'armure /
-     * de l'équipement de combat (armes, bouclier, armure) plutôt que des
-     * objets divers. Utilisé pour répartir l'inventaire du personnage en
-     * deux sections sur la page d'inventaire.
-     */
-    private const ARMURE = ['Épée', 'Arc court', 'Bouclier', 'Armure de cuir'];
-
     public function modificateur(int $score): int
     {
         return (int) floor(($score - 10) / 2);
@@ -122,18 +109,34 @@ class FicheDePersonnageService
     }
 
     /**
+     * Score d'une caractéristique augmenté des bonus d'objets actuellement
+     * actifs (équipés, ou custom "toujours actifs", ou effets temporaires)
+     * — jamais écrit en base, recalculé à chaque appel.
+     */
+    private function scoreEffectif(Personnage $personnage, string $cle): int
+    {
+        $base = $personnage->abilites?->$cle ?? 10;
+        $bonus = $this->inventaire->bonusActifs($personnage)[$cle] ?? 0;
+
+        return $base + $bonus;
+    }
+
+    /**
      * @return array<int, array{aptitude: string, label: string, modificateur: int, maitrise: bool, bonus: int}>
      */
     public function jetsDeSauvegarde(Personnage $personnage): array
     {
-        $abilites = $personnage->abilites;
         $nomClasse = $personnage->classe?->nom;
         $maitrisees = self::JETS_SAUVEGARDE_PAR_CLASSE[$nomClasse] ?? [];
         $bonusMaitrise = $this->bonusMaitrise($personnage->niveau);
+        // Bonus d'objet à tous les jets de sauvegarde sans distinction
+        // (ex. Cape/Anneau de protection), en plus du bonus par
+        // caractéristique déjà inclus via scoreEffectif().
+        $bonusObjetGlobal = $this->inventaire->bonusActifs($personnage)['bonus_jets_sauvegarde'] ?? 0;
 
         $resultat = [];
         foreach (self::ABILITES as $cle => $label) {
-            $mod = $this->modificateur($abilites?->$cle ?? 10);
+            $mod = $this->modificateur($this->scoreEffectif($personnage, $cle));
             $maitrise = in_array($cle, $maitrisees, true);
 
             $resultat[] = [
@@ -141,7 +144,7 @@ class FicheDePersonnageService
                 'label' => $label,
                 'modificateur' => $mod,
                 'maitrise' => $maitrise,
-                'bonus' => $mod + ($maitrise ? $bonusMaitrise : 0),
+                'bonus' => $mod + ($maitrise ? $bonusMaitrise : 0) + $bonusObjetGlobal,
             ];
         }
 
@@ -153,13 +156,15 @@ class FicheDePersonnageService
      */
     public function competences(Personnage $personnage): array
     {
-        $abilites = $personnage->abilites;
         $maitrisees = $personnage->listeCompetence?->competences ?? [];
         $bonusMaitrise = $this->bonusMaitrise($personnage->niveau);
+        // Bonus d'objet à toutes les compétences sans distinction, en plus
+        // du bonus par caractéristique déjà inclus via scoreEffectif().
+        $bonusObjetGlobal = $this->inventaire->bonusActifs($personnage)['bonus_competences'] ?? 0;
 
         $resultat = [];
         foreach (self::COMPETENCES as $nom => $aptitude) {
-            $mod = $this->modificateur($abilites?->$aptitude ?? 10);
+            $mod = $this->modificateur($this->scoreEffectif($personnage, $aptitude));
             $maitrise = in_array($nom, $maitrisees, true);
 
             $resultat[] = [
@@ -167,7 +172,7 @@ class FicheDePersonnageService
                 'aptitude' => self::ABILITES[$aptitude],
                 'modificateur' => $mod,
                 'maitrise' => $maitrise,
-                'bonus' => $mod + ($maitrise ? $bonusMaitrise : 0),
+                'bonus' => $mod + ($maitrise ? $bonusMaitrise : 0) + $bonusObjetGlobal,
             ];
         }
 
@@ -180,6 +185,17 @@ class FicheDePersonnageService
             ->firstWhere('nom', 'Perception');
 
         return 10 + ($perception['bonus'] ?? 0);
+    }
+
+    /**
+     * Classe d'Armure du personnage, dérivée de l'armure/bouclier
+     * réellement équipés (voir InventaireService::classeArmure()).
+     */
+    public function classeArmure(Personnage $personnage): int
+    {
+        $modDex = $this->modificateur($this->scoreEffectif($personnage, 'dexterite'));
+
+        return $this->inventaire->classeArmure($personnage, $modDex);
     }
 
     public function estLanceurDeSorts(Personnage $personnage): bool
@@ -201,7 +217,7 @@ class FicheDePersonnageService
             return null;
         }
 
-        $mod = $this->modificateur($personnage->abilites?->$cle ?? 10);
+        $mod = $this->modificateur($this->scoreEffectif($personnage, $cle));
         $bonusMaitrise = $this->bonusMaitrise($personnage->niveau);
 
         return [
@@ -213,54 +229,40 @@ class FicheDePersonnageService
     }
 
     /**
+     * Attaques dérivées des armes réellement équipées (InventaireService),
+     * et non plus d'une liste de noms en dur. Les armes magiques (+1/+2/+3)
+     * ajoutent leur bonus au toucher et aux dégâts via `bonus.bonus_attaque`
+     * / `bonus.bonus_degats` : comme le reste des bonus d'objets, ce sont
+     * des totaux agrégés sur le personnage (InventaireService::bonusActifs),
+     * pas un bonus distinct par arme équipée.
+     *
      * @return array<int, array{nom: string, degats: string, type: string, bonusAttaque: int}>
      */
     public function attaques(Personnage $personnage): array
     {
-        $equipement = $personnage->equipement ?? [];
         $bonusMaitrise = $this->bonusMaitrise($personnage->niveau);
+        $bonusMagique = $this->inventaire->bonusActifs($personnage);
+        $bonusAttaqueMagique = $bonusMagique['bonus_attaque'] ?? 0;
+        $bonusDegatsMagique = $bonusMagique['bonus_degats'] ?? 0;
 
         $resultat = [];
-        foreach ($equipement as $item) {
-            if (! isset(self::ARMES[$item])) {
+        foreach ($this->inventaire->armesEquipees($personnage) as $arme) {
+            if (! $arme->degats) {
                 continue;
             }
 
-            $arme = self::ARMES[$item];
-            $mod = $this->modificateur($personnage->abilites?->{$arme['caracteristique']} ?? 10);
+            $caracteristique = $arme->caracteristique_degats ?? 'force';
+            $mod = $this->modificateur($this->scoreEffectif($personnage, $caracteristique));
 
             $resultat[] = [
-                'nom' => $item,
-                'degats' => $arme['degats'].' '.$this->formaterBonus($mod),
-                'type' => $arme['type'],
-                'bonusAttaque' => $mod + $bonusMaitrise,
+                'nom' => $arme->nom,
+                'degats' => $arme->degats.' '.$this->formaterBonus($mod + $bonusDegatsMagique),
+                'type' => $arme->type_degats ?? '—',
+                'bonusAttaque' => $mod + $bonusMaitrise + $bonusAttaqueMagique,
             ];
         }
 
         return $resultat;
-    }
-
-    /**
-     * Répartit l'équipement porté du personnage entre armure/équipement de
-     * combat et objets divers, pour la page d'inventaire.
-     *
-     * @return array{armure: array<int, string>, objets: array<int, string>}
-     */
-    public function equipementClasse(Personnage $personnage): array
-    {
-        $equipement = $personnage->equipement ?? [];
-
-        $armure = [];
-        $objets = [];
-        foreach ($equipement as $item) {
-            if (in_array($item, self::ARMURE, true)) {
-                $armure[] = $item;
-            } else {
-                $objets[] = $item;
-            }
-        }
-
-        return ['armure' => $armure, 'objets' => $objets];
     }
 
     /**

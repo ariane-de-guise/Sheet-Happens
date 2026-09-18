@@ -5,8 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'niveau', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'outil', 'langues', 'equipement'])]
+#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'photo', 'niveau', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'langues'])]
 class Personnage extends Model
 {
     /**
@@ -20,7 +22,6 @@ class Personnage extends Model
     {
         return [
             'langues' => 'array',
-            'equipement' => 'array',
         ];
     }
 
@@ -82,5 +83,18 @@ class Personnage extends Model
     public function listeCompetence(): BelongsTo
     {
         return $this->belongsTo(ListeCompetence::class, 'liste_competence_id');
+    }
+
+    public function objets(): BelongsToMany
+    {
+        return $this->belongsToMany(Objet::class, 'personnage_objets')
+            ->using(PersonnageObjet::class)
+            ->withPivot(['id', 'quantite', 'equipe'])
+            ->withTimestamps();
+    }
+
+    public function effetsActifs(): HasMany
+    {
+        return $this->hasMany(EffetActif::class);
     }
 }
