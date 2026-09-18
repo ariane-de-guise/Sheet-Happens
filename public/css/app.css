@@ -473,7 +473,7 @@ a:hover {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: rgba(25, 10, 50, 0.9);
+    background: #190a32;
     border: 2px solid #c49a3c;
     display: flex;
     align-items: center;
@@ -494,7 +494,7 @@ a:hover {
 }
 
 .progress-step.completed {
-    background: rgba(230, 184, 77, 0.4);
+    background: #6c503d;
     border-color: #e6b84d;
     color: #e6b84d;
 }

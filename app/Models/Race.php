@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
@@ -28,5 +29,10 @@ class Race extends Model
     public function sousRaces(): HasMany
     {
         return $this->hasMany(SousRace::class);
+    }
+
+    public function traits(): BelongsToMany
+    {
+        return $this->belongsToMany(TraitModel::class, 'race_trait', 'race_id', 'trait_id');
     }
 }

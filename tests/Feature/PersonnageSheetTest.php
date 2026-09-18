@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\TraitModel;
 use App\Models\Utilisateur;
 use Database\Factories\ClasseFactory;
 use Database\Factories\PersonnageFactory;
@@ -67,6 +68,34 @@ class PersonnageSheetTest extends TestCase
             ->assertOk()
             ->assertSee($personnage->nom)
             ->assertSee('Loyal bon');
+    }
+
+    public function test_la_page_des_traits_transmet_les_traits_de_la_race_et_de_la_sous_race(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create();
+        $sousRace = SousRaceFactory::new()->pourRace($race)->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
+            'sous_race_id' => $sousRace->id,
+        ]);
+        $raceTrait = TraitModel::query()->create([
+            'nom' => 'Vision dans le noir',
+            'niveau' => 1,
+        ]);
+        $sousRaceTrait = TraitModel::query()->create([
+            'nom' => 'Résilience',
+            'niveau' => 1,
+        ]);
+        $race->traits()->attach($raceTrait);
+        $sousRace->traits()->attach($sousRaceTrait);
+
+        $this->actingAs($utilisateur)
+            ->get(route('personnages.traits', $personnage))
+            ->assertOk()
+            ->assertViewHas('raceTraits', fn ($traits) => $traits->contains($raceTrait))
+            ->assertViewHas('sousRaceTraits', fn ($traits) => $traits->contains($sousRaceTrait));
     }
 
     public function test_un_autre_utilisateur_ne_peut_pas_voir_la_fiche(): void
