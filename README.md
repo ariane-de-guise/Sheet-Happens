@@ -46,9 +46,20 @@ cp .env.example .env
 sail artisan key:generate
 ```
 
-### 4. Démarrer les conteneurs Sail
+### 4. Installer les dépendances JavaScript
+
 ```bash
-./vendor/bin/sail up -d
+npm install
+```
+
+La première fois que le conteneur démarre, Sail installe automatiquement le
+`chrome-headless-shell` correspondant à la version de Puppeteer utilisée par
+l'application. Le navigateur est conservé dans le volume Docker
+`puppeteer-cache`.
+
+### 5. Démarrer les conteneurs Sail
+```bash
+./vendor/bin/sail up -d --build
 ```
 
 #### Cas particulier — Apache (ou un autre service) occupe déjà le port 80

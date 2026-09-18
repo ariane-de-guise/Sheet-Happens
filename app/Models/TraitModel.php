@@ -38,6 +38,7 @@ class TraitModel extends Model
      */
     public function races(): BelongsToMany
     {
-        return $this->belongsToMany(Race::class, 'race_trait', 'trait_id', 'race_id');
+        return $this->belongsToMany(Race::class, 'race_trait', 'trait_id', 'race_id')
+            ->withTimestamps();
     }
 }
