@@ -9,6 +9,7 @@ use App\Models\Personnage;
 use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\SousRace;
+use App\Models\Utilisateur;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Validation\ValidationException;
 
@@ -20,6 +21,7 @@ readonly class PersonnageCreationService
     {
         return $this->database->transaction(function () use ($data): Personnage {
             $this->validateHierarchy($data);
+            $this->validateLimiteNonAtteinte($data);
 
             $abilites = Abilite::create($data['abilites']);
             $listeCompetence = ListeCompetence::create([
@@ -80,6 +82,31 @@ readonly class PersonnageCreationService
                     'sous_classe_id' => 'La sous-classe ne correspond pas à la classe ou au niveau sélectionné.',
                 ]);
             }
+        }
+    }
+
+    /**
+     * Empêche un utilisateur de dépasser son quota de personnages, quel
+     * que soit le point d'entrée utilisé pour créer un personnage
+     * (assistant de création ou API).
+     *
+     * La ligne utilisateur est verrouillée (SELECT ... FOR UPDATE) pour
+     * la durée de la transaction : si deux créations concurrentes du même
+     * utilisateur (ex. deux onglets) arrivent en même temps alors qu'il
+     * ne lui reste qu'une place, la seconde attend que la première soit
+     * validée avant de recompter, au lieu de lire un compte périmé et de
+     * laisser passer les deux.
+     */
+    private function validateLimiteNonAtteinte(array $data): void
+    {
+        Utilisateur::whereKey($data['utilisateur_id'])->lockForUpdate()->first();
+
+        $nombrePersonnages = Personnage::where('utilisateur_id', $data['utilisateur_id'])->count();
+
+        if ($nombrePersonnages >= Personnage::MAX_PAR_UTILISATEUR) {
+            throw ValidationException::withMessages([
+                'utilisateur_id' => 'Vous avez atteint la limite de '.Personnage::MAX_PAR_UTILISATEUR.' personnages. Supprimez-en un pour pouvoir en créer un nouveau.',
+            ]);
         }
     }
 }

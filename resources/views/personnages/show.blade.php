@@ -106,7 +106,18 @@
                             </div>
 
                             <div style="display: flex; gap: 0.5rem;">
-                                <a href="{{ route('personnages.edit', $personnage) }}" class="btn btn-secondary btn-small">Modifier</a>
+                                <button type="button" class="btn btn-secondary btn-small" style="flex: 1; text-align: center;"
+                                        onclick="window.location.href='{{ route('personnages.edit', $personnage) }}'">
+                                    Modifier
+                                </button>
+                                <form id="form-supprimer-personnage" action="{{ route('personnages.destroy', $personnage) }}" method="POST" style="margin: 0; flex: 1; text-align: center;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="btn btn-danger btn-small " style="flex: 1; text-align: center;"
+                                            onclick="ouvrirModalSuppression('form-supprimer-personnage', '{{ addslashes($personnage->nom) }}')">
+                                        Supprimer
+                                    </button>
+                                </form>
                             </div>
                         </div>
 
@@ -270,4 +281,5 @@
             </div>
         </div>
     </div>
+@include('partials.modal-suppression-personnage')
 @endsection
