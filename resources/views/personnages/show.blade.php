@@ -43,18 +43,31 @@
                             @endif
                         </div>
 
-                        <a href="{{ route('personnages.edit', $personnage) }}" class="btn btn-secondary btn-small">Modifier</a>
-                    </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button type="button" class="btn btn-secondary btn-small" style="flex: 1; text-align: center;"
+                                        onclick="window.location.href='{{ route('personnages.edit', $personnage) }}'">
+                                    Modifier
+                                </button>
+                                <form id="form-supprimer-personnage" action="{{ route('personnages.destroy', $personnage) }}" method="POST" style="margin: 0; flex: 1; text-align: center;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="btn btn-danger btn-small " style="flex: 1; text-align: center;"
+                                            onclick="ouvrirModalSuppression('form-supprimer-personnage', '{{ addslashes($personnage->nom) }}')">
+                                        Supprimer
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
 
-                    <div style="font-size: 0.75rem; color: #b8a9c9; display: flex; justify-content: space-between; margin-top: 0.5rem;">
-                        <span>Expériences</span>
-                        <span>0/300</span>
-                    </div>
-                    <div style="height: 6px; background: rgba(25, 10, 50, 0.9); border-radius: 3px; margin-top: 0.25rem; overflow: hidden;">
-                        <div style="width: 0; height: 100%; background: #e6b84d; border-radius: 3px;"></div>
+                        <div style="font-size: 0.75rem; color: #b8a9c9; display: flex; justify-content: space-between; margin-top: 0.5rem;">
+                            <span>Expériences</span>
+                            <span>0/300</span>
+                        </div>
+                        <div style="height: 6px; background: rgba(25, 10, 50, 0.9); border-radius: 3px; margin-top: 0.25rem; overflow: hidden;">
+                            <div style="width: 0; height: 100%; background: #e6b84d; border-radius: 3px;"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
                 <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1rem;">
@@ -132,11 +145,10 @@
                         <button class="btn btn-secondary btn-small" @disabled($errors->any())>Tous voir (à venir)</button>
                     </div>
                 </div>
+
             </div>
-
-
-
         </div>
     </div>
 </div>
+@include('partials.modal-suppression-personnage')
 @endsection
