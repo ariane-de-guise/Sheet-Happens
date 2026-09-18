@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/personnages/{personnage}', [PersonnageSheetController::class, 'show'])->name('personnages.show');
+    Route::get('/personnages/{personnage}/inventaire', [PersonnageSheetController::class, 'inventaire'])->name('personnages.inventaire');
     Route::get('/personnages/{personnage}/edit', [PersonnageSheetController::class, 'edit'])->name('personnages.edit');
     Route::get('/personnages/{personnage}/traits', [PersonnageSheetController::class, 'getTraits'])->name('personnages.traits');
     Route::patch('/personnages/{personnage}', [PersonnageSheetController::class, 'update'])->name('personnages.update');

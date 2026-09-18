@@ -473,7 +473,10 @@ a:hover {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: #190a32;
+    /* Fond opaque (et non semi-transparent) : le rond doit cacher
+       complètement la ligne de progression derrière lui, pas laisser sa
+       couleur transparaître à travers. */
+    background: #180a30;
     border: 2px solid #c49a3c;
     display: flex;
     align-items: center;
@@ -494,7 +497,7 @@ a:hover {
 }
 
 .progress-step.completed {
-    background: #6c503d;
+    background: #664e31;
     border-color: #e6b84d;
     color: #e6b84d;
 }
@@ -748,17 +751,35 @@ input.stat-base-value[type="number"] {
     cursor: not-allowed;
 }
 
-.roll-actions {
+/* Colonne de droite de .stats-container / .standard-points-container (pool
+   de résultats/valeurs). Les items d'une grille sont étirés par défaut
+   (align-items: stretch) pour occuper toute la hauteur de la rangée, donc
+   cette colonne est déjà aussi haute que la boîte de caractéristiques à
+   gauche : on la rend flex pour pouvoir pousser .stats-actions tout en bas
+   (margin-top: auto), alignée avec le bas de cette boîte au lieu de flotter
+   juste sous le pool. */
+.stats-side {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 0.75rem;
-    margin-top: 1rem;
+    flex-direction: column;
+    min-height: 0;
 }
 
-.roll-actions .btn {
-    flex: 1 1 200px;
+/* Boutons d'action à côté de la boîte de caractéristiques (pas en dessous),
+   collés au bas de la colonne grâce à margin-top: auto sur .stats-side.
+   Empilés verticalement, pleine largeur de cette colonne. Utilisée pour
+   "Lancer/Relancer + Réinitialiser les choix" (dés, 2 boutons) et
+   "Réinitialiser" seul (standard, 1 bouton). */
+.stats-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 1rem;
+}
+
+.stats-actions .btn {
+    width: 100%;
 }
 
 .drag-hint {

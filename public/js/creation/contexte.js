@@ -167,11 +167,23 @@ function filterByHistorique(selectId, historiqueId) {
     }
 }
 
+// Même présentation que pour la race/classe choisie : un encadré ("help-box")
+// avec le nom de l'historique en titre et sa description en contenu,
+// masqué tant qu'aucun historique n'est sélectionné (voir race.js /
+// showRaceDescription()).
 function updateHistoriqueDescription(historiqueId) {
     const box = document.getElementById('historique_description');
     if (!box) return;
+
     const historique = historiquesById[historiqueId];
-    box.textContent = historique ? (historique.description || '') : '';
+    if (!historique || !historique.description) {
+        box.style.display = 'none';
+        return;
+    }
+
+    document.getElementById('historique_description_title').textContent = historique.nom;
+    document.getElementById('historique_description_content').textContent = historique.description;
+    box.style.display = '';
 }
 
 function onHistoriqueChange(historiqueId, preselectOutil) {
