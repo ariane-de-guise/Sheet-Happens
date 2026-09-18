@@ -12,10 +12,10 @@
             <a href="{{ route('personnages.show', $personnage) }}" class="btn btn-secondary btn-small">← Retour à la fiche</a>
         </div>
 
-        <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+        <div style="background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
             <div class="text-gold mb-2" style="font-weight: 600;">Objets</div>
             @if(count($equipementClasse['objets']) > 0)
-                <ul style="list-style: disc; padding-left: 1.25rem; color: #b8a9c9; font-size: 0.9rem;">
+                <ul style="list-style: disc; padding-left: 1.25rem; color: var(--texte-secondaire); font-size: 0.9rem;">
                     @foreach($equipementClasse['objets'] as $item)
                         <li>{{ $item }}</li>
                     @endforeach
@@ -25,10 +25,10 @@
             @endif
         </div>
 
-        <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem;">
+        <div style="background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1.25rem;">
             <div class="text-gold mb-2" style="font-weight: 600;">Armure (équipement)</div>
             @if(count($equipementClasse['armure']) > 0)
-                <ul style="list-style: disc; padding-left: 1.25rem; color: #b8a9c9; font-size: 0.9rem;">
+                <ul style="list-style: disc; padding-left: 1.25rem; color: var(--texte-secondaire); font-size: 0.9rem;">
                     @foreach($equipementClasse['armure'] as $item)
                         <li>{{ $item }}</li>
                     @endforeach

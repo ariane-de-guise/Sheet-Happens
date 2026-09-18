@@ -2,13 +2,19 @@
  * Intégration du thème sombre / clair à la page.
  *
  * Toute la logique de décision (validation, lecture/écriture du
- * stockage, résolution du thème initial, bascule) vit dans le module
- * pur ./theme-logic.js, couvert par des tests unitaires. Ce fichier-ci
- * ne fait que relier cette logique au document : poser l'attribut
+ * stockage, résolution du thème initial) vit dans le module pur
+ * ./theme-logic.js, couvert par des tests unitaires. Ce fichier-ci ne
+ * fait que relier cette logique au document : poser l'attribut
  * `data-theme` sur <html> (lu par les variables CSS de app.css) et
- * câbler le bouton de bascule. N'étant qu'une couche d'interface,
- * il n'est volontairement pas inclus dans l'objectif de couverture
- * de tests (« logique seulement, non sur l'interface »).
+ * câbler les deux boutons de la page (soleil = clair, lune = sombre).
+ * N'étant qu'une couche d'interface, il n'est volontairement pas
+ * inclus dans l'objectif de couverture de tests (« logique seulement,
+ * non sur l'interface »).
+ *
+ * Chaque bouton force explicitement son thème : cliquer sur le
+ * soleil active toujours le clair, cliquer sur la lune active
+ * toujours le sombre, peu importe le thème courant (ce n'est donc pas
+ * un simple bouton bascule).
  *
  * Chargé en tant que module natif : <script type="module" src="...">.
  */
@@ -18,7 +24,6 @@ import {
     readStoredTheme,
     writeStoredTheme,
     resolveInitialTheme,
-    toggleTheme,
 } from "./theme-logic.js";
 
 /**
@@ -49,44 +54,44 @@ export function initTheme(win, doc) {
     return theme;
 }
 
-function updateToggleButton(button, theme) {
-    const isDark = theme === "dark";
-    // role="switch" : aria-checked="true" représente ici « thème
-    // sombre actif ». Le déplacement visuel du curseur, lui, est
-    // entièrement piloté par CSS via l'attribut data-theme posé sur
-    // <html> (voir app.css) — cette fonction ne gère que la
-    // sémantique d'accessibilité, jamais le style ou la position.
-    button.setAttribute("aria-checked", String(isDark));
-    button.setAttribute(
-        "aria-label",
-        isDark ? "Activer le thème clair" : "Activer le thème sombre"
-    );
+function updateToggleButtons(buttons, theme) {
+    buttons.forEach((button) => {
+        button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.themeSet === theme)
+        );
+    });
 }
 
 /**
- * Câble le bouton de bascule de thème (`[data-theme-toggle]`) trouvé
- * dans le document, s'il existe. Chaque clic bascule le thème,
- * l'applique au document, le mémorise, et met à jour l'état visuel
- * du bouton (icône, libellé accessible).
+ * Câble les boutons de thème (`[data-theme-set="light"]` et
+ * `[data-theme-set="dark"]`) trouvés dans le document, s'ils
+ * existent. Chaque bouton applique explicitement le thème qu'il
+ * représente, le mémorise, et met à jour l'état visuel des deux
+ * boutons (curseur qui glisse, `aria-pressed`).
  *
  * @param {Window} win
  * @param {Document} doc
  */
 export function setupThemeToggle(win, doc) {
-    const button = doc.querySelector("[data-theme-toggle]");
-    if (!button) return;
+    const buttons = Array.from(doc.querySelectorAll("[data-theme-set]"));
+    if (buttons.length === 0) return;
 
     let current = doc.documentElement.getAttribute("data-theme");
     if (!isValidTheme(current)) {
         current = initTheme(win, doc);
     }
-    updateToggleButton(button, current);
+    updateToggleButtons(buttons, current);
 
-    button.addEventListener("click", () => {
-        current = toggleTheme(current);
-        applyThemeToDocument(current, doc);
-        writeStoredTheme(win.localStorage, current);
-        updateToggleButton(button, current);
+    buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+            const target = button.dataset.themeSet;
+            if (!isValidTheme(target) || target === current) return;
+            current = target;
+            applyThemeToDocument(current, doc);
+            writeStoredTheme(win.localStorage, current);
+            updateToggleButtons(buttons, current);
+        });
     });
 }
 

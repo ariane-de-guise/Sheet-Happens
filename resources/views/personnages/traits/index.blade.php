@@ -17,7 +17,7 @@
             <a href="{{ route('personnages.show', $personnage) }}" class="btn btn-secondary btn-small">← Retour à la fiche</a>
         </div>
 
-        <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+        <div style="background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
             <div class="text-gold mb-2" style="font-size: 1.15rem; font-weight: 600;">Traits de race</div>
             @if($raceTraits->isEmpty())
                 <div class="text-muted" style="font-size: 0.9rem;">Aucun trait n'est associé à cette race.</div>
@@ -36,7 +36,7 @@
             @endif
         </div>
 
-        <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem;">
+        <div style="background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1.25rem;">
             <div class="text-gold mb-2" style="font-size: 1.15rem; font-weight: 600;">Traits de sous-race</div>
             @if(!$personnage->sousRace)
                 <div class="text-muted" style="font-size: 0.9rem;">Ce personnage n'a pas de sous-race.</div>

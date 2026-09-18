@@ -22,8 +22,8 @@
         }
 
         .sheet-box {
-            background: rgba(25, 10, 50, 0.9);
-            border: 1px solid #c49a3c;
+            background: var(--panneau);
+            border: 1px solid var(--or-bordure);
             border-radius: 12px;
             padding: 1rem;
         }
@@ -31,7 +31,7 @@
         .sheet-box-title {
             font-size: 0.85rem;
             font-weight: 600;
-            color: #e6b84d;
+            color: var(--or);
             margin-bottom: 0.5rem;
         }
 
@@ -39,7 +39,7 @@
             display: flex;
             justify-content: space-between;
             font-size: 0.8rem;
-            color: #b8a9c9;
+            color: var(--texte-secondaire);
             padding: 0.2rem 0;
         }
 
@@ -49,16 +49,16 @@
             height: 8px;
             border-radius: 50%;
             margin-right: 0.4rem;
-            background: rgba(184, 169, 201, 0.25);
+            background: var(--point-inactif);
             vertical-align: middle;
         }
 
         .sheet-row .maitrise-dot.actif {
-            background: #e6b84d;
+            background: var(--or-vif);
         }
 
         .sheet-row .valeur {
-            color: #e8d5b5;
+            color: var(--or-doux);
             font-weight: 600;
         }
     </style>
@@ -69,7 +69,7 @@
         <!-- Left Sidebar -->
         <div class="card" style="height: fit-content;">
             <div class="text-gold mb-3" style="font-size: 1.1rem;">Sheet Happens</div>
-            <div style="border-top: 1px solid #c49a3c; padding-top: 1rem;">
+            <div style="border-top: 1px solid var(--or-bordure); padding-top: 1rem;">
                 <a href="{{ route('personnages.index') }}" class="text-muted" style="text-decoration: none; font-size: 0.85rem;">
                     ← Retour à la sélection de personnages
                 </a>
@@ -82,24 +82,24 @@
                 <div style="display: flex; gap: 2rem; align-items: flex-start; margin-bottom: 2rem;">
                     <!-- Avatar & Level -->
                     <div style="position: relative;">
-                        <div style="width: 120px; height: 120px; border-radius: 50%; background: #e6b84d;"></div>
-                        <div style="position: absolute; bottom: -5px; right: -5px; width: 45px; height: 45px; border-radius: 50%; background: #e6b84d; display: flex; align-items: center; justify-content: center; text-align: center; color: #1a0533; font-size: 0.7rem; font-weight: 600;">
+                        <div style="width: 120px; height: 120px; border-radius: 50%; background: var(--or-vif);"></div>
+                        <div style="position: absolute; bottom: -5px; right: -5px; width: 45px; height: 45px; border-radius: 50%; background: var(--or-vif); display: flex; align-items: center; justify-content: center; text-align: center; color: var(--texte-inverse); font-size: 0.7rem; font-weight: 600;">
                             Niveau<br>{{ $personnage->niveau }}
                         </div>
                     </div>
 
-                    <div style="flex: 1; background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem;">
+                    <div style="flex: 1; background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1.25rem;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <div>
-                                <div style="font-size: 1.3rem; font-weight: 700; color: #e6b84d; margin-bottom: 0.5rem;">
+                                <div style="font-size: 1.3rem; font-weight: 700; color: var(--or); margin-bottom: 0.5rem;">
                                     {{ $personnage->nom }}
                                 </div>
-                                <div style="font-size: 0.9rem; color: #b8a9c9; margin-bottom: 0.25rem;">
+                                <div style="font-size: 0.9rem; color: var(--texte-secondaire); margin-bottom: 0.25rem;">
                                     {{ $personnage->classe->nom }} - {{ $personnage->race->nom }}
                                     @if($personnage->sousRace) {{ $personnage->sousRace->nom }} @endif
                                 </div>
                                 @if($personnage->alignement)
-                                    <div style="font-size: 0.9rem; color: #b8a9c9; margin-bottom: 0.75rem;">
+                                    <div style="font-size: 0.9rem; color: var(--texte-secondaire); margin-bottom: 0.75rem;">
                                         {{ $personnage->alignement }}
                                     </div>
                                 @endif
@@ -121,12 +121,12 @@
                             </div>
                         </div>
 
-                        <div style="font-size: 0.75rem; color: #b8a9c9; display: flex; justify-content: space-between; margin-top: 0.5rem;">
+                        <div style="font-size: 0.75rem; color: var(--texte-secondaire); display: flex; justify-content: space-between; margin-top: 0.5rem;">
                             <span>Expériences</span>
                             <span>0/300</span>
                         </div>
-                        <div style="height: 6px; background: rgba(25, 10, 50, 0.9); border-radius: 3px; margin-top: 0.25rem; overflow: hidden;">
-                            <div style="width: 0%; height: 100%; background: #e6b84d; border-radius: 3px;"></div>
+                        <div style="height: 6px; background: var(--panneau); border-radius: 3px; margin-top: 0.25rem; overflow: hidden;">
+                            <div style="width: 0%; height: 100%; background: var(--or-vif); border-radius: 3px;"></div>
                         </div>
                     </div>
                 </div>
@@ -196,8 +196,8 @@
                         @endforeach
                     </div>
 
-                    <div style="border-top: 1px solid rgba(196, 154, 60, 0.35); margin-top: 0.75rem; padding-top: 0.75rem;">
-                        <div style="font-size: 0.8rem; font-weight: 600; color: #e6b84d; margin-bottom: 0.35rem;">Langues et outils</div>
+                    <div style="border-top: 1px solid var(--or-ligne-forte); margin-top: 0.75rem; padding-top: 0.75rem;">
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--or); margin-bottom: 0.35rem;">Langues et outils</div>
                         <div class="sheet-row">
                             <span>Langues</span>
                             <span class="valeur">{{ $personnage->langues && count($personnage->langues) > 0 ? implode(', ', $personnage->langues) : 'Aucune' }}</span>

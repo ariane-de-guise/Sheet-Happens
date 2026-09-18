@@ -62,12 +62,13 @@
     --or-halo-moyen: rgba(230, 184, 77, 0.15);
     --or-halo-fort: rgba(230, 184, 77, 0.25);
     --or-halo-actif: rgba(230, 184, 77, 0.4);
+    --or-halo-actif-opaque: #664e31;
     --or-ligne-faible: rgba(196, 154, 60, 0.2);
     --or-ligne-moyenne: rgba(196, 154, 60, 0.3);
     --or-ligne-forte: rgba(196, 154, 60, 0.35);
-
-    /* Panneaux (cartes, listes, encarts) */
+    --point-inactif: rgba(184, 169, 201, 0.25);
     --panneau: rgba(25, 10, 50, 0.9);
+    --panneau-opaque: #180a30;
     --panneau-survol: rgba(40, 15, 70, 0.95);
     --panneau-vif: rgba(60, 15, 90, 0.8);
     --panneau-vif-survol: rgba(80, 25, 120, 0.9);
@@ -78,6 +79,17 @@
 
     /* Ombres */
     --ombre-sombre: rgba(0, 0, 0, 0.6);
+    --ombre-modal: rgba(0, 0, 0, 0.7);
+
+    /* Bouton et actions destructrices (supprimer, etc.) */
+    --danger-fond: rgba(60, 15, 20, 0.9);
+    --danger-texte: #f5c6cb;
+    --danger-bordure: #a33c3c;
+    --danger-fond-survol: #a33c3c;
+    --danger-texte-survol: #ffffff;
+
+    /* Fenêtre modale (fond assombrissant la page derrière elle) */
+    --modal-overlay-fond: rgba(10, 5, 20, 0.75);
 
     /* Alertes */
     --alerte-erreur-fond: rgba(120, 30, 30, 0.8);
@@ -107,12 +119,13 @@
 
 [data-theme="light"] {
     /* Palette claire « mauve pâque », reprise de la maquette
-       maquette-mauve-paque.pdf : un mauve/lavande moyen (et non un
-       fond blanc) avec les mêmes accents dorés que le thème sombre.
-       Les teintes ci-dessous sont calées sur les couleurs exactes de
-       la maquette (fond #a397ce, panneaux #907dd4, encarts #7962ce,
-       or #edbb47, bordures #d3ae76), légèrement assombries/ajustées
-       pour conserver un contraste de texte suffisant. */
+       maquette-mauve-paque.pdf (alias mauve_jaune_paque.pdf) : un
+       mauve/lavande moyen (et non un fond blanc) avec les mêmes
+       accents dorés que le thème sombre. Les teintes ci-dessous
+       sont calées sur les couleurs exactes de la maquette (fond
+       #a397ce, panneaux #907dd4, encarts #7962ce, or #edbb47,
+       bordures #d3ae76), légèrement assombries/ajustées pour
+       conserver un contraste de texte suffisant. */
     --fond: #8f7fc4;
     --surface: #7c68c9;
     --champ-fond: #6a56b8;
@@ -146,11 +159,14 @@
     --or-halo-moyen: rgba(237, 187, 71, 0.2);
     --or-halo-fort: rgba(237, 187, 71, 0.3);
     --or-halo-actif: rgba(237, 187, 71, 0.4);
+    --or-halo-actif-opaque: #d4b483;
     --or-ligne-faible: rgba(217, 184, 118, 0.3);
     --or-ligne-moyenne: rgba(217, 184, 118, 0.4);
     --or-ligne-forte: rgba(217, 184, 118, 0.45);
+    --point-inactif: rgba(217, 208, 240, 0.3);
 
     --panneau: #7c68c9;
+    --panneau-opaque: #7c68c9;
     --panneau-survol: #8b78d6;
     --panneau-vif: #6a56b8;
     --panneau-vif-survol: #7a63c9;
@@ -160,6 +176,15 @@
     --panneau-profil: #8571ce;
 
     --ombre-sombre: rgba(41, 23, 82, 0.35);
+    --ombre-modal: rgba(30, 15, 55, 0.55);
+
+    --danger-fond: #7a2e3a;
+    --danger-texte: #ffd9df;
+    --danger-bordure: #c85a6a;
+    --danger-fond-survol: #96414f;
+    --danger-texte-survol: #ffffff;
+
+    --modal-overlay-fond: rgba(30, 15, 55, 0.6);
 
     --alerte-erreur-fond: #5c2340;
     --alerte-erreur-bordure: #e2668f;
@@ -226,6 +251,7 @@ input,
 .form-select,
 button,
 .btn,
+.modal-box,
 .auth-badge {
     transition:
         background-color 0.2s ease,
@@ -446,6 +472,12 @@ button:active {
     text-decoration: none;
 }
 
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .btn-primary {
     background: var(--or-vif);
     color: var(--texte-inverse);
@@ -465,6 +497,61 @@ button:active {
 
 .btn-secondary:hover {
     background: var(--panneau-secondaire-survol);
+}
+
+.btn-danger {
+    background: var(--danger-fond);
+    color: var(--danger-texte);
+    border-color: var(--danger-bordure);
+}
+
+.btn-danger:hover {
+    background: var(--danger-fond-survol);
+    color: var(--danger-texte-survol);
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--modal-overlay-fond);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-box {
+    background: var(--panneau-carte);
+    border: 1px solid var(--or-bordure);
+    border-radius: 16px;
+    padding: 1.75rem;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 40px -10px var(--ombre-modal);
+}
+
+.modal-box h2 {
+    color: var(--or);
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+}
+
+.modal-box p {
+    color: var(--texte-secondaire);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
 }
 
 .btn-option {
@@ -597,7 +684,10 @@ a:hover {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: var(--panneau);
+    /* Fond opaque (et non semi-transparent) : le rond doit cacher
+       complètement la ligne de progression derrière lui, pas laisser sa
+       couleur transparaître à travers. */
+    background: var(--panneau-opaque);
     border: 2px solid var(--or-bordure);
     display: flex;
     align-items: center;
@@ -618,7 +708,7 @@ a:hover {
 }
 
 .progress-step.completed {
-    background: var(--or-halo-actif);
+    background: var(--or-halo-actif-opaque);
     border-color: var(--or);
     color: var(--or);
 }
@@ -872,17 +962,35 @@ input.stat-base-value[type="number"] {
     cursor: not-allowed;
 }
 
-.roll-actions {
+/* Colonne de droite de .stats-container / .standard-points-container (pool
+   de résultats/valeurs). Les items d'une grille sont étirés par défaut
+   (align-items: stretch) pour occuper toute la hauteur de la rangée, donc
+   cette colonne est déjà aussi haute que la boîte de caractéristiques à
+   gauche : on la rend flex pour pouvoir pousser .stats-actions tout en bas
+   (margin-top: auto), alignée avec le bas de cette boîte au lieu de flotter
+   juste sous le pool. */
+.stats-side {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 0.75rem;
-    margin-top: 1rem;
+    flex-direction: column;
+    min-height: 0;
 }
 
-.roll-actions .btn {
-    flex: 1 1 200px;
+/* Boutons d'action à côté de la boîte de caractéristiques (pas en dessous),
+   collés au bas de la colonne grâce à margin-top: auto sur .stats-side.
+   Empilés verticalement, pleine largeur de cette colonne. Utilisée pour
+   "Lancer/Relancer + Réinitialiser les choix" (dés, 2 boutons) et
+   "Réinitialiser" seul (standard, 1 bouton). */
+.stats-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 1rem;
+}
+
+.stats-actions .btn {
+    width: 100%;
 }
 
 .drag-hint {
@@ -1252,16 +1360,16 @@ input.stat-base-value[type="number"] {
     }
 }
 
-/* Bouton de changement de thème (sombre / clair) */
-
-/* Interrupteur de thème (sombre / clair), en bas de l'écran :
-   une piste avec une icône soleil et une icône lune à chaque
-   extrémité, et un curseur doré qui glisse de l'une à l'autre. La
-   position du curseur est pilotée uniquement par l'attribut
-   data-theme posé sur <html> (voir le script anti-flash de
-   layouts/app.blade.php et public/js/theme.js) : elle est donc
-   toujours correcte dès le premier rendu, sans attendre le
-   JavaScript différé. */
+/* Interrupteur de thème (sombre / clair), en bas de l'écran.
+   Contrairement à un simple bouton bascule, ce sont ici DEUX
+   boutons indépendants (soleil = thème clair, lune = thème sombre) :
+   appuyer sur le soleil force toujours le clair, peu importe le
+   thème courant, et appuyer sur la lune force toujours le sombre.
+   Un curseur doré glisse derrière le bouton actif. La position du
+   curseur est pilotée uniquement par l'attribut data-theme posé sur
+   <html> (voir le script anti-flash de layouts/app.blade.php et
+   public/js/theme.js) : elle est donc toujours correcte dès le
+   premier rendu, sans attendre le JavaScript différé. */
 
 .theme-toggle-switch {
     position: fixed;
@@ -1272,42 +1380,15 @@ input.stat-base-value[type="number"] {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 68px;
-    height: 34px;
-    padding: 0 7px;
+    width: 72px;
+    height: 36px;
+    padding: 0 6px;
     margin: 0;
     background: var(--panneau);
     border: 1px solid var(--or-bordure);
     border-radius: 999px;
-    cursor: pointer;
     box-shadow: 0 4px 14px var(--ombre-sombre);
     transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.theme-toggle-icon {
-    position: relative;
-    z-index: 1;
-    width: 20px;
-    height: 20px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    pointer-events: none;
-}
-
-.theme-toggle-icon svg {
-    width: 15px;
-    height: 15px;
-    display: block;
-}
-
-.theme-toggle-icon-sun {
-    color: var(--or);
-}
-
-.theme-toggle-icon-moon {
-    color: var(--texte-secondaire);
 }
 
 .theme-toggle-thumb {
@@ -1321,24 +1402,68 @@ input.stat-base-value[type="number"] {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 0;
+    pointer-events: none;
 }
 
 /* Le curseur glisse vers la lune dès que le thème sombre est actif. */
 [data-theme="dark"] .theme-toggle-thumb {
-    transform: translateX(34px);
+    transform: translateX(36px);
 }
 
-.theme-toggle-switch:hover .theme-toggle-thumb {
-    filter: brightness(1.05);
+.theme-toggle-icon {
+    position: relative;
+    z-index: 1;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
 }
 
-.theme-toggle-switch:focus-visible {
+.theme-toggle-icon svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+    pointer-events: none;
+}
+
+.theme-toggle-icon-sun {
+    color: var(--or);
+}
+
+.theme-toggle-icon-moon {
+    color: var(--texte-secondaire);
+}
+
+/* L'icône du thème déjà actif se pose directement sur le curseur :
+   elle passe donc dans une teinte lisible sur l'or plutôt que dans
+   sa couleur "au repos". */
+[data-theme="light"] .theme-toggle-icon-sun {
+    color: var(--texte-inverse);
+}
+
+[data-theme="dark"] .theme-toggle-icon-moon {
+    color: var(--texte-inverse);
+}
+
+.theme-toggle-icon:hover {
+    filter: brightness(1.15);
+}
+
+.theme-toggle-icon:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px var(--primaire-halo);
 }
 
-.theme-toggle-switch:active .theme-toggle-thumb {
-    filter: brightness(0.96);
+.theme-toggle-icon:active {
+    filter: brightness(0.92);
 }
 
 @media (max-width: 480px) {
