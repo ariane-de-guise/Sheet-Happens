@@ -10,6 +10,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'niveau', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'outil', 'langues', 'equipement', 'capacites', 'feats'])]
 class Personnage extends Model
 {
+    /**
+     * Nombre maximum de personnages qu'un utilisateur peut posséder
+     * simultanément. Au-delà, la création est bloquée tant qu'il n'en a
+     * pas supprimé un.
+     */
+    public const MAX_PAR_UTILISATEUR = 5;
+
     protected function casts(): array
     {
         return [

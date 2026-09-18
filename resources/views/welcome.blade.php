@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accueil</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_rmb.png') }}">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/inscription.css') }}">
 </head>
@@ -18,7 +19,7 @@
 
 <div class="auth-badge">
     @auth
-        <span class="auth-status-dot dot-online"></span>
+        <img src="{{ asset('images/logo_rmb.png') }}" alt="Sheet Happens" class="auth-logo">
         <div class="auth-info">
             <span class="auth-email">{{ Auth::user()->courriel }}</span>
             <form action="{{ route('deconnexion') }}" method="POST" style="margin: 0;">

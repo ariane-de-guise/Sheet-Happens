@@ -35,7 +35,7 @@ Route::middleware('auth')->group(function () {
         return view('personnages.choixPersonnage');
     })->name('personnages.choix');
 
-    Route::prefix('personnages/creer')->group(function () {
+    Route::prefix('personnages/creer')->middleware('limite.personnages')->group(function () {
         Route::get('/', [CreationPersonnageController::class, 'stepRace'])->name('creation.race');
         Route::post('/race', [CreationPersonnageController::class, 'saveRace'])->name('creation.race.save');
 
@@ -64,8 +64,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/personnages/{personnage}/montee-niveau', [MonteeNiveauController::class, 'store'])->name('personnages.montee-niveau.store');
 
     Route::get('/personnages/{personnage}', [PersonnageSheetController::class, 'show'])->name('personnages.show');
+    Route::get('/personnages/{personnage}/inventaire', [PersonnageSheetController::class, 'inventaire'])->name('personnages.inventaire');
     Route::get('/personnages/{personnage}/edit', [PersonnageSheetController::class, 'edit'])->name('personnages.edit');
+    Route::get('/personnages/{personnage}/traits', [PersonnageSheetController::class, 'getTraits'])->name('personnages.traits');
     Route::patch('/personnages/{personnage}', [PersonnageSheetController::class, 'update'])->name('personnages.update');
+    Route::delete('/personnages/{personnage}', [PersonnageSheetController::class, 'destroy'])->name('personnages.destroy');
 
     Route::get('/api/sous-classes/{classeId}/{niveauMax?}', [CreationPersonnageController::class, 'getSousClasses'])->name('api.sous-classes');
     Route::get('/api/sous-races/{raceId}', [CreationPersonnageController::class, 'getSousRaces'])->name('api.sous-races');

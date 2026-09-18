@@ -507,9 +507,50 @@ class CreationPersonnageController extends Controller
             'competences.*.in' => 'Cette compétence ne fait pas partie de celles offertes par votre classe.',
         ]);
 
+        $competences = array_values(array_unique($validated['competences']));
+
         $this->saveData([
-            'competences' => array_values(array_unique($validated['competences'])),
+            'competences' => $competences,
         ]);
+
+        // Si le joueur arrive ici après avoir été renvoyé depuis l'étape
+        // contexte (conflit entre une compétence de classe et une
+        // compétence déjà accordée par l'historique choisi), le reste du
+        // formulaire contexte (historique, traits, nom, ...) est déjà
+        // rempli et sauvegardé (voir saveContexte()) : on ne lui fait pas
+        // resaisir cette page, on vérifie juste que le nouveau choix
+        // résout bien le conflit et on l'envoie directement à la
+        // confirmation.
+        $historique = ! empty($data['historique_id']) ? Historique::find($data['historique_id']) : null;
+        $contexteDejaRempli = $historique
+            && ! empty($data['ideal_id'])
+            && ! empty($data['defaut_id'])
+            && ! empty($data['attachement_id'])
+            && ! empty($data['personnalite_id'])
+            && ! empty($data['nom']);
+
+        if ($contexteDejaRempli) {
+            $conflits = array_values(array_intersect($competences, $historique->competences ?? []));
+
+            if (! empty($conflits)) {
+                return redirect()->route('creation.competences')
+                    ->with('error', 'Vous maîtrisez déjà '.implode(' et ', $conflits).' grâce à l\'historique '.$historique->nom.'. Choisissez une compétence différente pour votre classe.');
+            }
+
+            $race = Race::find($data['race_id']);
+            $ideal = ! empty($data['ideal_id']) ? Ideal::find($data['ideal_id']) : null;
+            $defaut = ! empty($data['defaut_id']) ? Defaut::find($data['defaut_id']) : null;
+            $attachement = ! empty($data['attachement_id']) ? Attachement::find($data['attachement_id']) : null;
+            $personnalite = ! empty($data['personnalite_id']) ? Personnalite::find($data['personnalite_id']) : null;
+
+            $this->saveData([
+                'equipement' => array_values(array_merge($historique->equipement_depart ?? [], $historique->outils_fixes ?? [])),
+                'alignement' => $this->calculateAlignement($ideal, $defaut, $attachement, $personnalite),
+                'langues' => $race?->langues ?? ['Commun'],
+            ]);
+
+            return redirect()->route('creation.confirmation');
+        }
 
         return redirect()->route('creation.contexte');
     }
@@ -594,10 +635,34 @@ class CreationPersonnageController extends Controller
         $attachement = Attachement::find($validated['attachement_id']);
         $personnalite = Personnalite::find($validated['personnalite_id']);
 
+        // On sauvegarde tout de suite ce qui vient d'être saisi/sélectionné
+        // sur cette page, avant même la vérification du conflit
+        // compétences/historique ci-dessous : sinon, en cas de conflit, la
+        // redirection vers l'étape compétences effaçait tout ce que le
+        // joueur venait de remplir ici (nom, description, historique et
+        // traits choisis), l'obligeant à tout resaisir après correction.
+        // L'outil est conservé tel quel (non encore validé formellement
+        // via outils_disponibles) : sa validation stricte dépend de
+        // l'historique et ne doit avoir lieu qu'une fois le conflit
+        // écarté, comme avant ce correctif (voir plus bas).
+        $this->saveData([
+            'historique_id' => $validated['historique_id'],
+            'ideal_id' => $validated['ideal_id'],
+            'defaut_id' => $validated['defaut_id'],
+            'attachement_id' => $validated['attachement_id'],
+            'personnalite_id' => $validated['personnalite_id'],
+            'outil' => $request->filled('outil') ? $request->input('outil') : null,
+            'nom' => $validated['nom'],
+            'description' => $validated['description'] ?? null,
+        ]);
+
         // En 5e, si votre historique accorde une compétence que votre classe
         // vous a déjà fait choisir, les deux ne se cumulent pas : il faut
         // reprendre un choix différent pour votre classe. On bloque donc ici
-        // plutôt que de silencieusement perdre une maîtrise.
+        // plutôt que de silencieusement perdre une maîtrise. Ce contrôle
+        // doit rester avant la validation stricte de l'outil ci-dessous :
+        // un historique qui impose un choix d'outil ne doit pas empêcher
+        // d'afficher l'erreur de conflit de compétences en premier.
         $conflits = array_values(array_intersect($data['competences'] ?? [], $historique?->competences ?? []));
         if (! empty($conflits)) {
             return redirect()->route('creation.competences')
@@ -609,7 +674,7 @@ class CreationPersonnageController extends Controller
         // un (ou plusieurs) fixe(s) sans choix (voir plus bas, fusionnés
         // avec l'équipement), et d'autres encore proposent une liste
         // précise dans laquelle il faut choisir. On ne peut donc valider ce
-        // champ qu'une fois l'historique connu.
+        // champ qu'une fois l'historique connu (et le conflit écarté).
         $outilsDisponibles = $historique?->outils_disponibles ?? [];
 
         $outilValidated = $request->validate([
@@ -622,11 +687,6 @@ class CreationPersonnageController extends Controller
         ]);
 
         $this->saveData([
-            'historique_id' => $validated['historique_id'],
-            'ideal_id' => $validated['ideal_id'],
-            'defaut_id' => $validated['defaut_id'],
-            'attachement_id' => $validated['attachement_id'],
-            'personnalite_id' => $validated['personnalite_id'],
             'outil' => ! empty($outilsDisponibles) ? $outilValidated['outil'] : null,
             // L'historique vient avec son propre équipement de départ, auquel
             // s'ajoutent les outils qu'il accorde automatiquement sans choix
@@ -638,8 +698,6 @@ class CreationPersonnageController extends Controller
             'equipement' => array_values(array_merge($historique?->equipement_depart ?? [], $historique?->outils_fixes ?? [])),
             'alignement' => $this->calculateAlignement($ideal, $defaut, $attachement, $personnalite),
             'langues' => $race?->langues ?? ['Commun'],
-            'nom' => $validated['nom'],
-            'description' => $validated['description'] ?? null,
         ]);
 
         return redirect()->route('creation.confirmation');
