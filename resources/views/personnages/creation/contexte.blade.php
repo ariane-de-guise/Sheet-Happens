@@ -61,8 +61,9 @@
                         </option>
                     @endforeach
                 </select>
-                <div id="historique_description" class="hint mt-2" style="font-style: italic;">
-                    {{ $selectedHistoriqueModel ? $selectedHistoriqueModel->description : '' }}
+                <div class="help-box mt-2" id="historique_description" style="{{ $selectedHistoriqueModel && $selectedHistoriqueModel->description ? '' : 'display:none;' }}">
+                    <div class="title" id="historique_description_title">{{ $selectedHistoriqueModel->nom ?? '' }}</div>
+                    <div class="content" id="historique_description_content">{{ $selectedHistoriqueModel->description ?? '' }}</div>
                 </div>
             </div>
 

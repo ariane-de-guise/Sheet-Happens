@@ -2,21 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Abilite;
 use App\Models\Classe;
 use App\Models\Historique;
+use App\Models\ListeCompetence;
 use App\Models\Personnage;
 use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\SousRace;
 use App\Models\Utilisateur;
+use App\Services\FicheDePersonnageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class PersonnageSheetController extends Controller
 {
+    public function __construct(private readonly FicheDePersonnageService $fiche) {}
+
     public function index(): View
     {
         $userId = auth()->id() ?? Utilisateur::query()->value('id');
@@ -42,6 +48,26 @@ class PersonnageSheetController extends Controller
 
         return view('personnages.show', [
             'personnage' => $personnage,
+            'bonusMaitrise' => $this->fiche->bonusMaitrise($personnage->niveau),
+            'jetsDeSauvegarde' => $this->fiche->jetsDeSauvegarde($personnage),
+            'competences' => $this->fiche->competences($personnage),
+            'perceptionPassive' => $this->fiche->perceptionPassive($personnage),
+            'actions' => $this->fiche->actions($personnage),
+        ]);
+        // Section "Traits" volontairement vide pour l'instant (à faire plus
+        // tard) : voir FicheDePersonnageService::traits(), déjà prête et
+        // testée, en attendant d'être branchée sur la vue.
+    }
+
+    public function inventaire(Personnage $personnage): View
+    {
+        $this->authorizeOwner($personnage);
+
+        $personnage->load(['race', 'classe', 'historique']);
+
+        return view('personnages.inventaire', [
+            'personnage' => $personnage,
+            'equipementClasse' => $this->fiche->equipementClasse($personnage),
         ]);
     }
 
@@ -227,6 +253,33 @@ class PersonnageSheetController extends Controller
 
         return redirect()->route('personnages.show', $personnage)
             ->with('success', 'Personnage mis à jour avec succès !');
+    }
+
+    /**
+     * Supprime définitivement un personnage ainsi que ses données associées
+     * (caractéristiques et liste de compétences), qui lui sont propres et ne
+     * sont partagées avec aucun autre personnage.
+     *
+     * L'opération est effectuée dans une transaction afin de garantir que le
+     * personnage et ses données associées sont soit tous supprimés, soit
+     * aucun ne l'est en cas d'erreur.
+     */
+    public function destroy(Personnage $personnage): RedirectResponse
+    {
+        $this->authorizeOwner($personnage);
+
+        DB::transaction(function () use ($personnage): void {
+            $abilitesId = $personnage->abilites_id;
+            $listeCompetenceId = $personnage->liste_competence_id;
+
+            $personnage->delete();
+
+            Abilite::whereKey($abilitesId)->delete();
+            ListeCompetence::whereKey($listeCompetenceId)->delete();
+        });
+
+        return redirect()->route('personnages.index')
+            ->with('success', 'Personnage supprimé avec succès.');
     }
 
     protected function authorizeOwner(Personnage $personnage): void

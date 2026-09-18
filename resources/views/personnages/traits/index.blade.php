@@ -3,82 +3,58 @@
 @section('title', 'Traits de ' . $personnage->nom . ' - Sheet Happens')
 
 @section('content')
-    <div style="display: grid; grid-template-columns: 250px 1fr; gap: 1.5rem;">
-        <aside class="card" style="height: fit-content;">
-            <div class="text-gold mb-3" style="font-size: 1.1rem;">Sheet Happens</div>
-            <div style="border-top: 1px solid #c49a3c; padding-top: 1rem;">
-                <a href="{{ route('personnages.show', $personnage) }}" class="text-muted" style="text-decoration: none; font-size: 0.85rem;">
-                    ← Retour à la fiche du personnage
-                </a>
-            </div>
-        </aside>
-
-        <main class="card">
-            <div style="margin-bottom: 2rem;">
-                <h1 class="title-main" style="margin-bottom: 0.5rem;">Traits</h1>
-                <p class="text-muted" style="margin: 0;">
-                    {{ $personnage->nom }} · {{ $personnage->race->nom }}
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <div class="text-gold" style="font-size: 1.3rem; font-weight: 700;">Traits de {{ $personnage->nom }}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">
+                    {{ $personnage->classe->nom }} - {{ $personnage->race->nom }}
                     @if($personnage->sousRace)
                         ({{ $personnage->sousRace->nom }})
                     @endif
-                </p>
+                </div>
             </div>
+            <a href="{{ route('personnages.show', $personnage) }}" class="btn btn-secondary btn-small">← Retour à la fiche</a>
+        </div>
 
-            <section class="mb-4">
-                <h2 class="title-section">Traits de race</h2>
+        <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+            <div class="text-gold mb-2" style="font-size: 1.15rem; font-weight: 600;">Traits de race</div>
+            @if($raceTraits->isEmpty())
+                <div class="text-muted" style="font-size: 0.9rem;">Aucun trait n'est associé à cette race.</div>
+            @else
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    @foreach($raceTraits as $trait)
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.25rem;">
+                                <span class="text-gold" style="font-weight: 600;">{{ $trait->nom }}</span>
+                                <span class="text-muted" style="font-size: 0.8rem; white-space: nowrap;">Niveau {{ $trait->niveau }}</span>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.9rem;">{{ $trait->description ?: 'Aucune description disponible.' }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
 
-                @if($raceTraits->isEmpty())
-                    <div class="help-box">
-                        <div class="content">Aucun trait n'est associé à cette race.</div>
-                    </div>
-                @else
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        @foreach($raceTraits as $trait)
-                            <article class="help-box" style="margin-top: 0;">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.5rem;">
-                                    <h3 class="title" style="margin: 0;">{{ $trait->nom }}</h3>
-                                    <span class="text-muted" style="font-size: 0.8rem; white-space: nowrap;">
-                                        Niveau {{ $trait->niveau }}
-                                    </span>
-                                </div>
-                                <div class="content">
-                                    {{ $trait->description ?: 'Aucune description disponible.' }}
-                                </div>
-                            </article>
-                        @endforeach
-                    </div>
-                @endif
-            </section>
-
-            <section>
-                <h2 class="title-section">Traits de sous-race</h2>
-
-                @if(!$personnage->sousRace)
-                    <div class="help-box">
-                        <div class="content">Ce personnage n'a pas de sous-race.</div>
-                    </div>
-                @elseif($sousRaceTraits->isEmpty())
-                    <div class="help-box">
-                        <div class="content">Aucun trait n'est associé à cette sous-race.</div>
-                    </div>
-                @else
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        @foreach($sousRaceTraits as $trait)
-                            <article class="help-box" style="margin-top: 0;">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.5rem;">
-                                    <h3 class="title" style="margin: 0;">{{ $trait->nom }}</h3>
-                                    <span class="text-muted" style="font-size: 0.8rem; white-space: nowrap;">
-                                        Niveau {{ $trait->niveau }}
-                                    </span>
-                                </div>
-                                <div class="content">
-                                    {{ $trait->description ?: 'Aucune description disponible.' }}
-                                </div>
-                            </article>
-                        @endforeach
-                    </div>
-                @endif
-            </section>
-        </main>
+        <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem;">
+            <div class="text-gold mb-2" style="font-size: 1.15rem; font-weight: 600;">Traits de sous-race</div>
+            @if(!$personnage->sousRace)
+                <div class="text-muted" style="font-size: 0.9rem;">Ce personnage n'a pas de sous-race.</div>
+            @elseif($sousRaceTraits->isEmpty())
+                <div class="text-muted" style="font-size: 0.9rem;">Aucun trait n'est associé à cette sous-race.</div>
+            @else
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    @foreach($sousRaceTraits as $trait)
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.25rem;">
+                                <span class="text-gold" style="font-weight: 600;">{{ $trait->nom }}</span>
+                                <span class="text-muted" style="font-size: 0.8rem; white-space: nowrap;">Niveau {{ $trait->niveau }}</span>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.9rem;">{{ $trait->description ?: 'Aucune description disponible.' }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
     </div>
 @endsection
