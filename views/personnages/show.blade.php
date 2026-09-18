@@ -1,0 +1,142 @@
+@extends('layouts.app')
+
+@section('title', $personnage->nom . ' - Sheet Happens')
+
+@section('content')
+<div style="display: grid; grid-template-columns: 250px 1fr; gap: 1.5rem;">
+    <!-- Left Sidebar -->
+    <div class="card" style="height: fit-content;">
+        <div class="text-gold mb-3" style="font-size: 1.1rem;">Sheet Happens</div>
+        <div style="border-top: 1px solid var(--or-bordure); padding-top: 1rem;">
+            <a href="{{ route('personnages.index') }}" class="text-muted" style="text-decoration: none; font-size: 0.85rem;">
+                ← Retour à la sélection de personnages
+            </a>
+        </div>
+    </div>
+
+    <div>
+        <div class="card" style="height: fit-content;">
+
+            <div style="display: flex; gap: 2rem; align-items: flex-start; margin-bottom: 2rem;">
+                <!-- Avatar & Level -->
+                <div style="position: relative;">
+                    <div style="width: 120px; height: 120px; border-radius: 50%; background: var(--or-vif);"></div>
+                    <div style="position: absolute; bottom: -5px; right: -5px; width: 45px; height: 45px; border-radius: 50%; background: var(--or-vif); display: flex; align-items: center; justify-content: center; text-align: center; color: var(--texte-inverse); font-size: 0.7rem; font-weight: 600;">
+                        Niveau<br>{{ $personnage->niveau }}
+                    </div>
+                </div>
+
+                <div style="flex: 1; background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <div style="font-size: 1.3rem; font-weight: 700; color: var(--or); margin-bottom: 0.5rem;">
+                                {{ $personnage->nom }}
+                            </div>
+                            <div style="font-size: 0.9rem; color: var(--texte-secondaire); margin-bottom: 0.25rem;">
+                                {{ $personnage->classe->nom }} - {{ $personnage->race->nom }}
+                                @if($personnage->sousRace) {{ $personnage->sousRace->nom }} @endif
+                            </div>
+                            @if($personnage->alignement)
+                                <div style="font-size: 0.9rem; color: var(--texte-secondaire); margin-bottom: 0.75rem;">
+                                    {{ $personnage->alignement }}
+                                </div>
+                            @endif
+                        </div>
+
+                        <a href="{{ route('personnages.edit', $personnage) }}" class="btn btn-secondary btn-small">Modifier</a>
+                    </div>
+
+                    <div style="font-size: 0.75rem; color: var(--texte-secondaire); display: flex; justify-content: space-between; margin-top: 0.5rem;">
+                        <span>Expériences</span>
+                        <span>0/300</span>
+                    </div>
+                    <div style="height: 6px; background: var(--panneau); border-radius: 3px; margin-top: 0.25rem; overflow: hidden;">
+                        <div style="width: 0; height: 100%; background: var(--or-vif); border-radius: 3px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1rem;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--or); margin-bottom: 0.5rem;">Caractéristiques</div>
+                    @php
+                        $stats = [
+                            'force' => 'For',
+                            'dexterite' => 'Dex',
+                            'constitution' => 'Con',
+                            'intelligence' => 'Int',
+                            'sagesse' => 'Sag',
+                            'charisme' => 'Cha',
+                        ];
+                    @endphp
+                    @foreach($stats as $key => $label)
+                        @php
+                            $mod = floor(($personnage->abilites->$key - 10) / 2);
+                            $modStr = $mod >= 0 ? '+' . $mod : $mod;
+                        @endphp
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
+                            {{ $label }}: {{ $personnage->abilites->$key }} ({{ $modStr }})
+                        </div>
+                    @endforeach
+                </div>
+
+                <div style="background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1rem;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--or); margin-bottom: 0.5rem;">Compétences</div>
+                    @if($personnage->listeCompetence && $personnage->listeCompetence->competences)
+                        @foreach($personnage->listeCompetence->competences as $comp)
+                            <div style="font-size: 0.8rem; color: var(--texte-secondaire);">{{ $comp }}</div>
+                        @endforeach
+                    @endif
+                </div>
+
+                <div style="background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1rem;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--or); margin-bottom: 0.5rem;">Historique & Contexte</div>
+                    @if($personnage->historique)
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);"><strong>Historique:</strong> {{ $personnage->historique->nom }}</div>
+                    @endif
+                    @if($personnage->ideal)
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);"><strong>Idéal:</strong> {{ $personnage->ideal->valeur }}</div>
+                    @endif
+                    @if($personnage->defaut)
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);"><strong>Défaut:</strong> {{ $personnage->defaut->valeur }}</div>
+                    @endif
+                    @if($personnage->attachement)
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);"><strong>Attachement:</strong> {{ $personnage->attachement->valeur }}</div>
+                    @endif
+                    @if($personnage->personnalite)
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);"><strong>Personnalité:</strong> {{ $personnage->personnalite->valeur }}</div>
+                    @endif
+                </div>
+
+                <div style="background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1rem;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--or); margin-bottom: 0.5rem;">Détails</div>
+                    <div style="font-size: 0.8rem; color: var(--texte-secondaire);">PV: {{ $personnage->point_de_vie }}</div>
+                    @if($personnage->race->vitesse)
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">Vitesse: {{ $personnage->race->vitesse }} pi</div>
+                    @endif
+                    <div style="font-size: 0.8rem; color: var(--texte-secondaire);">Niveau: {{ $personnage->niveau }}</div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.95rem; font-weight: 600; color: var(--or);">Traits</span>
+                        <a href="{{ route('personnages.traits', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
+                    </div>
+                </div>
+
+                <div style="background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.95rem; font-weight: 600; color: var(--or);">Équipements</span>
+                        <button class="btn btn-secondary btn-small" @disabled($errors->any())>Tous voir (à venir)</button>
+                    </div>
+                </div>
+            </div>
+
+
+
+        </div>
+    </div>
+</div>
+@endsection
