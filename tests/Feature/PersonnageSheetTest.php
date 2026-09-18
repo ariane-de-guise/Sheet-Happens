@@ -10,6 +10,7 @@ use Database\Factories\RaceFactory;
 use Database\Factories\SousClasseFactory;
 use Database\Factories\SousRaceFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\LaravelPdf\Facades\Pdf;
 use Tests\TestCase;
 
 class PersonnageSheetTest extends TestCase
@@ -202,6 +203,61 @@ class PersonnageSheetTest extends TestCase
             ->assertOk()
             ->assertSee('Traits')
             ->assertDontSee('Une race curieuse.');
+    }
+
+    public function test_un_personnage_peut_etre_telecharge_en_pdf_avec_sa_sous_race(): void
+    {
+        Pdf::fake();
+
+        $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create();
+        $sousRace = SousRaceFactory::new()->pourRace($race)->create();
+        $classe = ClasseFactory::new()->create(['nom' => 'Guerrier']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
+            'sous_race_id' => $sousRace->id,
+            'classe_id' => $classe->id,
+            'nom' => 'Aragorn',
+            'equipement' => ['Épée', 'Sac à dos'],
+        ]);
+
+        $response = $this->actingAs($utilisateur)
+            ->get(route('personnage.telecharger', $personnage));
+
+        $response->assertOk();
+        Pdf::assertRespondedWithPdf(function ($pdf) use ($personnage) {
+            return $pdf->viewName === 'pdf.fiche-personnage'
+                && $pdf->viewData['personnage']->is($personnage)
+                && $pdf->viewData['raceTraits']->isEmpty()
+                && $pdf->viewData['sousRaceTraits']->isEmpty()
+                && $pdf->viewData['equipementClasse'] === [
+                    'armure' => ['Épée'],
+                    'objets' => ['Sac à dos'],
+                ]
+                && $pdf->downloadName === 'aragorn-fiche.pdf'
+                && $pdf->format === 'a4';
+        });
+        Pdf::assertBrowsershot(fn ($browsershot) => true);
+    }
+
+    public function test_le_telechargement_pdf_gere_un_personnage_sans_sous_race(): void
+    {
+        Pdf::fake();
+
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'nom' => 'Legolas',
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get(route('personnage.telecharger', $personnage))
+            ->assertOk();
+
+        Pdf::assertRespondedWithPdf(function ($pdf) {
+            return $pdf->viewData['sousRaceTraits']->isEmpty();
+        });
     }
 
     public function test_la_fiche_affiche_l_inventaire_avec_un_lien_vers_la_page_complete(): void

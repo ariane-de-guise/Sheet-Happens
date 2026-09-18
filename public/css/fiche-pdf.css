@@ -1,0 +1,74 @@
+
+.sheet-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 1.5rem;
+}
+
+.sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .sheet-container {
+        grid-template-columns: 1fr;
+    }
+    .sheet-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.sheet-box {
+    background: rgba(25, 10, 50, 0.9);
+    border: 1px solid #c49a3c;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.sheet-box-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #e6b84d;
+    margin-bottom: 0.5rem;
+}
+
+.sheet-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #b8a9c9;
+    padding: 0.2rem 0;
+}
+
+.sheet-row .maitrise-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.4rem;
+    background: rgba(184, 169, 201, 0.25);
+    vertical-align: middle;
+}
+
+.sheet-row .maitrise-dot.actif {
+    background: #e6b84d;
+}
+
+.sheet-row .valeur {
+    color: #e8d5b5;
+    font-weight: 600;
+}
+
+.text-gold { color: #e6b84d; }
+.text-muted { color: #b8a9c9; }
+.mb-3 { margin-bottom: 1rem; }
+
+.card{
+    width: 100%;
+}

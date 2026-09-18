@@ -563,6 +563,11 @@
                         </div>
                     @endif
                 </div>
+
+                <a href="{{ route('personnage.telecharger', $personnage) }}" class="btn btn-primary" style="margin-top: 1rem">
+                    Télécharger
+                </a>
+
             </div>
         </div>
     </div>

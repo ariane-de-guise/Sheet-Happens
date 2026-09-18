@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Spatie\Browsershot\Browsershot;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class PersonnageSheetController extends Controller
 {
@@ -295,5 +297,34 @@ class PersonnageSheetController extends Controller
     protected function getMaxLanguesByLevel(int $niveau): int
     {
         return 2 + (int) floor(($niveau - 1) / 3);
+    }
+
+    public function telecharger(Personnage $personnage)
+    {
+        $personnage->load([
+            'race', 'sousRace', 'classe', 'sousClasse',
+            'abilites', 'listeCompetence',
+            'historique', 'ideal', 'defaut', 'attachement', 'personnalite',
+        ]);
+
+        $raceTraits = $personnage->race->traits;
+        $sousRaceTraits = $personnage->sousRace?->traits ?? collect();
+
+        return Pdf::view('pdf.fiche-personnage', [
+            'personnage' => $personnage,
+            'bonusMaitrise' => $this->fiche->bonusMaitrise($personnage->niveau),
+            'jetsDeSauvegarde' => $this->fiche->jetsDeSauvegarde($personnage),
+            'competences' => $this->fiche->competences($personnage),
+            'perceptionPassive' => $this->fiche->perceptionPassive($personnage),
+            'actions' => $this->fiche->actions($personnage),
+            'raceTraits' => $raceTraits,
+            'sousRaceTraits' => $sousRaceTraits,
+            'equipementClasse' => $this->fiche->equipementClasse($personnage),
+        ])
+            ->format('a4')
+            ->withBrowsershot(function (Browsershot $browsershot) {
+                $browsershot->noSandbox();
+            })
+            ->name(str($personnage->nom)->slug().'-fiche.pdf');
     }
 }
