@@ -34,14 +34,10 @@ export function applyThemeToDocument(theme, doc) {
     doc.documentElement.setAttribute("data-theme", theme);
 }
 
-function prefersDarkScheme(win) {
-    return Boolean(
-        win.matchMedia && win.matchMedia("(prefers-color-scheme: dark)").matches
-    );
-}
-
 /**
- * Résout et applique le thème initial de la page.
+ * Résout et applique le thème initial de la page : la préférence
+ * mémorisée si elle existe, sinon le thème sombre (défaut de
+ * l'application, indépendant des préférences système du navigateur).
  *
  * @param {Window} win
  * @param {Document} doc
@@ -49,7 +45,7 @@ function prefersDarkScheme(win) {
  */
 export function initTheme(win, doc) {
     const stored = readStoredTheme(win.localStorage);
-    const theme = resolveInitialTheme(stored, prefersDarkScheme(win));
+    const theme = resolveInitialTheme(stored);
     applyThemeToDocument(theme, doc);
     return theme;
 }

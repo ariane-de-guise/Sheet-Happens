@@ -8,7 +8,6 @@ import {
     isValidTheme,
     readStoredTheme,
     writeStoredTheme,
-    systemTheme,
     resolveInitialTheme,
     toggleTheme,
 } from "../../public/js/theme-logic.js";
@@ -93,23 +92,18 @@ test("writeStoredTheme renvoie false si le stockage lève une exception", () => 
     assert.equal(writeStoredTheme(storage, THEME_LIGHT), false);
 });
 
-test("systemTheme reflète la préférence système", () => {
-    assert.equal(systemTheme(true), THEME_DARK);
-    assert.equal(systemTheme(false), THEME_LIGHT);
+test("resolveInitialTheme respecte le thème mémorisé, qu'il soit clair ou sombre", () => {
+    assert.equal(resolveInitialTheme(THEME_LIGHT), THEME_LIGHT);
+    assert.equal(resolveInitialTheme(THEME_DARK), THEME_DARK);
 });
 
-test("resolveInitialTheme priorise le thème mémorisé sur la préférence système", () => {
-    assert.equal(resolveInitialTheme(THEME_LIGHT, true), THEME_LIGHT);
-    assert.equal(resolveInitialTheme(THEME_DARK, false), THEME_DARK);
+test("resolveInitialTheme retombe sur le thème sombre par défaut si rien n'est mémorisé", () => {
+    assert.equal(resolveInitialTheme(null), THEME_DARK);
+    assert.equal(resolveInitialTheme(undefined), THEME_DARK);
 });
 
-test("resolveInitialTheme retombe sur la préférence système si rien n'est mémorisé", () => {
-    assert.equal(resolveInitialTheme(null, true), THEME_DARK);
-    assert.equal(resolveInitialTheme(null, false), THEME_LIGHT);
-});
-
-test("resolveInitialTheme ignore une valeur mémorisée invalide", () => {
-    assert.equal(resolveInitialTheme("corrompu", true), THEME_DARK);
+test("resolveInitialTheme retombe sur le thème sombre si la valeur mémorisée est invalide", () => {
+    assert.equal(resolveInitialTheme("corrompu"), THEME_DARK);
 });
 
 test("toggleTheme bascule entre les deux thèmes", () => {

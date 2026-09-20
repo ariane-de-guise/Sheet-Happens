@@ -55,6 +55,9 @@
     --or-doux: #e8d5b5;
     --or-bordure: #c49a3c;
     --or-vif: #e6b84d;
+    --bordure-option: #6e5689;
+    --niveau-max-fond: #4d3d5d;
+    --niveau-max-texte: #d7c9e3;
     --or-vif-clair: #f0c963;
 
     /* Halos et liserés dorés translucides */
@@ -153,6 +156,9 @@
     --or-doux: #f3d9a0;
     --or-bordure: #d9b876;
     --or-vif: #edbb47;
+    --bordure-option: #a996d6;
+    --niveau-max-fond: #a99bd9;
+    --niveau-max-texte: #3d2a6b;
     --or-vif-clair: #f5cd6f;
 
     --or-halo-faible: rgba(237, 187, 71, 0.12);
@@ -206,17 +212,6 @@
     --badge-ombre: rgba(41, 23, 82, 0.3);
     --badge-danger: #ef4444;
     --badge-danger-texte: #ffffff;
-}
-
-/* La palette claire suit aussi la préférence système lorsque
-   l'utilisateur n'a jamais choisi explicitement de thème (voir
-   public/js/theme.js : c'est ce script, exécuté avant l'affichage,
-   qui pose data-theme="light" dans ce cas — cette media query n'est
-   donc qu'un filet de sécurité si JavaScript est indisponible). */
-@media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-        color-scheme: light;
-    }
 }
 
 *,

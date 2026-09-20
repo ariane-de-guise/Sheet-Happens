@@ -7,7 +7,7 @@
     <title>@yield('title', 'Sheet Happens')</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo_rmb.png') }}">
     <script>
-        // Applique le thème mémorisé (ou la préférence système à défaut)
+        // Applique le thème mémorisé, ou le thème sombre par défaut
         // avant le premier affichage, pour éviter un flash visuel du
         // mauvais thème. Volontairement en ligne et synchrone : la
         // même logique, testée unitairement, vit dans
@@ -16,9 +16,9 @@
             try {
                 var theme = localStorage.getItem('theme');
                 if (theme !== 'dark' && theme !== 'light') {
-                    theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
-                        ? 'dark'
-                        : 'light';
+                    // Le thème sombre est le défaut de l'application ;
+                    // on ne consulte pas la préférence système.
+                    theme = 'dark';
                 }
                 document.documentElement.setAttribute('data-theme', theme);
             } catch (e) {

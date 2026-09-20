@@ -61,25 +61,17 @@ export function writeStoredTheme(storage, theme) {
 }
 
 /**
- * @param {boolean} prefersDark valeur de
- *   `matchMedia('(prefers-color-scheme: dark)').matches`.
- * @returns {"dark" | "light"}
- */
-export function systemTheme(prefersDark) {
-    return prefersDark ? THEME_DARK : THEME_LIGHT;
-}
-
-/**
  * Détermine le thème à appliquer au chargement de la page : la
  * préférence explicitement enregistrée par l'utilisateur prévaut
- * toujours sur la préférence système.
+ * toujours ; à défaut, le thème sombre est le défaut de
+ * l'application (la préférence système du navigateur n'est
+ * volontairement pas consultée ici).
  *
  * @param {"dark" | "light" | null} storedTheme
- * @param {boolean} prefersDark
  * @returns {"dark" | "light"}
  */
-export function resolveInitialTheme(storedTheme, prefersDark) {
-    return isValidTheme(storedTheme) ? storedTheme : systemTheme(prefersDark);
+export function resolveInitialTheme(storedTheme) {
+    return isValidTheme(storedTheme) ? storedTheme : THEME_DARK;
 }
 
 /**
