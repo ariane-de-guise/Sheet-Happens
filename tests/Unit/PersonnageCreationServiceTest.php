@@ -195,4 +195,71 @@ class PersonnageCreationServiceTest extends TestCase
         $this->assertDatabaseCount('listes_competences', 0);
         $this->assertDatabaseCount('personnages', 0);
     }
+
+    /**
+     * L'équipement de départ accordé par l'historique est une simple liste
+     * de noms narratifs (ex. "Symbole sacré") qui n'existent pas forcément
+     * dans le catalogue d'objets de base : ils doivent tout de même se
+     * retrouver dans l'inventaire du personnage, créés à la volée plutôt
+     * que d'être silencieusement perdus.
+     */
+    public function test_l_equipement_de_depart_de_l_historique_est_ajoute_a_l_inventaire(): void
+    {
+        $payload = $this->payloadDeBase();
+        $payload['equipement'] = ['Symbole sacré', 'Symbole sacré', 'Épée'];
+
+        $personnage = $this->service()->create($payload);
+
+        $this->assertSame(2, $personnage->objets()->count());
+        $this->assertSame(2, $personnage->objets()->where('nom', 'Symbole sacré')->first()->pivot->quantite);
+        $this->assertSame('autre', $personnage->objets()->where('nom', 'Symbole sacré')->first()->type);
+        $this->assertSame(1, $personnage->objets()->where('nom', 'Épée')->first()->pivot->quantite);
+    }
+
+    /**
+     * L'outil choisi à la création n'est plus stocké comme un simple texte
+     * sur le personnage (colonne `outil`, retirée) : il doit se retrouver
+     * dans l'inventaire réel, comme n'importe quel autre objet de départ.
+     */
+    public function test_l_outil_choisi_est_ajoute_a_l_inventaire_plutot_que_stocke_en_texte(): void
+    {
+        $payload = $this->payloadDeBase();
+        $payload['outil'] = 'Kit de calligraphe';
+
+        $personnage = $this->service()->create($payload);
+
+        $this->assertFalse(array_key_exists('outil', $personnage->getAttributes()));
+        $objetOutil = $personnage->objets()->where('nom', 'Kit de calligraphe')->first();
+        $this->assertNotNull($objetOutil);
+        $this->assertSame(1, $objetOutil->pivot->quantite);
+        $this->assertFalse((bool) $objetOutil->pivot->equipe);
+    }
+
+    public function test_aucun_objet_n_est_ajoute_si_aucun_outil_n_est_choisi(): void
+    {
+        $payload = $this->payloadDeBase();
+
+        $personnage = $this->service()->create($payload);
+
+        $this->assertSame(0, $personnage->objets()->count());
+    }
+
+    /**
+     * Si l'outil choisi correspond au même objet qu'un équipement déjà
+     * accordé par l'historique (ex. l'historique impose "Kit A" en outil
+     * fixe et le joueur choisit aussi "Kit A"), les deux sources ne doivent
+     * pas créer deux lignes en conflit (contrainte d'unicité), mais
+     * cumuler la quantité sur une seule ligne.
+     */
+    public function test_l_outil_choisi_qui_double_un_equipement_deja_accorde_cumule_la_quantite(): void
+    {
+        $payload = $this->payloadDeBase();
+        $payload['equipement'] = ['Kit de calligraphe'];
+        $payload['outil'] = 'Kit de calligraphe';
+
+        $personnage = $this->service()->create($payload);
+
+        $this->assertSame(1, $personnage->objets()->count());
+        $this->assertSame(2, $personnage->objets()->where('nom', 'Kit de calligraphe')->first()->pivot->quantite);
+    }
 }

@@ -449,16 +449,6 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Outil</label>
-                    <select name="outil" class="form-select-small">
-                        @foreach($outils as $o)
-                            <option value="{{ $o }}" {{ old('outil') == $o ? 'selected' : '' }}>
-                                {{ $o }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group">
                     <label class="form-label">Langues (max {{ 2 + (int)floor(($personnage->niveau - 1) / 3) }})</label>
                     <div class="checkbox-grid">
                         @php
@@ -475,18 +465,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Équipement</label>
-                    <div class="checkbox-grid">
-                        @php
-                            $currentEquipements = old('equipements', []);
-                        @endphp
-                        @foreach($equipements as $eq)
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="equipements[]" value="{{ $eq }}"
-                                    {{ in_array($eq, $currentEquipements) ? 'checked' : '' }}>
-                                {{ $eq }}
-                            </label>
-                        @endforeach
-                    </div>
+                    <a href="{{ route('personnages.inventaire.index', $personnage) }}" class="btn btn-secondary btn-small">Gérer l'inventaire →</a>
                 </div>
             </div>
         </div>
