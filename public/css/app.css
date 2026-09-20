@@ -5,6 +5,12 @@
    déclenchaient une requête 404 inutile. */
 
 :root {
+    /* Indique aux navigateurs que la page est sombre, pour que les
+       contrôles de formulaire natifs (case à cocher, flèches des champs
+       number, etc.) se dessinent dans une variante sombre au lieu du blanc
+       par défaut, qui tranchait violemment avec le reste de l'interface. */
+    color-scheme: dark;
+
     /* Palette sombre avec reflets mauves */
     --fond: #141124;
     --surface: #1e1933;
@@ -171,6 +177,16 @@ input::placeholder {
     color: var(--texte-espace-reserve);
 }
 
+/* La règle `input { width: 100% }` ci-dessus, pensée pour les champs
+   texte, donne aux case à cocher une boîte de disposition anormalement
+   large ; `accent-color` fixe aussi leur couleur cochée sur le thème (au
+   lieu du bleu par défaut du navigateur). */
+input[type="checkbox"],
+input[type="radio"] {
+    width: auto;
+    accent-color: var(--secondaire);
+}
+
 input:focus {
     outline: none;
     border-color: var(--primaire);
@@ -261,6 +277,12 @@ button:active {
     text-decoration: none;
 }
 
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .btn-primary {
     background: #e6b84d;
     color: #1a0533;
@@ -280,6 +302,61 @@ button:active {
 
 .btn-secondary:hover {
     background: rgba(30, 15, 55, 0.95);
+}
+
+.btn-danger {
+    background: rgba(60, 15, 20, 0.9);
+    color: #f5c6cb;
+    border-color: #a33c3c;
+}
+
+.btn-danger:hover {
+    background: #a33c3c;
+    color: #fff;
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 5, 20, 0.75);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-box {
+    background: rgba(15, 5, 30, 0.97);
+    border: 1px solid #c49a3c;
+    border-radius: 16px;
+    padding: 1.75rem;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
+}
+
+.modal-box h2 {
+    color: #e6b84d;
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+}
+
+.modal-box p {
+    color: #b8a9c9;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
 }
 
 .btn-option {
@@ -412,7 +489,10 @@ a:hover {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: rgba(25, 10, 50, 0.9);
+    /* Fond opaque (et non semi-transparent) : le rond doit cacher
+       complètement la ligne de progression derrière lui, pas laisser sa
+       couleur transparaître à travers. */
+    background: #180a30;
     border: 2px solid #c49a3c;
     display: flex;
     align-items: center;
@@ -433,7 +513,7 @@ a:hover {
 }
 
 .progress-step.completed {
-    background: rgba(230, 184, 77, 0.4);
+    background: #664e31;
     border-color: #e6b84d;
     color: #e6b84d;
 }
@@ -687,17 +767,35 @@ input.stat-base-value[type="number"] {
     cursor: not-allowed;
 }
 
-.roll-actions {
+/* Colonne de droite de .stats-container / .standard-points-container (pool
+   de résultats/valeurs). Les items d'une grille sont étirés par défaut
+   (align-items: stretch) pour occuper toute la hauteur de la rangée, donc
+   cette colonne est déjà aussi haute que la boîte de caractéristiques à
+   gauche : on la rend flex pour pouvoir pousser .stats-actions tout en bas
+   (margin-top: auto), alignée avec le bas de cette boîte au lieu de flotter
+   juste sous le pool. */
+.stats-side {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 0.75rem;
-    margin-top: 1rem;
+    flex-direction: column;
+    min-height: 0;
 }
 
-.roll-actions .btn {
-    flex: 1 1 200px;
+/* Boutons d'action à côté de la boîte de caractéristiques (pas en dessous),
+   collés au bas de la colonne grâce à margin-top: auto sur .stats-side.
+   Empilés verticalement, pleine largeur de cette colonne. Utilisée pour
+   "Lancer/Relancer + Réinitialiser les choix" (dés, 2 boutons) et
+   "Réinitialiser" seul (standard, 1 bouton). */
+.stats-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 1rem;
+}
+
+.stats-actions .btn {
+    width: 100%;
 }
 
 .drag-hint {

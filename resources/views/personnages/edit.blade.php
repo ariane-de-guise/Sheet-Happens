@@ -264,6 +264,12 @@
                 <div class="stat-block-label">Niveau</div>
                 <input type="number" name="niveau" value="{{ old('niveau', $personnage->niveau) }}" min="1" max="20"
                     style="width:45px;">
+                <form action="{{ route('personnages.update', $personnage) }}" method="POST" style="display:inline;">
+                    @csrf
+                    @method('PATCH')
+                    <input type="number" name="niveau" value="{{ $personnage->niveau }}" min="1" max="5" readonly title="Le niveau se modifie avec la montée de niveau"
+                        onchange="this.form.submit()" style="width:45px;">
+                </form>
             </div>
             <div class="stat-block">
                 <div class="stat-block-label">PV</div>
@@ -462,6 +468,7 @@
                     </select>
                 </div>
                 <div class="form-group">
+<<<<<<< HEAD
                     <label class="form-label">Outil</label>
                     <select name="outil" class="form-select-small">
                         @foreach($outils as $o)
@@ -472,6 +479,8 @@
                     </select>
                 </div>
                 <div class="form-group">
+=======
+>>>>>>> develop
                     <label class="form-label">Langues (max {{ 2 + (int)floor(($personnage->niveau - 1) / 3) }})</label>
                     <div class="checkbox-grid">
                         @php
@@ -488,6 +497,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Équipement</label>
+<<<<<<< HEAD
                     <div class="checkbox-grid">
                         @php
                             $currentEquipements = old('equipements', $personnage->equipement ?? []);
@@ -500,6 +510,9 @@
                             </label>
                         @endforeach
                     </div>
+=======
+                    <a href="{{ route('personnages.inventaire.index', $personnage) }}" class="btn btn-secondary btn-small">Gérer l'inventaire →</a>
+>>>>>>> develop
                 </div>
             </div>
         </div>

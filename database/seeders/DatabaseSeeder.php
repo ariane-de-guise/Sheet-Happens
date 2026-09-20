@@ -26,6 +26,10 @@ class DatabaseSeeder extends Seeder
             RacesSeeder::class,
             ClassesSeeder::class,
             HistoriquesSeeder::class,
+            TraitSeeder::class,
+            RaceTraitSeeder::class,
+            SousRaceTraitSeeder::class,
+            ObjetsSeeder::class,
         ]);
     }
 }

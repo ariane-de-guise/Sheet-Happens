@@ -35,22 +35,24 @@
             @endforeach
         </div>
 
-        <div>
+        <div class="stats-side">
             <div class="label mb-1" style="color:#e6b84d;">Résultats des lancers</div>
             <div class="value-pool" id="valuePool"
                  ondragover="onPoolDragOver(event)"
                  ondragleave="onPoolDragLeave(event)"
                  ondrop="onPoolDrop(event)"></div>
-        </div>
-    </div>
 
-    <div class="roll-actions">
-        <button type="button" class="btn btn-primary" id="btnRoll" onclick="rollDice()">
-            {{ $dicePool ? 'Relancer les dés' : 'Lancer les dés' }}
-        </button>
-        <button type="button" class="btn btn-secondary" id="btnResetAssignments" onclick="resetAssignments()">
-            Réinitialiser les choix
-        </button>
+            <!-- À côté de la boîte de caractéristiques (2e colonne), collée
+                 en bas (voir .stats-side), pas en dessous de celle-ci. -->
+            <div class="stats-actions">
+                <button type="button" class="btn btn-primary" id="btnRoll" onclick="rollDice()">
+                    {{ $dicePool ? 'Relancer les dés' : 'Lancer les dés' }}
+                </button>
+                <button type="button" class="btn btn-secondary" id="btnResetAssignments" onclick="resetAssignments()">
+                    Réinitialiser les choix
+                </button>
+            </div>
+        </div>
     </div>
 
     <div class="btn-group-row">

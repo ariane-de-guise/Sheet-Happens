@@ -5,15 +5,26 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'niveau', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'outil', 'langues', 'equipement'])]
+#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'photo', 'niveau', 'experience', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'outil', 'langues', 'equipement', 'capacites', 'feats'])]
 class Personnage extends Model
 {
+    /**
+     * Nombre maximum de personnages qu'un utilisateur peut posséder
+     * simultanément. Au-delà, la création est bloquée tant qu'il n'en a
+     * pas supprimé un.
+     */
+    public const MAX_PAR_UTILISATEUR = 5;
+
     protected function casts(): array
     {
         return [
             'langues' => 'array',
             'equipement' => 'array',
+            'capacites' => 'array',
+            'feats' => 'array',
         ];
     }
 
@@ -72,8 +83,26 @@ class Personnage extends Model
         return $this->belongsTo(Abilite::class, 'abilites_id');
     }
 
+    public function monteesNiveau(): HasMany
+    {
+        return $this->hasMany(MonteeNiveau::class)->orderBy('niveau_arrivee');
+    }
+
     public function listeCompetence(): BelongsTo
     {
         return $this->belongsTo(ListeCompetence::class, 'liste_competence_id');
+    }
+
+    public function objets(): BelongsToMany
+    {
+        return $this->belongsToMany(Objet::class, 'personnage_objets')
+            ->using(PersonnageObjet::class)
+            ->withPivot(['id', 'quantite', 'equipe'])
+            ->withTimestamps();
+    }
+
+    public function effetsActifs(): HasMany
+    {
+        return $this->hasMany(EffetActif::class);
     }
 }
