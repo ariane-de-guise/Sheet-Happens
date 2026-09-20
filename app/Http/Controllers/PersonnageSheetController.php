@@ -159,8 +159,6 @@ class PersonnageSheetController extends Controller
         $personnage->load(['abilites', 'listeCompetence', 'classe']);
 
         $niveau = (int) $request->input('niveau', $personnage->niveau);
-
-        $maxCompetences = $personnage->classe?->nombre_competences ?? 2;
         $maxLangues = $this->getMaxLanguesByLevel($niveau);
 
         $validated = $request->validate([
@@ -181,7 +179,7 @@ class PersonnageSheetController extends Controller
                     return $query->where('classe_id', $request->input('classe_id'));
                 }),
             ],
-            'niveau' => ['required', 'integer', Rule::in([(int) $personnage->niveau])],
+            'niveau' => ['required', 'integer', Rule::in([(int) $personnage->niveau, (int) $personnage->niveau + 1])],
             'alignement' => 'nullable|string|max:50',
             'description' => 'nullable|string',
             'point_de_vie' => 'required|integer|min:1',
@@ -202,6 +200,14 @@ class PersonnageSheetController extends Controller
             'personnalite_id' => 'nullable|integer|exists:personnalites,id',
         ], [
         ]);
+
+        // Un changement de classe ici est un reclassement complet (pas un
+        // multiclassage 5e à la carte) : le personnage abandonne son
+        // ancienne classe pour la nouvelle, donc toutes les limites
+        // dépendantes de la classe (compétences, dé de vie, ASI) se basent
+        // désormais sur la nouvelle classe choisie.
+        $nouvelleClasse = Classe::find($validated['classe_id']);
+        $maxCompetences = $nouvelleClasse?->nombre_competences ?? 2;
 
         $historiqueCompetences = [];
         $historiqueIds = array_filter([
@@ -246,7 +252,7 @@ class PersonnageSheetController extends Controller
         $sousRaceId = $validated['sous_race_id'] ?? null;
         if ($sousRaceId) {
             $sr = SousRace::find($sousRaceId);
-            if (! $sr || $sr->race_id !== $validated['race_id']) {
+            if (! $sr || (int) $sr->race_id !== (int) $validated['race_id']) {
                 $sousRaceId = null;
             }
         }
@@ -254,19 +260,15 @@ class PersonnageSheetController extends Controller
         $sousClasseId = $validated['sous_classe_id'] ?? null;
         if ($sousClasseId) {
             $sc = SousClasse::find($sousClasseId);
-            $classe = Classe::find($validated['classe_id']);
-            if (! $sc || ! $classe || $sc->classe_id !== $validated['classe_id'] || $classe->niveau_sous_classe > $validated['niveau']) {
+            if (! $sc || ! $nouvelleClasse || (int) $sc->classe_id !== (int) $validated['classe_id']) {
                 $sousClasseId = null;
+            } elseif ($nouvelleClasse->niveau_sous_classe > (int) $validated['niveau']) {
+                throw ValidationException::withMessages([
+                    'sous_classe_id' => "Cette sous-classe n'est disponible qu'à partir du niveau {$nouvelleClasse->niveau_sous_classe}.",
+                ]);
             }
         }
 
-        if ((int) $validated['classe_id'] !== (int) $personnage->classe_id) {
-            throw ValidationException::withMessages([
-                'classe_id' => 'La classe ne peut pas être changée sans gérer le multiclassage.',
-            ]);
-        }
-
-        $ancienneClasse = $personnage->classe;
         $anciennesAbilites = $personnage->abilites;
         $nouvellesAbilites = [
             'force' => $validated['force'],
@@ -281,11 +283,11 @@ class PersonnageSheetController extends Controller
             $anciennesAbilites,
             $personnage->niveau,
             $validated['niveau'],
-            $ancienneClasse,
+            $nouvelleClasse,
         );
 
         if ((int) $validated['point_de_vie'] !== (int) $personnage->point_de_vie) {
-            $this->validateHitPoints($validated['point_de_vie'], $validated['niveau'], (object) $nouvellesAbilites, $ancienneClasse);
+            $this->validateHitPoints($validated['point_de_vie'], $validated['niveau'], (object) $nouvellesAbilites, $nouvelleClasse);
         }
 
         $personnage->update([
@@ -303,9 +305,7 @@ class PersonnageSheetController extends Controller
             'alignement' => $validated['alignement'] ?? null,
             'description' => $validated['description'] ?? null,
             'point_de_vie' => $validated['point_de_vie'],
-            'outil' => $validated['outil'] ?? null,
             'langues' => $langues,
-            'equipement' => array_values(array_unique($validated['equipements'] ?? [])),
         ]);
 
         if ($personnage->abilites) {
@@ -463,7 +463,7 @@ class PersonnageSheetController extends Controller
         $maximumIncrease = $asiCount * 2;
 
         if ($asiCount === 0 || array_sum($increases) > $maximumIncrease || count($increases) > 2 || max($increases) > 2) {
-            $message = "Les caractéristiques ne peuvent augmenter qu’au niveau d’une amélioration de caractéristiques (ASI), avec un maximum de +2 par ASI.";
+            $message = 'Les caractéristiques ne peuvent augmenter qu’au niveau d’une amélioration de caractéristiques (ASI), avec un maximum de +2 par ASI.';
             throw ValidationException::withMessages(array_fill_keys(array_keys($increases), $message));
         }
     }

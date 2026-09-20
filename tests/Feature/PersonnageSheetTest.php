@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Historique;
 use App\Models\TraitModel;
 use App\Models\Utilisateur;
-use App\Models\Historique;
 use Database\Factories\ClasseFactory;
 use Database\Factories\ObjetFactory;
 use Database\Factories\PersonnageFactory;
@@ -275,6 +275,70 @@ class PersonnageSheetTest extends TestCase
             ->assertDontSee('onchange="this.form.submit()"', false);
     }
 
+    public function test_le_formulaire_edition_preselectionne_l_alignement_calcule_a_la_creation(): void
+    {
+        // calculateAlignement() (CreationPersonnageController) doit produire
+        // exactement les mêmes chaînes que les options du select
+        // "Alignement" ci-dessous, sinon la valeur enregistrée en base ne
+        // s'y retrouve jamais présélectionnée (elle affiche "-- Choisir --"
+        // au premier chargement).
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'alignement' => 'Chaotique neutre',
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get("/personnages/{$personnage->id}/edit")
+            ->assertOk()
+            ->assertSee('<option value="Chaotique neutre" selected>', false);
+    }
+
+    public function test_le_formulaire_edition_affiche_et_preselectionne_la_sous_race_actuelle(): void
+    {
+        // La sous-race doit être visible dès le chargement de la page (pas
+        // seulement après un appel JS asynchrone), sinon un souci réseau ou
+        // JS côté client la ferait disparaître de l'écran alors qu'elle est
+        // bien enregistrée en base.
+        $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create();
+        $autreSousRace = SousRaceFactory::new()->pourRace($race)->create(['nom' => 'Elfe des bois']);
+        $sousRace = SousRaceFactory::new()->pourRace($race)->create(['nom' => 'Haut Elfe']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
+            'sous_race_id' => $sousRace->id,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get("/personnages/{$personnage->id}/edit")
+            ->assertOk()
+            ->assertSee('Haut Elfe', false)
+            ->assertSee('Elfe des bois', false)
+            ->assertSee('<option value="'.$sousRace->id.'" selected>', false);
+    }
+
+    public function test_le_formulaire_edition_bloque_la_sous_classe_si_le_niveau_est_insuffisant(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create();
+        $classe = ClasseFactory::new()->create(['niveau_sous_classe' => 3]);
+        $sousClasse = SousClasseFactory::new()->pourClasse($classe)->create(['nom' => 'Voie du berserker']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
+            'classe_id' => $classe->id,
+            'niveau' => 1,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get("/personnages/{$personnage->id}/edit")
+            ->assertOk()
+            ->assertDontSee('Voie du berserker', false)
+            ->assertSee('id="sousClasseSelect" class="form-select-small" disabled', false)
+            ->assertSee('Sous-classe disponible au niveau 3', false);
+    }
+
     public function test_une_competence_d_historique_est_verrouillee_dans_le_formulaire(): void
     {
         $utilisateur = Utilisateur::factory()->create();
@@ -360,9 +424,7 @@ class PersonnageSheetTest extends TestCase
             'alignement' => 'Neutre bon',
             'description' => 'Roi du Gondor',
             'point_de_vie' => 10,
-            'outil' => 'Outils de voleur',
             'langues' => ['Commun', 'Elfe'],
-            'equipements' => ['Épée longue', 'Bouclier'],
             'force' => 10,
             'dexterite' => 10,
             'constitution' => 10,
@@ -386,9 +448,9 @@ class PersonnageSheetTest extends TestCase
         $donnees = $this->donneesMiseAJour([
             'race_id' => $race->id,
             'classe_id' => $classe->id,
-            'niveau' => 4,
-            'point_de_vie' => 20,
-            'force' => 12,
+            'niveau' => 1,
+            'point_de_vie' => 8,
+            'force' => 10,
             'competences' => ['Athlétisme', 'Perception'],
         ]);
 
@@ -400,12 +462,38 @@ class PersonnageSheetTest extends TestCase
 
         $personnage->refresh();
         $this->assertSame('Aragorn Mis à jour', $personnage->nom);
-        $this->assertSame(20, $personnage->point_de_vie);
-        $this->assertSame('Outils de voleur', $personnage->outil);
+        $this->assertSame(8, $personnage->point_de_vie);
         $this->assertSame(['Commun', 'Elfe'], $personnage->langues);
-        $this->assertSame(['Épée longue', 'Bouclier'], $personnage->equipement);
         $this->assertSame(['Athlétisme', 'Perception'], $personnage->listeCompetence->fresh()->competences);
-        $this->assertSame(12, $personnage->abilites->fresh()->force);
+        $this->assertSame(10, $personnage->abilites->fresh()->force);
+    }
+
+    public function test_un_proprietaire_peut_changer_la_classe_de_son_personnage(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create();
+        $ancienneClasse = ClasseFactory::new()->create(['nombre_competences' => 2]);
+        $nouvelleClasse = ClasseFactory::new()->create(['nombre_competences' => 4]);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
+            'classe_id' => $ancienneClasse->id,
+            'niveau' => 1,
+        ]);
+
+        $donnees = $this->donneesMiseAJour([
+            'race_id' => $race->id,
+            'classe_id' => $nouvelleClasse->id,
+            'niveau' => 1,
+            'competences' => ['Athlétisme', 'Perception', 'Nature', 'Survie'],
+        ]);
+
+        $response = $this->actingAs($utilisateur)
+            ->patch("/personnages/{$personnage->id}", $donnees);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('personnages.show', $personnage));
+        $this->assertSame($nouvelleClasse->id, $personnage->refresh()->classe_id);
     }
 
     public function test_un_proprietaire_peut_modifier_uniquement_le_niveau(): void
@@ -444,14 +532,12 @@ class PersonnageSheetTest extends TestCase
         $personnage = PersonnageFactory::new()->create([
             'utilisateur_id' => $utilisateur->id,
             'langues' => ['Commun'],
-            'equipement' => ['Épée longue'],
         ]);
 
         $donnees = $this->donneesMiseAJour([
             'race_id' => $personnage->race_id,
             'classe_id' => $personnage->classe_id,
             'langues' => [],
-            'equipements' => [],
         ]);
 
         $response = $this->actingAs($utilisateur)
@@ -460,7 +546,6 @@ class PersonnageSheetTest extends TestCase
         $response->assertSessionHasNoErrors();
         $personnage->refresh();
         $this->assertSame([], $personnage->langues);
-        $this->assertSame([], $personnage->equipement);
         $this->assertSame([], $personnage->listeCompetence->fresh()->competences);
     }
 
@@ -521,13 +606,13 @@ class PersonnageSheetTest extends TestCase
         $this->assertSame($competences, $personnage->listeCompetence->fresh()->competences);
     }
 
-    public function test_la_mise_a_jour_neutralise_une_sous_race_en_cas_d_incoherence_de_type(): void
+    public function test_la_mise_a_jour_conserve_une_sous_race_valide_meme_si_race_id_est_une_chaine(): void
     {
-        // La règle de validation "exists" compare race_id via SQL (typage
-        // souple), mais le contrôleur compare ensuite avec `!==` (typage
-        // strict). Envoyer race_id sous forme de chaîne fait donc passer la
-        // validation tout en déclenchant la vérification manuelle du
-        // contrôleur, qui neutralise alors la sous-race sans lever d'erreur.
+        // Les requêtes HTTP envoient toujours race_id sous forme de chaîne
+        // (les champs de formulaire HTML n'ont pas de typage). La
+        // comparaison ne doit donc pas être stricte (!==) sous peine de
+        // neutraliser systématiquement la sous-race à chaque sauvegarde,
+        // même sans changement de race.
         $utilisateur = Utilisateur::factory()->create();
         $race = RaceFactory::new()->create();
         $sousRace = SousRaceFactory::new()->pourRace($race)->create();
@@ -537,6 +622,7 @@ class PersonnageSheetTest extends TestCase
             'utilisateur_id' => $utilisateur->id,
             'race_id' => $race->id,
             'classe_id' => $classe->id,
+            'sous_race_id' => $sousRace->id,
         ]);
 
         $donnees = $this->donneesMiseAJour([
@@ -550,7 +636,7 @@ class PersonnageSheetTest extends TestCase
 
         $response->assertSessionHasNoErrors();
         $personnage->refresh();
-        $this->assertNull($personnage->sous_race_id);
+        $this->assertSame($sousRace->id, $personnage->sous_race_id);
     }
 
     public function test_la_mise_a_jour_accepte_une_sous_race_valide(): void
@@ -580,7 +666,7 @@ class PersonnageSheetTest extends TestCase
         $this->assertSame($sousRace->id, $personnage->sous_race_id);
     }
 
-    public function test_la_mise_a_jour_ignore_une_sous_classe_dont_le_niveau_requis_est_trop_eleve(): void
+    public function test_la_mise_a_jour_refuse_une_sous_classe_dont_le_niveau_requis_est_trop_eleve(): void
     {
         $utilisateur = Utilisateur::factory()->create();
         $race = RaceFactory::new()->create();
@@ -604,7 +690,7 @@ class PersonnageSheetTest extends TestCase
         $response = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasNoErrors();
+        $response->assertSessionHasErrors(['sous_classe_id']);
         $personnage->refresh();
         $this->assertNull($personnage->sous_classe_id);
     }

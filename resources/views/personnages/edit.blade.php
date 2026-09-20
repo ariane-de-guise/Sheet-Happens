@@ -264,12 +264,6 @@
                 <div class="stat-block-label">Niveau</div>
                 <input type="number" name="niveau" value="{{ old('niveau', $personnage->niveau) }}" min="1" max="20"
                     style="width:45px;">
-                <form action="{{ route('personnages.update', $personnage) }}" method="POST" style="display:inline;">
-                    @csrf
-                    @method('PATCH')
-                    <input type="number" name="niveau" value="{{ $personnage->niveau }}" min="1" max="5" readonly title="Le niveau se modifie avec la montée de niveau"
-                        onchange="this.form.submit()" style="width:45px;">
-                </form>
             </div>
             <div class="stat-block">
                 <div class="stat-block-label">PV</div>
@@ -301,6 +295,16 @@
                     <label class="form-label">Sous-race</label>
                     <select name="sous_race_id" id="sousRaceSelect" class="form-select-small">
                         <option value="">-- Aucune --</option>
+                        @php
+                            $raceActuelle = $races->firstWhere('id', old('race_id', $personnage->race_id));
+                        @endphp
+                        @if($raceActuelle)
+                            @foreach($raceActuelle->sousRaces as $sousRace)
+                                <option value="{{ $sousRace->id }}" {{ old('sous_race_id', $personnage->sous_race_id) == $sousRace->id ? 'selected' : '' }}>
+                                    {{ $sousRace->nom }}
+                                </option>
+                            @endforeach
+                        @endif
                     </select>
                 </div>
                 <div class="form-group">
@@ -325,7 +329,7 @@
                     <select name="classe_id" id="classeSelect" class="form-select-small" required onchange="loadSousClasses()">
                         <option value="">-- Choisir --</option>
                         @foreach($classes as $classe)
-                            <option value="{{ $classe->id }}" {{ old('classe_id', $personnage->classe_id) == $classe->id ? 'selected' : '' }}>
+                            <option value="{{ $classe->id }}" data-niveau-sous-classe="{{ $classe->niveau_sous_classe }}" data-a-des-sous-classes="{{ $classe->sousClasses->isNotEmpty() ? '1' : '0' }}" {{ old('classe_id', $personnage->classe_id) == $classe->id ? 'selected' : '' }}>
                                 {{ $classe->nom }}
                             </option>
                         @endforeach
@@ -333,9 +337,25 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Sous-classe</label>
-                    <select name="sous_classe_id" id="sousClasseSelect" class="form-select-small">
+                    @php
+                        $classeActuelle = $classes->firstWhere('id', old('classe_id', $personnage->classe_id));
+                        $sousClasseBloquee = $classeActuelle && $classeActuelle->sousClasses->isNotEmpty() && $personnage->niveau < $classeActuelle->niveau_sous_classe;
+                    @endphp
+                    <select name="sous_classe_id" id="sousClasseSelect" class="form-select-small" {{ $sousClasseBloquee ? 'disabled' : '' }}>
                         <option value="">-- Aucune --</option>
+                        @if($classeActuelle && ! $sousClasseBloquee)
+                            @foreach($classeActuelle->sousClasses as $sousClasse)
+                                <option value="{{ $sousClasse->id }}" {{ old('sous_classe_id', $personnage->sous_classe_id) == $sousClasse->id ? 'selected' : '' }}>
+                                    {{ $sousClasse->nom }} (Niv. {{ $classeActuelle->niveau_sous_classe }})
+                                </option>
+                            @endforeach
+                        @endif
                     </select>
+                    <div id="sousClasseMessage" class="text-muted" style="font-size: 0.75rem; margin-top: 0.3rem;">
+                        @if($sousClasseBloquee)
+                            Sous-classe disponible au niveau {{ $classeActuelle->niveau_sous_classe }} (personnage actuellement niveau {{ $personnage->niveau }}).
+                        @endif
+                    </div>
                 </div>
             </div>
             <div class="form-group mt-2">
@@ -468,19 +488,6 @@
                     </select>
                 </div>
                 <div class="form-group">
-<<<<<<< HEAD
-                    <label class="form-label">Outil</label>
-                    <select name="outil" class="form-select-small">
-                        @foreach($outils as $o)
-                            <option value="{{ $o }}" {{ old('outil', $personnage->outil) == $o ? 'selected' : '' }}>
-                                {{ $o }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group">
-=======
->>>>>>> develop
                     <label class="form-label">Langues (max {{ 2 + (int)floor(($personnage->niveau - 1) / 3) }})</label>
                     <div class="checkbox-grid">
                         @php
@@ -497,22 +504,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Équipement</label>
-<<<<<<< HEAD
-                    <div class="checkbox-grid">
-                        @php
-                            $currentEquipements = old('equipements', $personnage->equipement ?? []);
-                        @endphp
-                        @foreach($equipements as $eq)
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="equipements[]" value="{{ $eq }}"
-                                    {{ in_array($eq, $currentEquipements) ? 'checked' : '' }}>
-                                {{ $eq }}
-                            </label>
-                        @endforeach
-                    </div>
-=======
                     <a href="{{ route('personnages.inventaire.index', $personnage) }}" class="btn btn-secondary btn-small">Gérer l'inventaire →</a>
->>>>>>> develop
                 </div>
             </div>
         </div>
@@ -527,31 +519,46 @@
 
 @push('scripts')
 <script>
-function filterEditOptions(selectId, historiqueId) {
+// Les <option hidden> ne sont pas fiables dans une <select> native (surtout
+// Firefox, qui les affiche quand même dans la liste déroulante) : on garde
+// donc la liste complète de chaque select en mémoire et on reconstruit le
+// contenu du select à partir de là à chaque changement d'historique, au
+// lieu de simplement masquer les options qui ne correspondent pas.
+const editHistoriqueOptionsStore = {};
+
+function initEditHistoriqueOptionsStore(selectId) {
     const select = document.getElementById(selectId);
     if (!select) return;
 
-    let hasSelectedVisible = false;
+    editHistoriqueOptionsStore[selectId] = {
+        placeholder: select.options[0].outerHTML,
+        current: select.value,
+        options: Array.from(select.options).slice(1).map(opt => ({
+            value: opt.value,
+            historique: opt.dataset.historique,
+            html: opt.innerHTML,
+        })),
+    };
+}
 
-    Array.from(select.options).forEach(opt => {
-        if (!opt.value) {
-            opt.hidden = false;
-            opt.disabled = false;
-            return;
-        }
+function filterEditOptions(selectId, historiqueId) {
+    const select = document.getElementById(selectId);
+    const store = editHistoriqueOptionsStore[selectId];
+    if (!select || !store) return;
 
-        const match = opt.dataset.historique == historiqueId;
-        opt.hidden = !match;
-        opt.disabled = !match;
+    // Tant qu'aucun historique n'est choisi, ces champs sont entièrement
+    // bloqués (comme "Outil" à l'étape Contexte de la création) : ils ne
+    // dépendent que de l'historique, donc rien n'est sélectionnable avant.
+    const bloque = historiqueId === '' || historiqueId === null || historiqueId === undefined;
+    select.disabled = bloque;
 
-        if (match && opt.selected) {
-            hasSelectedVisible = true;
-        }
-    });
+    const optionsCorrespondantes = bloque
+        ? []
+        : store.options.filter(opt => opt.historique == historiqueId);
 
-    if (!hasSelectedVisible) {
-        select.value = '';
-    }
+    select.innerHTML = store.placeholder + optionsCorrespondantes.map(opt =>
+        '<option value="' + opt.value + '"' + (opt.value === store.current ? ' selected' : '') + '>' + opt.html + '</option>'
+    ).join('');
 }
 
 function onEditHistoriqueChange(historiqueId) {
@@ -562,6 +569,11 @@ function onEditHistoriqueChange(historiqueId) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    initEditHistoriqueOptionsStore('edit_ideal_select');
+    initEditHistoriqueOptionsStore('edit_defaut_select');
+    initEditHistoriqueOptionsStore('edit_attachement_select');
+    initEditHistoriqueOptionsStore('edit_personnalite_select');
+
     const histSel = document.getElementById('edit_historique_select');
     if (histSel && histSel.value) {
         onEditHistoriqueChange(histSel.value);
@@ -591,7 +603,7 @@ function loadSousRaces() {
     fetch('/api/sous-races/' + raceId)
         .then(res => res.json())
         .then(data => {
-            const current = {{ json_encode(old('sous_race_id', $personnage->sous_race_id ?? '')) }};
+            const current = @json(old('sous_race_id', $personnage->sous_race_id ?? ''));
             data.forEach(sr => {
                 const opt = document.createElement('option');
                 opt.value = sr.id;
@@ -605,14 +617,30 @@ function loadSousRaces() {
 function loadSousClasses() {
     const classeId = document.getElementById('classeSelect').value;
     const select = document.getElementById('sousClasseSelect');
+    const message = document.getElementById('sousClasseMessage');
     select.innerHTML = '<option value="">-- Aucune --</option>';
+    select.disabled = false;
+    if (message) message.textContent = '';
 
     if (!classeId) return;
 
-    fetch('/api/sous-classes/' + classeId + '/' + {{ $personnage->niveau }})
+    const classeOption = document.querySelector('#classeSelect option[value="' + classeId + '"]');
+    const niveauRequis = classeOption ? parseInt(classeOption.dataset.niveauSousClasse, 10) : 0;
+    const aDesSousClasses = classeOption && classeOption.dataset.aDesSousClasses === '1';
+    const niveauPersonnage = {{ $personnage->niveau }};
+
+    if (aDesSousClasses && niveauPersonnage < niveauRequis) {
+        select.disabled = true;
+        if (message) {
+            message.textContent = 'Sous-classe disponible au niveau ' + niveauRequis + ' (personnage actuellement niveau ' + niveauPersonnage + ').';
+        }
+        return;
+    }
+
+    fetch('/api/sous-classes/' + classeId + '/' + niveauPersonnage)
         .then(res => res.json())
         .then(data => {
-            const current = {{ json_encode(old('sous_classe_id', $personnage->sous_classe_id ?? '')) }};
+            const current = @json(old('sous_classe_id', $personnage->sous_classe_id ?? ''));
             data.forEach(sc => {
                 const opt = document.createElement('option');
                 opt.value = sc.id;
@@ -624,8 +652,10 @@ function loadSousClasses() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadSousRaces();
-    loadSousClasses();
+    // Les options initiales sont déjà rendues côté serveur (voir le select
+    // ci-dessus) : on ne recharge via l'API que lors d'un vrai changement
+    // de race/classe par l'utilisateur (onchange), pas au chargement de la
+    // page, sinon un échec réseau viderait un sélecteur déjà correct.
 });
 </script>
 @endpush
