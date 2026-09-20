@@ -12,16 +12,21 @@ use App\Models\SousClasse;
 use App\Models\SousRace;
 use App\Models\Utilisateur;
 use App\Services\FicheDePersonnageService;
+use App\Services\MonteeNiveauService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class PersonnageSheetController extends Controller
 {
-    public function __construct(private readonly FicheDePersonnageService $fiche) {}
+    public function __construct(
+        private readonly FicheDePersonnageService $fiche,
+        private readonly MonteeNiveauService $monteeNiveau,
+    ) {}
 
     public function index(): View
     {
@@ -44,6 +49,7 @@ class PersonnageSheetController extends Controller
             'race', 'sousRace', 'classe', 'sousClasse',
             'abilites', 'listeCompetence',
             'historique', 'ideal', 'defaut', 'attachement', 'personnalite',
+            'objets',
         ]);
 
         return view('personnages.show', [
@@ -52,23 +58,13 @@ class PersonnageSheetController extends Controller
             'jetsDeSauvegarde' => $this->fiche->jetsDeSauvegarde($personnage),
             'competences' => $this->fiche->competences($personnage),
             'perceptionPassive' => $this->fiche->perceptionPassive($personnage),
+            'classeArmure' => $this->fiche->classeArmure($personnage),
             'actions' => $this->fiche->actions($personnage),
+            'seuilExperience' => $this->monteeNiveau->xpProchainNiveau($personnage),
         ]);
         // Section "Traits" volontairement vide pour l'instant (à faire plus
         // tard) : voir FicheDePersonnageService::traits(), déjà prête et
         // testée, en attendant d'être branchée sur la vue.
-    }
-
-    public function inventaire(Personnage $personnage): View
-    {
-        $this->authorizeOwner($personnage);
-
-        $personnage->load(['race', 'classe', 'historique']);
-
-        return view('personnages.inventaire', [
-            'personnage' => $personnage,
-            'equipementClasse' => $this->fiche->equipementClasse($personnage),
-        ]);
     }
 
     public function getTraits(Personnage $personnage): View
@@ -120,18 +116,6 @@ class PersonnageSheetController extends Controller
             'Orc', 'Souterrain', 'Titan', 'Sylvain',
         ];
 
-        $equipements = [
-            'Harpe', 'Livre', 'Épée', 'Arc court',
-            'Bouclier', 'Armure de cuir', 'Sac à dos',
-            'Kit d\'explorateur', 'Lanternes', 'Cordes',
-        ];
-
-        $outils = [
-            'Aucun', 'Kit de calligraphe', 'Kit de charpentier',
-            'Kit de cuisinier', 'Kit de joueur', 'Kit de potier',
-            'Instruments de musique', 'Outils de voleur',
-        ];
-
         return view('personnages.edit', [
             'personnage' => $personnage,
             'races' => $races,
@@ -139,8 +123,6 @@ class PersonnageSheetController extends Controller
             'historiques' => $historiques,
             'allCompetences' => $allCompetences,
             'langues' => $langues,
-            'equipements' => $equipements,
-            'outils' => $outils,
         ]);
     }
 
@@ -187,14 +169,11 @@ class PersonnageSheetController extends Controller
             'competences.*' => 'string|max:50',
             'langues' => ['nullable', 'array', "max:$maxLangues"],
             'langues.*' => 'string|max:50',
-            'equipements' => 'nullable|array',
-            'equipements.*' => 'string|max:50',
             'historique_id' => 'nullable|integer|exists:historiques,id',
             'ideal_id' => 'nullable|integer|exists:ideaux,id',
             'defaut_id' => 'nullable|integer|exists:defauts,id',
             'attachement_id' => 'nullable|integer|exists:attachements,id',
             'personnalite_id' => 'nullable|integer|exists:personnalites,id',
-            'outil' => 'nullable|string|max:50',
         ], [
             'competences.max' => "Vous ne pouvez avoir que $maxCompetences compétence(s) à ce niveau.",
             'langues.max' => "Vous ne pouvez avoir que $maxLangues langue(s) à ce niveau.",
@@ -256,6 +235,59 @@ class PersonnageSheetController extends Controller
     }
 
     /**
+     * Enregistre une photo de personnage envoyée par le joueur, en
+     * remplacement du logo par défaut affiché sur la fiche. L'ancien
+     * fichier (s'il y en avait un) est supprimé du disque pour ne pas
+     * accumuler des images orphelines.
+     */
+    public function updatePhoto(Request $request, Personnage $personnage): RedirectResponse
+    {
+        $this->authorizeOwner($personnage);
+
+        $validated = $request->validate([
+            'photo' => 'required|image|max:2048',
+        ]);
+
+        $ancienChemin = $personnage->photo;
+
+        $chemin = $validated['photo']->store('personnages', 'public');
+        $personnage->update(['photo' => $chemin]);
+
+        if ($ancienChemin) {
+            Storage::disk('public')->delete($ancienChemin);
+        }
+
+        return redirect()->route('personnages.show', $personnage)
+            ->with('success', 'Photo mise à jour avec succès !');
+    }
+
+    /**
+     * Ajoute de l'expérience au personnage. S'il en a assez pour franchir
+     * le seuil de son niveau actuel, on l'envoie directement sur l'écran
+     * de montée de niveau pour qu'il y fasse ses choix (sous-classe,
+     * amélioration de caractéristiques/don, dé de vie), plutôt que de
+     * monter le niveau tout seul sans lui laisser la main.
+     */
+    public function ajouterExperience(Request $request, Personnage $personnage): RedirectResponse
+    {
+        $this->authorizeOwner($personnage);
+
+        $validated = $request->validate([
+            'experience' => 'required|integer|min:1|max:1000000',
+        ]);
+
+        $personnage->increment('experience', $validated['experience']);
+
+        if ($this->monteeNiveau->peutMonterDeNiveau($personnage)) {
+            return redirect()->route('personnages.montee-niveau', $personnage)
+                ->with('success', "{$personnage->nom} a assez d'expérience pour monter de niveau !");
+        }
+
+        return redirect()->route('personnages.show', $personnage)
+            ->with('success', "{$validated['experience']} points d'expérience ajoutés.");
+    }
+
+    /**
      * Supprime définitivement un personnage ainsi que ses données associées
      * (caractéristiques et liste de compétences), qui lui sont propres et ne
      * sont partagées avec aucun autre personnage.
@@ -277,6 +309,10 @@ class PersonnageSheetController extends Controller
             Abilite::whereKey($abilitesId)->delete();
             ListeCompetence::whereKey($listeCompetenceId)->delete();
         });
+
+        if ($personnage->photo) {
+            Storage::disk('public')->delete($personnage->photo);
+        }
 
         return redirect()->route('personnages.index')
             ->with('success', 'Personnage supprimé avec succès.');
