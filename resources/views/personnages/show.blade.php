@@ -84,8 +84,8 @@
             height: 120px;
             border-radius: 50%;
             overflow: hidden;
-            background: rgba(15, 5, 30, 0.9);
-            border: 2px solid #c49a3c;
+            background: var(--panneau-carte);
+            border: 2px solid var(--or-bordure);
             position: relative;
         }
 
@@ -112,8 +112,8 @@
         .avatar-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(20, 5, 40, 0.7);
-            color: #e6b84d;
+            background: var(--avatar-overlay-fond);
+            color: var(--or);
             font-size: 0.7rem;
             font-weight: 600;
             display: flex;
@@ -135,13 +135,13 @@
             width: 45px;
             height: 45px;
             border-radius: 50%;
-            background: #1a0533;
-            border: 2px solid #e6b84d;
+            background: var(--texte-inverse);
+            border: 2px solid var(--or);
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            color: #e6b84d;
+            color: var(--or);
             font-size: 0.65rem;
             font-weight: 700;
             line-height: 1.1;
@@ -183,15 +183,6 @@
 
                         <div class="badge-ca">CA<br>{{ $classeArmure }}</div>
 
-                        <div style="position: absolute; bottom: -5px; right: -5px; width: 45px; height: 45px; border-radius: 50%; background: #e6b84d; display: flex; align-items: center; justify-content: center; text-align: center; color: #1a0533; font-size: 0.7rem; font-weight: 600;">
-                        <div
-                            style="
-                           width: 120px;
-                           height: 120px;
-                           border-radius: 50%;
-                           background: var(--or-vif);
-                       ">
-                        </div>
                         <div
                             style="
                            position: absolute;
@@ -332,24 +323,24 @@
                         </div>
                         @if ($seuilExperience !== null)
                             <form action="{{ route('personnages.experience.ajouter', $personnage) }}" method="POST"
-                                style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+                                  style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
                                 @csrf
                                 <input type="number" name="experience" min="1" max="1000000" required
-                                    placeholder="Points d'XP"
-                                    style="
+                                       placeholder="Points d'XP"
+                                       style="
                                        flex: 1;
                                        min-width: 0;
-                                       background: rgba(15, 5, 30, 0.9);
-                                       border: 1px solid #c49a3c;
+                                       background: var(--panneau-carte);
+                                       border: 1px solid var(--or-bordure);
                                        border-radius: 6px;
-                                       color: #e8d5b5;
+                                       color: var(--or-doux);
                                        padding: 0.3rem 0.5rem;
                                        font-size: 0.8rem;
                                    ">
                                 <button type="submit" class="btn btn-small"
-                                    style="
-                                       background: #e6b84d;
-                                       color: #1a0533;
+                                        style="
+                                       background: var(--or-vif);
+                                       color: var(--texte-inverse);
                                        font-weight: 800;
                                        text-align: center;
                                        white-space: nowrap;
@@ -358,9 +349,9 @@
                                 </button>
                             </form>
                             @error('experience')
-                                <div style="color: #e07a7a; font-size: 0.75rem; margin-top: 0.25rem;">
-                                    {{ $message }}
-                                </div>
+                            <div style="color: var(--texte-negatif); font-size: 0.75rem; margin-top: 0.25rem;">
+                                {{ $message }}
+                            </div>
                             @enderror
                         @endif
                     </div>
@@ -465,11 +456,8 @@
                            color: var(--or);
                            margin-bottom: 0.35rem;
                        ">
-                            Langues et outils
+                            Langues
                         </div>
-
-                    <div style="border-top: 1px solid rgba(196, 154, 60, 0.35); margin-top: 0.75rem; padding-top: 0.75rem;">
-                        <div style="font-size: 0.8rem; font-weight: 600; color: #e6b84d; margin-bottom: 0.35rem;">Langues</div>
                         <div class="sheet-row">
                             <span>Langues</span>
                             <span class="valeur">

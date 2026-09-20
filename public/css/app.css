@@ -101,6 +101,12 @@
     /* Fenêtre modale (fond assombrissant la page derrière elle) */
     --modal-overlay-fond: rgba(10, 5, 20, 0.75);
 
+    /* Voile assombrissant une photo de personnage au survol ("Changer
+       la photo") : reste identique dans les deux thèmes, une photo
+       arbitraire a besoin d'un fond sombre constant pour que le texte
+       doré posé dessus reste lisible. */
+    --avatar-overlay-fond: rgba(20, 5, 40, 0.75);
+
     /* Alertes */
     --alerte-erreur-fond: rgba(120, 30, 30, 0.8);
     --alerte-erreur-bordure: #e05555;
@@ -198,6 +204,7 @@
     --danger-texte-survol: #ffffff;
 
     --modal-overlay-fond: rgba(30, 15, 55, 0.6);
+    --avatar-overlay-fond: rgba(20, 5, 40, 0.75);
 
     --alerte-erreur-fond: #5c2340;
     --alerte-erreur-bordure: #e2668f;
@@ -869,8 +876,8 @@ a:hover {
 }
 
 .bonus-choix-row select {
-    background: rgba(60, 15, 90, 0.8);
-    border: 1px solid #c49a3c;
+    background: var(--panneau-vif);
+    border: 1px solid var(--or-bordure);
     border-radius: 6px;
     color: var(--or);
     font-size: 0.8rem;
