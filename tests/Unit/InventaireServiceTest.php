@@ -82,7 +82,7 @@ class InventaireServiceTest extends TestCase
 
         $service->desequiper($ligne);
 
-        $this->assertFalse($ligne->fresh()->equipe);
+        $this->assertSame(0, $ligne->fresh()->quantite_equipee);
     }
 
     public function test_equiper_deux_armes_a_une_main_est_permis(): void
@@ -100,6 +100,95 @@ class InventaireServiceTest extends TestCase
         $service->equiper($personnage, $ligne2);
 
         $this->assertCount(2, $service->objetsEquipes($personnage));
+    }
+
+    public function test_equiper_deux_exemplaires_de_la_meme_arme_a_une_main_est_permis(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $ligne = $service->ajouter($personnage, $dague, 2);
+
+        $service->equiper($personnage, $ligne);
+        $service->equiper($personnage, $ligne);
+
+        $this->assertSame(2, $ligne->fresh()->quantite_equipee);
+    }
+
+    public function test_equiper_un_troisieme_exemplaire_de_la_meme_arme_refuse_faute_de_mains_libres(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $ligne = $service->ajouter($personnage, $dague, 3);
+
+        $service->equiper($personnage, $ligne);
+        $service->equiper($personnage, $ligne);
+
+        $this->expectException(ValidationException::class);
+        $service->equiper($personnage, $ligne);
+    }
+
+    public function test_equiper_refuse_un_exemplaire_qu_on_ne_possede_pas(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $ligne = $service->ajouter($personnage, $dague, 1);
+
+        $service->equiper($personnage, $ligne);
+
+        $this->expectException(ValidationException::class);
+        $service->equiper($personnage, $ligne);
+    }
+
+    public function test_equiper_deux_fois_la_meme_armure_est_refuse(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $cuir = ObjetFactory::new()->armure('legere', 11)->create(['nom' => 'Armure de cuir']);
+        $ligne = $service->ajouter($personnage, $cuir, 2);
+
+        $service->equiper($personnage, $ligne);
+
+        $this->expectException(ValidationException::class);
+        $service->equiper($personnage, $ligne);
+    }
+
+    public function test_ajuster_quantite_replafonne_le_nombre_equipe_si_la_quantite_diminue(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $ligne = $service->ajouter($personnage, $dague, 2);
+        $service->equiper($personnage, $ligne);
+        $service->equiper($personnage, $ligne);
+
+        $service->ajusterQuantite($ligne, -1);
+
+        $ligne->refresh();
+        $this->assertSame(1, $ligne->quantite);
+        $this->assertSame(1, $ligne->quantite_equipee);
+    }
+
+    public function test_armes_equipees_repete_une_arme_dual_wieldee(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague', 'degats' => '1d4']);
+        $ligne = $service->ajouter($personnage, $dague, 2);
+        $service->equiper($personnage, $ligne);
+        $service->equiper($personnage, $ligne);
+
+        $armes = $service->armesEquipees($personnage->fresh(['objets']));
+
+        $this->assertCount(2, $armes);
     }
 
     public function test_equiper_une_troisieme_arme_a_une_main_refuse_faute_de_mains_libres(): void

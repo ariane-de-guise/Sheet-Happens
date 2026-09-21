@@ -107,7 +107,7 @@ readonly class PersonnageCreationService
                 'personnage_id' => $personnage->id,
                 'objet_id' => $objet->id,
                 'quantite' => $quantite,
-                'equipe' => false,
+                'quantite_equipee' => 0,
             ]);
         }
     }

@@ -199,6 +199,13 @@
                             <option value="dexterite">Dextérité</option>
                         </select>
                     </div>
+                    <div class="form-field form-field-narrow">
+                        <label for="customCoutMains">Mains nécessaires</label>
+                        <select name="cout_mains" id="customCoutMains" class="form-select-small">
+                            <option value="1">Une main</option>
+                            <option value="2">Deux mains</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -295,9 +302,14 @@ function majChampsSelonType() {
     if (categories) {
         categorieWrapper.style.display = 'flex';
         categorieSelect.innerHTML = categories.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+        categorieSelect.onchange = majCoutMainsSelonCategorie;
     } else {
         categorieWrapper.style.display = 'none';
         categorieSelect.innerHTML = '';
+    }
+
+    if (type === 'arme') {
+        majCoutMainsSelonCategorie();
     }
 
     const estPotion = type === 'potion';
@@ -315,6 +327,20 @@ function majChampsSelonType() {
 
     const magique = document.getElementById('customMagique').checked;
     document.getElementById('customRareteWrapper').style.display = magique ? 'flex' : 'none';
+}
+
+// Une catégorie mêlée impose son nombre de mains (une_main = 1, deux_mains
+// = 2) ; seule une arme à distance varie réellement (arbalète de poing =
+// 1 main, arc long = 2 mains), donc son champ reste librement modifiable.
+function majCoutMainsSelonCategorie() {
+    const categorie = document.getElementById('customCategorie').value;
+    const coutMainsSelect = document.getElementById('customCoutMains');
+
+    if (categorie === 'une_main') {
+        coutMainsSelect.value = '1';
+    } else if (categorie === 'deux_mains') {
+        coutMainsSelect.value = '2';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', majChampsSelonType);

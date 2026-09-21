@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * un modèle à part entière (voir InventaireController), pour cibler une
  * ligne d'inventaire précise par son id dans les routes/formulaires.
  */
-#[Fillable(['personnage_id', 'objet_id', 'quantite', 'equipe'])]
+#[Fillable(['personnage_id', 'objet_id', 'quantite', 'quantite_equipee'])]
 class PersonnageObjet extends Pivot
 {
     protected $table = 'personnage_objets';
@@ -23,7 +23,7 @@ class PersonnageObjet extends Pivot
     {
         return [
             'quantite' => 'integer',
-            'equipe' => 'boolean',
+            'quantite_equipee' => 'integer',
         ];
     }
 

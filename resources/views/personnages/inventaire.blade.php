@@ -182,11 +182,14 @@
     {{-- Équipement porté : uniquement ce qui est réellement équipé --}}
     <div class="inventaire-section">
         <div class="inventaire-section-title">Équipement porté</div>
-        @php $equipes = $personnage->objets->filter(fn($objet) => $objet->pivot->equipe); @endphp
+        @php $equipes = $personnage->objets->filter(fn($objet) => $objet->pivot->quantite_equipee > 0); @endphp
         @forelse($equipes as $objet)
             <div class="objet-ligne">
                 <div class="objet-info">
-                    <div class="objet-nom">{{ $objet->nom }}</div>
+                    <div class="objet-nom">
+                        {{ $objet->nom }}
+                        @if($objet->pivot->quantite_equipee > 1)<span class="badge-equipe">×{{ $objet->pivot->quantite_equipee }}</span>@endif
+                    </div>
                     @include('partials.objet-stats', ['objet' => $objet])
                 </div>
                 <form action="{{ route('personnages.inventaire.desequiper', [$personnage, $objet->pivot->id]) }}" method="POST" style="margin:0;">
@@ -211,7 +214,7 @@
                 <div class="objet-info">
                     <div class="objet-nom">
                         {{ $objet->nom }}
-                        @if($objet->pivot->equipe)<span class="badge-equipe">ÉQUIPÉ</span>@endif
+                        @if($objet->pivot->quantite_equipee > 0)<span class="badge-equipe">ÉQUIPÉ{{ $objet->pivot->quantite_equipee > 1 ? ' ×'.$objet->pivot->quantite_equipee : '' }}</span>@endif
                     </div>
                     @include('partials.objet-stats', ['objet' => $objet])
                 </div>
@@ -231,17 +234,18 @@
                     </form>
 
                     @if(in_array($objet->type, ['arme', 'armure', 'bouclier']))
-                        @if($objet->pivot->equipe)
+                        @if($objet->pivot->quantite_equipee > 0)
                             <form action="{{ route('personnages.inventaire.desequiper', [$personnage, $objet->pivot->id]) }}" method="POST" style="margin:0;">
                                 @csrf
                                 @method('PATCH')
                                 <button type="submit" class="btn btn-secondary btn-mini">Déséquiper</button>
                             </form>
-                        @else
+                        @endif
+                        @if($objet->pivot->quantite_equipee < $objet->pivot->quantite)
                             <form action="{{ route('personnages.inventaire.equiper', [$personnage, $objet->pivot->id]) }}" method="POST" style="margin:0;">
                                 @csrf
                                 @method('PATCH')
-                                <button type="submit" class="btn btn-primary btn-mini">Équiper</button>
+                                <button type="submit" class="btn btn-primary btn-mini">Équiper{{ $objet->pivot->quantite_equipee > 0 ? ' un de plus' : '' }}</button>
                             </form>
                         @endif
                     @endif

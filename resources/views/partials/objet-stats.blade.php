@@ -16,6 +16,11 @@
         ->implode(', ');
     $bonusTexte = $texteBonus($objet->bonus ?? []);
     $bonusUtilisation = $texteBonus($objet->effet_utilisation['bonus'] ?? []);
+    $coutMainsTexte = match ($objet->cout_mains) {
+        1 => 'Une main',
+        2 => 'Deux mains',
+        default => null,
+    };
 @endphp
 
 <div class="objet-meta">
@@ -24,6 +29,10 @@
         · <span class="badge badge-magique">{{ $objet->rarete ? ucfirst(str_replace('_', ' ', $objet->rarete)) : 'Magique' }}</span>
     @endif
 </div>
+
+@if($objet->type === 'arme' && $coutMainsTexte)
+    <div class="objet-meta">{{ $coutMainsTexte }}</div>
+@endif
 
 @if($objet->degats)
     <div class="objet-meta">Dégâts : {{ $objet->degats }} {{ $objet->type_degats }} ({{ $objet->caracteristique_degats === 'dexterite' ? 'Dextérité' : 'Force' }})</div>
