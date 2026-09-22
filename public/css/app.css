@@ -213,6 +213,7 @@ input:focus {
     color: #e8d5b5;
     font-size: 0.95rem;
     outline: none;
+    resize: vertical;
     transition: border-color 0.2s;
 }
 

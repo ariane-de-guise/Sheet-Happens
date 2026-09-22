@@ -223,7 +223,7 @@
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="delta" value="-1">
-                        <button type="submit" class="btn btn-secondary btn-mini">−</button>
+                        <button type="submit" class="btn btn-secondary btn-mini" @disabled($objet->pivot->quantite <= 1)>−</button>
                     </form>
                     <span class="valeur-quantite">{{ $objet->pivot->quantite }}</span>
                     <form action="{{ route('personnages.inventaire.quantite', [$personnage, $objet->pivot->id]) }}" method="POST" class="quantite-form">

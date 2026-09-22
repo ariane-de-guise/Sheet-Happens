@@ -54,6 +54,19 @@ class InventaireServiceTest extends TestCase
         $this->assertSame(0, $personnage->objets()->count());
     }
 
+    public function test_ajuster_quantite_sans_permettre_la_suppression_plafonne_a_1(): void
+    {
+        $personnage = $this->personnage();
+        $objet = ObjetFactory::new()->create();
+        $service = $this->service();
+
+        $ligne = $service->ajouter($personnage, $objet, 1);
+        $service->ajusterQuantite($ligne, -1, permetSuppression: false);
+
+        $this->assertSame(1, $ligne->fresh()->quantite);
+        $this->assertSame(1, $personnage->objets()->count());
+    }
+
     public function test_equiper_une_armure_refuse_si_une_autre_armure_est_deja_equipee(): void
     {
         $personnage = $this->personnage();

@@ -187,7 +187,7 @@ class InventaireController extends Controller
             'delta' => 'required|integer',
         ]);
 
-        $this->inventaire->ajusterQuantite($personnageObjet, $validated['delta']);
+        $this->inventaire->ajusterQuantite($personnageObjet, $validated['delta'], permetSuppression: false);
 
         return back();
     }

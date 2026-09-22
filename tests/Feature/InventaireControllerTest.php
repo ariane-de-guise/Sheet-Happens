@@ -497,6 +497,25 @@ class InventaireControllerTest extends TestCase
         $this->assertSame(5, $ligne->fresh()->quantite);
     }
 
+    public function test_le_bouton_moins_ne_retire_pas_le_dernier_exemplaire_d_un_objet(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+        $objet = ObjetFactory::new()->create();
+        $ligne = PersonnageObjetFactory::new()->create([
+            'personnage_id' => $personnage->id,
+            'objet_id' => $objet->id,
+            'quantite' => 1,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.inventaire.quantite', [$personnage, $ligne]), ['delta' => -1])
+            ->assertRedirect();
+
+        $this->assertSame(1, $ligne->fresh()->quantite);
+        $this->assertSame(1, $personnage->objets()->count());
+    }
+
     public function test_utiliser_un_objet_non_consommable_echoue_avec_un_message_d_erreur(): void
     {
         $utilisateur = Utilisateur::factory()->create();

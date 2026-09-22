@@ -44,16 +44,26 @@ class InventaireService
 
     /**
      * Ajuste la quantité d'une ligne d'inventaire (delta positif ou
-     * négatif). La ligne est supprimée si la quantité tombe à 0, en
-     * déséquipant d'abord l'objet s'il l'était. Si la quantité restante
-     * passe sous le nombre d'exemplaires équipés (ex. on vend une dague
-     * dual-wieldée), l'excédent équipé est retiré automatiquement.
+     * négatif). Si la quantité restante passe sous le nombre d'exemplaires
+     * équipés (ex. on vend une dague dual-wieldée), l'excédent équipé est
+     * retiré automatiquement.
+     *
+     * Avec $permetSuppression à false (les boutons +/- de l'inventaire),
+     * la quantité est plafonnée à 1 au lieu de faire disparaître l'objet :
+     * seul retirer() doit pouvoir enlever un objet de l'inventaire. Avec
+     * $permetSuppression à true (ex. consommer le dernier exemplaire d'une
+     * potion via utiliser()), la ligne est supprimée quand la quantité
+     * tombe à 0.
      */
-    public function ajusterQuantite(PersonnageObjet $ligne, int $delta): void
+    public function ajusterQuantite(PersonnageObjet $ligne, int $delta, bool $permetSuppression = true): void
     {
         $nouvelleQuantite = $ligne->quantite + $delta;
 
         if ($nouvelleQuantite <= 0) {
+            if (! $permetSuppression) {
+                return;
+            }
+
             $ligne->delete();
 
             return;
