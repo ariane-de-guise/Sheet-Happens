@@ -12,6 +12,14 @@ class MonteeNiveauService
 {
     private const STATS = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'];
 
+    /** Seuil d'expérience (PHB 2014) pour passer du niveau (clé) au suivant. */
+    private const XP_PAR_NIVEAU = [
+        1 => 300,
+        2 => 900,
+        3 => 2700,
+        4 => 6500,
+    ];
+
     /** Progression PHB 2014, limitée aux cinq classes prises en charge par le projet. */
     private const PROGRESSION = [
         'Barbare' => [
@@ -68,6 +76,24 @@ class MonteeNiveauService
         'Tireur d’élite' => ['resume' => 'Améliore les attaques à distance à longue portée et contre le couvert.'],
         'Bagarreur de tavernes' => ['resume' => 'Augmente Force ou Constitution de 1 et améliore le combat improvisé.', 'choix_stat' => ['force', 'constitution']],
     ];
+
+    /**
+     * Seuil d'expérience cumulée à atteindre pour pouvoir monter au niveau
+     * suivant, ou null si le personnage a atteint le niveau maximum pris
+     * en charge (5).
+     */
+    public function xpProchainNiveau(Personnage $personnage): ?int
+    {
+        return self::XP_PAR_NIVEAU[$personnage->niveau] ?? null;
+    }
+
+    /** Le personnage a-t-il assez d'expérience pour monter de niveau ? */
+    public function peutMonterDeNiveau(Personnage $personnage): bool
+    {
+        $seuil = $this->xpProchainNiveau($personnage);
+
+        return $seuil !== null && $personnage->experience >= $seuil;
+    }
 
     public function apercu(Personnage $personnage): array
     {

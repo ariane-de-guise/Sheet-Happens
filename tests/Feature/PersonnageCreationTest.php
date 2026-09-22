@@ -1018,7 +1018,7 @@ class PersonnageCreationTest extends TestCase
         $response->assertRedirect(route('creation.confirmation'));
         // idéal (Chaotique) + défaut (Chaotique) => Chaotique sur l'axe loi ;
         // aucun des 4 traits ne porte d'étiquette sur l'axe bien => Neutre.
-        $this->assertSame('Chaotique Neutre', session('personnage_creation')['alignement']);
+        $this->assertSame('Chaotique neutre', session('personnage_creation')['alignement']);
     }
 
     public function test_l_alignement_final_peut_s_annuler_sur_un_axe_et_rester_tranche_sur_l_autre(): void
@@ -1048,7 +1048,7 @@ class PersonnageCreationTest extends TestCase
         ]);
 
         $response->assertRedirect(route('creation.confirmation'));
-        $this->assertSame('Neutre Mauvais', session('personnage_creation')['alignement']);
+        $this->assertSame('Neutre méchant', session('personnage_creation')['alignement']);
     }
 
     public function test_l_alignement_final_est_neutre_si_aucun_trait_choisi_ne_penche_d_un_cote(): void

@@ -755,13 +755,16 @@ class CreationPersonnageController extends Controller
             default => 'Neutre',
         };
 
+        // Ces deux mots (avec cette casse) doivent correspondre exactement
+        // aux options du select "Alignement" de resources/views/personnages/edit.blade.php,
+        // sinon la valeur enregistrée ne s'y retrouve jamais présélectionnée.
         $bien = match (true) {
-            $bienScore < 0 => 'Bon',
-            $bienScore > 0 => 'Mauvais',
-            default => 'Neutre',
+            $bienScore < 0 => 'bon',
+            $bienScore > 0 => 'méchant',
+            default => 'neutre',
         };
 
-        if ($loi === 'Neutre' && $bien === 'Neutre') {
+        if ($loi === 'Neutre' && $bien === 'neutre') {
             return 'Neutre';
         }
 
@@ -769,8 +772,8 @@ class CreationPersonnageController extends Controller
             return "Neutre $bien";
         }
 
-        if ($bien === 'Neutre') {
-            return "$loi Neutre";
+        if ($bien === 'neutre') {
+            return "$loi neutre";
         }
 
         return "$loi $bien";

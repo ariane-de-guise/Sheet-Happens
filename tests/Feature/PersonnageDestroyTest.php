@@ -4,6 +4,8 @@ use App\Models\Personnage;
 use App\Models\Utilisateur;
 use Database\Factories\PersonnageFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PersonnageDestroyTest extends TestCase
@@ -110,6 +112,23 @@ class PersonnageDestroyTest extends TestCase
 
         $this->assertDatabaseHas('personnages', ['id' => $nouveauPersonnage->id]);
         $this->assertSame(1, Personnage::where('utilisateur_id', $utilisateur->id)->count());
+    }
+
+    public function test_la_suppression_supprime_aussi_la_photo_du_personnage(): void
+    {
+        Storage::fake('public');
+
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $this->actingAs($utilisateur)->patch(route('personnages.photo', $personnage), [
+            'photo' => UploadedFile::fake()->image('portrait.jpg'),
+        ]);
+        $chemin = $personnage->refresh()->photo;
+
+        $this->actingAs($utilisateur)->delete("/personnages/{$personnage->id}");
+
+        Storage::disk('public')->assertMissing($chemin);
     }
 
     public function test_la_suppression_d_un_personnage_ne_supprime_pas_les_donnees_d_un_autre_personnage(): void

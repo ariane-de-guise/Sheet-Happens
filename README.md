@@ -185,7 +185,7 @@ Générer le rapport de couverture HTML :
 sail artisan test --coverage-html=tests/reports/coverage
 ```
 
-Ouvrir `tests/reports/index.html` dans le navigateur et vérifier :
+Ouvrir `tests/reports/coverage/index.html` dans le navigateur et vérifier :
 - que tous les tests passent (aucun rouge)
 - que le pourcentage de couverture global n'a pas baissé à moins de 90%
 - qu'il n'y a pas de fichier touché par la PR avec une couverture anormalement basse
