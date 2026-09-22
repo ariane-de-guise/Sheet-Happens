@@ -334,7 +334,7 @@ class PersonnageSheetTest extends TestCase
         $this->actingAs($utilisateur)
             ->get("/personnages/{$personnage->id}/edit")
             ->assertOk()
-            ->assertDontSee('Voie du berserker', false)
+            ->assertDontSee('<option value="'.$sousClasse->id.'">', false)
             ->assertSee('id="sousClasseSelect" class="form-select-small" disabled', false)
             ->assertSee('Sous-classe disponible au niveau 3', false);
     }
@@ -666,6 +666,31 @@ class PersonnageSheetTest extends TestCase
         $this->assertSame($sousRace->id, $personnage->sous_race_id);
     }
 
+    public function test_la_mise_a_jour_refuse_une_race_avec_sous_races_sans_sous_race(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $ancienneRace = RaceFactory::new()->create();
+        $nouvelleRace = RaceFactory::new()->create();
+        SousRaceFactory::new()->pourRace($nouvelleRace)->create();
+        $classe = ClasseFactory::new()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $ancienneRace->id,
+            'classe_id' => $classe->id,
+        ]);
+
+        $donnees = $this->donneesMiseAJour([
+            'race_id' => $nouvelleRace->id,
+            'classe_id' => $classe->id,
+        ]);
+
+        $response = $this->actingAs($utilisateur)
+            ->patch("/personnages/{$personnage->id}", $donnees);
+
+        $response->assertSessionHasErrors(['sous_race_id']);
+        $this->assertSame($ancienneRace->id, $personnage->refresh()->race_id);
+    }
+
     public function test_la_mise_a_jour_refuse_une_sous_classe_dont_le_niveau_requis_est_trop_eleve(): void
     {
         $utilisateur = Utilisateur::factory()->create();
@@ -722,6 +747,31 @@ class PersonnageSheetTest extends TestCase
         $response->assertSessionHasNoErrors();
         $personnage->refresh();
         $this->assertSame($sousClasse->id, $personnage->sous_classe_id);
+    }
+
+    public function test_la_mise_a_jour_refuse_une_classe_avec_sous_classes_sans_sous_classe(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create();
+        $ancienneClasse = ClasseFactory::new()->create();
+        $nouvelleClasse = ClasseFactory::new()->create(['niveau_sous_classe' => 1]);
+        SousClasseFactory::new()->pourClasse($nouvelleClasse)->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
+            'classe_id' => $ancienneClasse->id,
+        ]);
+
+        $donnees = $this->donneesMiseAJour([
+            'race_id' => $race->id,
+            'classe_id' => $nouvelleClasse->id,
+        ]);
+
+        $response = $this->actingAs($utilisateur)
+            ->patch("/personnages/{$personnage->id}", $donnees);
+
+        $response->assertSessionHasErrors(['sous_classe_id']);
+        $this->assertSame($ancienneClasse->id, $personnage->refresh()->classe_id);
     }
 
     public function test_la_mise_a_jour_respecte_la_limite_de_competences_selon_le_niveau(): void

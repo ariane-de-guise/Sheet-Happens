@@ -201,6 +201,13 @@ class PersonnageSheetController extends Controller
         ], [
         ]);
 
+        $race = Race::with('sousRaces')->find($validated['race_id']);
+        if ($race->sousRaces->isNotEmpty() && empty($validated['sous_race_id'])) {
+            throw ValidationException::withMessages([
+                'sous_race_id' => 'Vous devez choisir une sous-race pour cette race.',
+            ]);
+        }
+
         // Un changement de classe ici est un reclassement complet (pas un
         // multiclassage 5e à la carte) : le personnage abandonne son
         // ancienne classe pour la nouvelle, donc toutes les limites
@@ -208,6 +215,15 @@ class PersonnageSheetController extends Controller
         // désormais sur la nouvelle classe choisie.
         $nouvelleClasse = Classe::find($validated['classe_id']);
         $maxCompetences = $nouvelleClasse?->nombre_competences ?? 2;
+
+        $sousClasseRequise = $nouvelleClasse
+            && $nouvelleClasse->niveau_sous_classe <= (int) $validated['niveau']
+            && $nouvelleClasse->sousClasses()->exists();
+        if ($sousClasseRequise && empty($validated['sous_classe_id'])) {
+            throw ValidationException::withMessages([
+                'sous_classe_id' => 'Vous devez choisir une sous-classe pour cette classe.',
+            ]);
+        }
 
         $historiqueCompetences = [];
         $historiqueIds = array_filter([

@@ -293,11 +293,12 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Sous-race</label>
-                    <select name="sous_race_id" id="sousRaceSelect" class="form-select-small">
+                    @php
+                        $raceActuelle = $races->firstWhere('id', old('race_id', $personnage->race_id));
+                        $sousRaceRequise = $raceActuelle && $raceActuelle->sousRaces->isNotEmpty();
+                    @endphp
+                    <select name="sous_race_id" id="sousRaceSelect" class="form-select-small" {{ $sousRaceRequise ? 'required' : '' }}>
                         <option value="">-- Aucune --</option>
-                        @php
-                            $raceActuelle = $races->firstWhere('id', old('race_id', $personnage->race_id));
-                        @endphp
                         @if($raceActuelle)
                             @foreach($raceActuelle->sousRaces as $sousRace)
                                 <option value="{{ $sousRace->id }}" {{ old('sous_race_id', $personnage->sous_race_id) == $sousRace->id ? 'selected' : '' }}>
@@ -339,9 +340,12 @@
                     <label class="form-label">Sous-classe</label>
                     @php
                         $classeActuelle = $classes->firstWhere('id', old('classe_id', $personnage->classe_id));
+                        $sousClasseRequise = $classeActuelle
+                            && $classeActuelle->sousClasses->isNotEmpty()
+                            && $personnage->niveau >= $classeActuelle->niveau_sous_classe;
                         $sousClasseBloquee = $classeActuelle && $classeActuelle->sousClasses->isNotEmpty() && $personnage->niveau < $classeActuelle->niveau_sous_classe;
                     @endphp
-                    <select name="sous_classe_id" id="sousClasseSelect" class="form-select-small" {{ $sousClasseBloquee ? 'disabled' : '' }}>
+                    <select name="sous_classe_id" id="sousClasseSelect" class="form-select-small" {{ $sousClasseBloquee ? 'disabled' : '' }} {{ $sousClasseRequise ? 'required' : '' }}>
                         <option value="">-- Aucune --</option>
                         @if($classeActuelle && ! $sousClasseBloquee)
                             @foreach($classeActuelle->sousClasses as $sousClasse)
@@ -596,59 +600,59 @@ function updateMod(input) {
 function loadSousRaces() {
     const raceId = document.getElementById('raceSelect').value;
     const select = document.getElementById('sousRaceSelect');
+    const sousRacesParRace = @json($races->mapWithKeys(fn ($race) => [$race->id => $race->sousRaces->map(fn ($sousRace) => ['id' => $sousRace->id, 'nom' => $sousRace->nom])]));
+    const sousRaces = sousRacesParRace[raceId] || [];
+    const conserverSelection = raceId === @json((string) old('race_id', $personnage->race_id));
+    const current = conserverSelection ? @json(old('sous_race_id', $personnage->sous_race_id ?? '')) : '';
+
     select.innerHTML = '<option value="">-- Aucune --</option>';
+    select.required = sousRaces.length > 0;
 
-    if (!raceId) return;
-
-    fetch('/api/sous-races/' + raceId)
-        .then(res => res.json())
-        .then(data => {
-            const current = @json(old('sous_race_id', $personnage->sous_race_id ?? ''));
-            data.forEach(sr => {
-                const opt = document.createElement('option');
-                opt.value = sr.id;
-                opt.textContent = sr.nom;
-                if (sr.id == current) opt.selected = true;
-                select.appendChild(opt);
-            });
-        });
+    sousRaces.forEach(sr => {
+        const opt = document.createElement('option');
+        opt.value = sr.id;
+        opt.textContent = sr.nom;
+        if (sr.id == current) opt.selected = true;
+        select.appendChild(opt);
+    });
 }
 
 function loadSousClasses() {
     const classeId = document.getElementById('classeSelect').value;
     const select = document.getElementById('sousClasseSelect');
     const message = document.getElementById('sousClasseMessage');
+    const sousClassesParClasse = @json($classes->mapWithKeys(fn ($classe) => [$classe->id => $classe->sousClasses->map(fn ($sousClasse) => ['id' => $sousClasse->id, 'nom' => $sousClasse->nom])]));
+    const sousClasses = sousClassesParClasse[classeId] || [];
+    const classeOption = document.querySelector('#classeSelect option[value="' + classeId + '"]');
+    const niveauRequis = classeOption ? parseInt(classeOption.dataset.niveauSousClasse, 10) : 0;
+    const niveauPersonnage = {{ $personnage->niveau }};
+    const current = @json(old('sous_classe_id', $personnage->sous_classe_id ?? ''));
+
     select.innerHTML = '<option value="">-- Aucune --</option>';
     select.disabled = false;
+    select.required = sousClasses.length > 0;
     if (message) message.textContent = '';
 
     if (!classeId) return;
 
-    const classeOption = document.querySelector('#classeSelect option[value="' + classeId + '"]');
-    const niveauRequis = classeOption ? parseInt(classeOption.dataset.niveauSousClasse, 10) : 0;
     const aDesSousClasses = classeOption && classeOption.dataset.aDesSousClasses === '1';
-    const niveauPersonnage = {{ $personnage->niveau }};
 
     if (aDesSousClasses && niveauPersonnage < niveauRequis) {
         select.disabled = true;
+        select.required = false;
         if (message) {
             message.textContent = 'Sous-classe disponible au niveau ' + niveauRequis + ' (personnage actuellement niveau ' + niveauPersonnage + ').';
         }
         return;
     }
 
-    fetch('/api/sous-classes/' + classeId + '/' + niveauPersonnage)
-        .then(res => res.json())
-        .then(data => {
-            const current = @json(old('sous_classe_id', $personnage->sous_classe_id ?? ''));
-            data.forEach(sc => {
-                const opt = document.createElement('option');
-                opt.value = sc.id;
-                opt.textContent = sc.nom + ' (Niv. ' + sc.niveau_sous_classe + ')';
-                if (sc.id == current) opt.selected = true;
-                select.appendChild(opt);
-            });
-        });
+    sousClasses.forEach(sc => {
+        const opt = document.createElement('option');
+        opt.value = sc.id;
+        opt.textContent = sc.nom + ' (Niv. ' + niveauRequis + ')';
+        if (sc.id == current) opt.selected = true;
+        select.appendChild(opt);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
