@@ -58,6 +58,7 @@
     color: #e8d5b5;
     font-size: 0.85rem;
     outline: none;
+    resize: vertical;
 }
 
 .form-select-small { cursor: pointer; }
