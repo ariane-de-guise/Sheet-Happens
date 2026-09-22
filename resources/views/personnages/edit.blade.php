@@ -235,6 +235,21 @@
 
 @section('content')
 <div class="sheet-container">
+    @if ($errors->any())
+        <div class="alert alert-danger" role="alert">
+            <strong>La sauvegarde a échoué.</strong>
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="{{ route('personnages.update', $personnage) }}" method="POST" id="editForm">
+        @csrf
+        @method('PATCH')
+
     <div class="sheet-header">
         <div class="sheet-header-left">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
@@ -247,29 +262,16 @@
         <div class="sheet-header-right">
             <div class="stat-block">
                 <div class="stat-block-label">Niveau</div>
-                <form action="{{ route('personnages.update', $personnage) }}" method="POST" style="display:inline;">
-                    @csrf
-                    @method('PATCH')
-                    <input type="number" name="niveau" value="{{ $personnage->niveau }}" min="1" max="5" readonly title="Le niveau se modifie avec la montée de niveau"
-                        onchange="this.form.submit()" style="width:45px;">
-                </form>
+                <input type="number" name="niveau" value="{{ old('niveau', $personnage->niveau) }}" min="1" max="20"
+                    style="width:45px;">
             </div>
             <div class="stat-block">
                 <div class="stat-block-label">PV</div>
-                <form action="{{ route('personnages.update', $personnage) }}" method="POST" style="display:inline;">
-                    @csrf
-                    @method('PATCH')
-                    <input type="number" name="point_de_vie" value="{{ $personnage->point_de_vie }}" min="1"
-                        onchange="this.form.submit()" style="width:55px;">
-                </form>
+                <input type="number" name="point_de_vie" value="{{ old('point_de_vie', $personnage->point_de_vie) }}" min="1"
+                    style="width:55px;">
             </div>
         </div>
     </div>
-
-    <form action="{{ route('personnages.update', $personnage) }}" method="POST" id="editForm">
-        @csrf
-        @method('PATCH')
-        <input type="hidden" name="niveau" value="{{ $personnage->niveau }}">
 
         <div class="sheet-section">
             <div class="sheet-section-title">Identité</div>
@@ -291,8 +293,19 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Sous-race</label>
-                    <select name="sous_race_id" id="sousRaceSelect" class="form-select-small">
+                    @php
+                        $raceActuelle = $races->firstWhere('id', old('race_id', $personnage->race_id));
+                        $sousRaceRequise = $raceActuelle && $raceActuelle->sousRaces->isNotEmpty();
+                    @endphp
+                    <select name="sous_race_id" id="sousRaceSelect" class="form-select-small" {{ $sousRaceRequise ? 'required' : '' }}>
                         <option value="">-- Aucune --</option>
+                        @if($raceActuelle)
+                            @foreach($raceActuelle->sousRaces as $sousRace)
+                                <option value="{{ $sousRace->id }}" {{ old('sous_race_id', $personnage->sous_race_id) == $sousRace->id ? 'selected' : '' }}>
+                                    {{ $sousRace->nom }}
+                                </option>
+                            @endforeach
+                        @endif
                     </select>
                 </div>
                 <div class="form-group">
@@ -317,7 +330,7 @@
                     <select name="classe_id" id="classeSelect" class="form-select-small" required onchange="loadSousClasses()">
                         <option value="">-- Choisir --</option>
                         @foreach($classes as $classe)
-                            <option value="{{ $classe->id }}" {{ old('classe_id', $personnage->classe_id) == $classe->id ? 'selected' : '' }}>
+                            <option value="{{ $classe->id }}" data-niveau-sous-classe="{{ $classe->niveau_sous_classe }}" data-a-des-sous-classes="{{ $classe->sousClasses->isNotEmpty() ? '1' : '0' }}" {{ old('classe_id', $personnage->classe_id) == $classe->id ? 'selected' : '' }}>
                                 {{ $classe->nom }}
                             </option>
                         @endforeach
@@ -325,9 +338,28 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Sous-classe</label>
-                    <select name="sous_classe_id" id="sousClasseSelect" class="form-select-small">
+                    @php
+                        $classeActuelle = $classes->firstWhere('id', old('classe_id', $personnage->classe_id));
+                        $sousClasseRequise = $classeActuelle
+                            && $classeActuelle->sousClasses->isNotEmpty()
+                            && $personnage->niveau >= $classeActuelle->niveau_sous_classe;
+                        $sousClasseBloquee = $classeActuelle && $classeActuelle->sousClasses->isNotEmpty() && $personnage->niveau < $classeActuelle->niveau_sous_classe;
+                    @endphp
+                    <select name="sous_classe_id" id="sousClasseSelect" class="form-select-small" {{ $sousClasseBloquee ? 'disabled' : '' }} {{ $sousClasseRequise ? 'required' : '' }}>
                         <option value="">-- Aucune --</option>
+                        @if($classeActuelle && ! $sousClasseBloquee)
+                            @foreach($classeActuelle->sousClasses as $sousClasse)
+                                <option value="{{ $sousClasse->id }}" {{ old('sous_classe_id', $personnage->sous_classe_id) == $sousClasse->id ? 'selected' : '' }}>
+                                    {{ $sousClasse->nom }} (Niv. {{ $classeActuelle->niveau_sous_classe }})
+                                </option>
+                            @endforeach
+                        @endif
                     </select>
+                    <div id="sousClasseMessage" class="text-muted" style="font-size: 0.75rem; margin-top: 0.3rem;">
+                        @if($sousClasseBloquee)
+                            Sous-classe disponible au niveau {{ $classeActuelle->niveau_sous_classe }} (personnage actuellement niveau {{ $personnage->niveau }}).
+                        @endif
+                    </div>
                 </div>
             </div>
             <div class="form-group mt-2">
@@ -357,7 +389,7 @@
                     @endphp
                     <div class="ability-box">
                         <div class="ability-name">{{ $label }}</div>
-                        <input type="number" name="{{ $key }}" value="{{ $value }}" min="1" max="30"
+                        <input type="number" name="{{ $key }}" value="{{ $value }}" min="1" max="20"
                             class="ability-input"
                             oninput="updateMod(this)">
                         <div class="ability-mod" id="mod-{{ $key }}">{{ $modStr }}</div>
@@ -368,15 +400,26 @@
 
         <div class="sheet-grid-2">
             <div class="sheet-section">
-                <div class="sheet-section-title">Compétences (max {{ 2 + (int)floor(($personnage->niveau - 1) / 2) }})</div>
+                <div class="sheet-section-title">Compétences de classe (max {{ $personnage->classe->nombre_competences ?? 2 }})</div>
+                @if($personnage->historique?->competences)
+                    <div class="text-muted" style="font-size: 0.8rem; margin-bottom: 0.75rem;">
+                        Compétences d’historique incluses et non modifiables : {{ implode(', ', $personnage->historique->competences) }}
+                    </div>
+                @endif
                 <div class="checkbox-grid">
                     @php
                         $currentCompetences = old('competences', $personnage->listeCompetence->competences ?? []);
+                        $competencesHistorique = $personnage->historique?->competences ?? [];
                     @endphp
                     @foreach($allCompetences as $comp)
+                        @php $estAccordeeParHistorique = in_array($comp, $competencesHistorique, true); @endphp
                         <label class="checkbox-item">
                             <input type="checkbox" name="competences[]" value="{{ $comp }}"
-                                {{ in_array($comp, $currentCompetences) ? 'checked' : '' }}>
+                                {{ in_array($comp, $currentCompetences, true) ? 'checked' : '' }}
+                                {{ $estAccordeeParHistorique ? 'disabled' : '' }}>
+                            @if($estAccordeeParHistorique)
+                                <input type="hidden" name="competences[]" value="{{ $comp }}">
+                            @endif
                             {{ $comp }}
                         </label>
                     @endforeach
@@ -480,31 +523,46 @@
 
 @push('scripts')
 <script>
-function filterEditOptions(selectId, historiqueId) {
+// Les <option hidden> ne sont pas fiables dans une <select> native (surtout
+// Firefox, qui les affiche quand même dans la liste déroulante) : on garde
+// donc la liste complète de chaque select en mémoire et on reconstruit le
+// contenu du select à partir de là à chaque changement d'historique, au
+// lieu de simplement masquer les options qui ne correspondent pas.
+const editHistoriqueOptionsStore = {};
+
+function initEditHistoriqueOptionsStore(selectId) {
     const select = document.getElementById(selectId);
     if (!select) return;
 
-    let hasSelectedVisible = false;
+    editHistoriqueOptionsStore[selectId] = {
+        placeholder: select.options[0].outerHTML,
+        current: select.value,
+        options: Array.from(select.options).slice(1).map(opt => ({
+            value: opt.value,
+            historique: opt.dataset.historique,
+            html: opt.innerHTML,
+        })),
+    };
+}
 
-    Array.from(select.options).forEach(opt => {
-        if (!opt.value) {
-            opt.hidden = false;
-            opt.disabled = false;
-            return;
-        }
+function filterEditOptions(selectId, historiqueId) {
+    const select = document.getElementById(selectId);
+    const store = editHistoriqueOptionsStore[selectId];
+    if (!select || !store) return;
 
-        const match = opt.dataset.historique == historiqueId;
-        opt.hidden = !match;
-        opt.disabled = !match;
+    // Tant qu'aucun historique n'est choisi, ces champs sont entièrement
+    // bloqués (comme "Outil" à l'étape Contexte de la création) : ils ne
+    // dépendent que de l'historique, donc rien n'est sélectionnable avant.
+    const bloque = historiqueId === '' || historiqueId === null || historiqueId === undefined;
+    select.disabled = bloque;
 
-        if (match && opt.selected) {
-            hasSelectedVisible = true;
-        }
-    });
+    const optionsCorrespondantes = bloque
+        ? []
+        : store.options.filter(opt => opt.historique == historiqueId);
 
-    if (!hasSelectedVisible) {
-        select.value = '';
-    }
+    select.innerHTML = store.placeholder + optionsCorrespondantes.map(opt =>
+        '<option value="' + opt.value + '"' + (opt.value === store.current ? ' selected' : '') + '>' + opt.html + '</option>'
+    ).join('');
 }
 
 function onEditHistoriqueChange(historiqueId) {
@@ -515,6 +573,11 @@ function onEditHistoriqueChange(historiqueId) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    initEditHistoriqueOptionsStore('edit_ideal_select');
+    initEditHistoriqueOptionsStore('edit_defaut_select');
+    initEditHistoriqueOptionsStore('edit_attachement_select');
+    initEditHistoriqueOptionsStore('edit_personnalite_select');
+
     const histSel = document.getElementById('edit_historique_select');
     if (histSel && histSel.value) {
         onEditHistoriqueChange(histSel.value);
@@ -537,48 +600,66 @@ function updateMod(input) {
 function loadSousRaces() {
     const raceId = document.getElementById('raceSelect').value;
     const select = document.getElementById('sousRaceSelect');
+    const sousRacesParRace = @json($races->mapWithKeys(fn ($race) => [$race->id => $race->sousRaces->map(fn ($sousRace) => ['id' => $sousRace->id, 'nom' => $sousRace->nom])]));
+    const sousRaces = sousRacesParRace[raceId] || [];
+    const conserverSelection = raceId === @json((string) old('race_id', $personnage->race_id));
+    const current = conserverSelection ? @json(old('sous_race_id', $personnage->sous_race_id ?? '')) : '';
+
     select.innerHTML = '<option value="">-- Aucune --</option>';
+    select.required = sousRaces.length > 0;
 
-    if (!raceId) return;
-
-    fetch('/api/sous-races/' + raceId)
-        .then(res => res.json())
-        .then(data => {
-            const current = {{ json_encode(old('sous_race_id', $personnage->sous_race_id ?? '')) }};
-            data.forEach(sr => {
-                const opt = document.createElement('option');
-                opt.value = sr.id;
-                opt.textContent = sr.nom;
-                if (sr.id == current) opt.selected = true;
-                select.appendChild(opt);
-            });
-        });
+    sousRaces.forEach(sr => {
+        const opt = document.createElement('option');
+        opt.value = sr.id;
+        opt.textContent = sr.nom;
+        if (sr.id == current) opt.selected = true;
+        select.appendChild(opt);
+    });
 }
 
 function loadSousClasses() {
     const classeId = document.getElementById('classeSelect').value;
     const select = document.getElementById('sousClasseSelect');
+    const message = document.getElementById('sousClasseMessage');
+    const sousClassesParClasse = @json($classes->mapWithKeys(fn ($classe) => [$classe->id => $classe->sousClasses->map(fn ($sousClasse) => ['id' => $sousClasse->id, 'nom' => $sousClasse->nom])]));
+    const sousClasses = sousClassesParClasse[classeId] || [];
+    const classeOption = document.querySelector('#classeSelect option[value="' + classeId + '"]');
+    const niveauRequis = classeOption ? parseInt(classeOption.dataset.niveauSousClasse, 10) : 0;
+    const niveauPersonnage = {{ $personnage->niveau }};
+    const current = @json(old('sous_classe_id', $personnage->sous_classe_id ?? ''));
+
     select.innerHTML = '<option value="">-- Aucune --</option>';
+    select.disabled = false;
+    select.required = sousClasses.length > 0;
+    if (message) message.textContent = '';
 
     if (!classeId) return;
 
-    fetch('/api/sous-classes/' + classeId + '/' + {{ $personnage->niveau }})
-        .then(res => res.json())
-        .then(data => {
-            const current = {{ json_encode(old('sous_classe_id', $personnage->sous_classe_id ?? '')) }};
-            data.forEach(sc => {
-                const opt = document.createElement('option');
-                opt.value = sc.id;
-                opt.textContent = sc.nom + ' (Niv. ' + sc.niveau_sous_classe + ')';
-                if (sc.id == current) opt.selected = true;
-                select.appendChild(opt);
-            });
-        });
+    const aDesSousClasses = classeOption && classeOption.dataset.aDesSousClasses === '1';
+
+    if (aDesSousClasses && niveauPersonnage < niveauRequis) {
+        select.disabled = true;
+        select.required = false;
+        if (message) {
+            message.textContent = 'Sous-classe disponible au niveau ' + niveauRequis + ' (personnage actuellement niveau ' + niveauPersonnage + ').';
+        }
+        return;
+    }
+
+    sousClasses.forEach(sc => {
+        const opt = document.createElement('option');
+        opt.value = sc.id;
+        opt.textContent = sc.nom + ' (Niv. ' + niveauRequis + ')';
+        if (sc.id == current) opt.selected = true;
+        select.appendChild(opt);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadSousRaces();
-    loadSousClasses();
+    // Les options initiales sont déjà rendues côté serveur (voir le select
+    // ci-dessus) : on ne recharge via l'API que lors d'un vrai changement
+    // de race/classe par l'utilisateur (onchange), pas au chargement de la
+    // page, sinon un échec réseau viderait un sélecteur déjà correct.
 });
 </script>
 @endpush

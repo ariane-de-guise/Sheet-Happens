@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PersonnageSheetController extends Controller
@@ -130,11 +131,34 @@ class PersonnageSheetController extends Controller
     {
         $this->authorizeOwner($personnage);
 
-        $personnage->load(['abilites', 'listeCompetence']);
+        $submittedFields = array_keys($request->except(['_token', '_method']));
+        if ($submittedFields === ['niveau']) {
+            $validated = $request->validate([
+                'niveau' => 'required|integer|min:1|max:20',
+            ]);
+
+            $personnage->update(['niveau' => $validated['niveau']]);
+
+            return redirect()->route('personnages.show', $personnage)
+                ->with('success', 'Niveau mis à jour avec succès !');
+        }
+
+        if ($submittedFields === ['point_de_vie']) {
+            $validated = $request->validate([
+                'point_de_vie' => 'required|integer|min:1',
+            ]);
+            $personnage->load(['abilites', 'classe']);
+            $this->validateHitPoints($validated['point_de_vie'], $personnage->niveau, $personnage->abilites, $personnage->classe);
+
+            $personnage->update(['point_de_vie' => $validated['point_de_vie']]);
+
+            return redirect()->route('personnages.show', $personnage)
+                ->with('success', 'Points de vie mis à jour avec succès !');
+        }
+
+        $personnage->load(['abilites', 'listeCompetence', 'classe']);
 
         $niveau = (int) $request->input('niveau', $personnage->niveau);
-
-        $maxCompetences = $this->getMaxCompetencesByLevel($niveau);
         $maxLangues = $this->getMaxLanguesByLevel($niveau);
 
         $validated = $request->validate([
@@ -155,19 +179,19 @@ class PersonnageSheetController extends Controller
                     return $query->where('classe_id', $request->input('classe_id'));
                 }),
             ],
-            'niveau' => ['required', 'integer', Rule::in([(int) $personnage->niveau])],
+            'niveau' => ['required', 'integer', Rule::in([(int) $personnage->niveau, (int) $personnage->niveau + 1])],
             'alignement' => 'nullable|string|max:50',
             'description' => 'nullable|string',
             'point_de_vie' => 'required|integer|min:1',
-            'force' => 'required|integer|min:1|max:30',
-            'dexterite' => 'required|integer|min:1|max:30',
-            'constitution' => 'required|integer|min:1|max:30',
-            'intelligence' => 'required|integer|min:1|max:30',
-            'sagesse' => 'required|integer|min:1|max:30',
-            'charisme' => 'required|integer|min:1|max:30',
-            'competences' => ['nullable', 'array', "max:$maxCompetences"],
+            'force' => 'required|integer|min:1|max:20',
+            'dexterite' => 'required|integer|min:1|max:20',
+            'constitution' => 'required|integer|min:1|max:20',
+            'intelligence' => 'required|integer|min:1|max:20',
+            'sagesse' => 'required|integer|min:1|max:20',
+            'charisme' => 'required|integer|min:1|max:20',
+            'competences' => ['nullable', 'array'],
             'competences.*' => 'string|max:50',
-            'langues' => ['nullable', 'array', "max:$maxLangues"],
+            'langues' => ['nullable', 'array'],
             'langues.*' => 'string|max:50',
             'historique_id' => 'nullable|integer|exists:historiques,id',
             'ideal_id' => 'nullable|integer|exists:ideaux,id',
@@ -175,14 +199,76 @@ class PersonnageSheetController extends Controller
             'attachement_id' => 'nullable|integer|exists:attachements,id',
             'personnalite_id' => 'nullable|integer|exists:personnalites,id',
         ], [
-            'competences.max' => "Vous ne pouvez avoir que $maxCompetences compétence(s) à ce niveau.",
-            'langues.max' => "Vous ne pouvez avoir que $maxLangues langue(s) à ce niveau.",
         ]);
+
+        $race = Race::with('sousRaces')->find($validated['race_id']);
+        if ($race->sousRaces->isNotEmpty() && empty($validated['sous_race_id'])) {
+            throw ValidationException::withMessages([
+                'sous_race_id' => 'Vous devez choisir une sous-race pour cette race.',
+            ]);
+        }
+
+        // Un changement de classe ici est un reclassement complet (pas un
+        // multiclassage 5e à la carte) : le personnage abandonne son
+        // ancienne classe pour la nouvelle, donc toutes les limites
+        // dépendantes de la classe (compétences, dé de vie, ASI) se basent
+        // désormais sur la nouvelle classe choisie.
+        $nouvelleClasse = Classe::find($validated['classe_id']);
+        $maxCompetences = $nouvelleClasse?->nombre_competences ?? 2;
+
+        $sousClasseRequise = $nouvelleClasse
+            && $nouvelleClasse->niveau_sous_classe <= (int) $validated['niveau']
+            && $nouvelleClasse->sousClasses()->exists();
+        if ($sousClasseRequise && empty($validated['sous_classe_id'])) {
+            throw ValidationException::withMessages([
+                'sous_classe_id' => 'Vous devez choisir une sous-classe pour cette classe.',
+            ]);
+        }
+
+        $historiqueCompetences = [];
+        $historiqueIds = array_filter([
+            $personnage->historique_id,
+            $validated['historique_id'] ?? null,
+        ]);
+        foreach (array_unique($historiqueIds) as $historiqueId) {
+            $historiqueCompetences = array_merge(
+                $historiqueCompetences,
+                Historique::find($historiqueId)?->competences ?? [],
+            );
+        }
+        $competences = array_values(array_unique(array_merge(
+            $validated['competences'] ?? [],
+            $historiqueCompetences,
+        )));
+        $anciennesCompetences = array_values(array_unique($personnage->listeCompetence->competences ?? []));
+        $competencesClasse = array_values(array_diff($competences, $historiqueCompetences));
+        $anciennesCompetencesClasse = array_values(array_diff($anciennesCompetences, $personnage->historique?->competences ?? []));
+        $competencesTriees = $competencesClasse;
+        $anciennesCompetencesTriees = $anciennesCompetencesClasse;
+        sort($competencesTriees);
+        sort($anciennesCompetencesTriees);
+        if ($competencesTriees !== $anciennesCompetencesTriees && count($competencesClasse) > $maxCompetences) {
+            throw ValidationException::withMessages([
+                'competences' => "Vous ne pouvez avoir que $maxCompetences compétence(s) à ce niveau.",
+            ]);
+        }
+
+        $langues = array_values(array_unique($validated['langues'] ?? []));
+        $anciennesLangues = array_values(array_unique($personnage->langues ?? []));
+        $languesTriees = $langues;
+        $anciennesLanguesTriees = $anciennesLangues;
+        sort($languesTriees);
+        sort($anciennesLanguesTriees);
+        if ($languesTriees !== $anciennesLanguesTriees && count($langues) > $maxLangues) {
+            throw ValidationException::withMessages([
+                'langues' => "Vous ne pouvez avoir que $maxLangues langue(s) à ce niveau.",
+            ]);
+        }
 
         $sousRaceId = $validated['sous_race_id'] ?? null;
         if ($sousRaceId) {
             $sr = SousRace::find($sousRaceId);
-            if (! $sr || $sr->race_id !== $validated['race_id']) {
+            if (! $sr || (int) $sr->race_id !== (int) $validated['race_id']) {
                 $sousRaceId = null;
             }
         }
@@ -190,10 +276,34 @@ class PersonnageSheetController extends Controller
         $sousClasseId = $validated['sous_classe_id'] ?? null;
         if ($sousClasseId) {
             $sc = SousClasse::find($sousClasseId);
-            $classe = Classe::find($validated['classe_id']);
-            if (! $sc || ! $classe || $sc->classe_id !== $validated['classe_id'] || $classe->niveau_sous_classe > $validated['niveau']) {
+            if (! $sc || ! $nouvelleClasse || (int) $sc->classe_id !== (int) $validated['classe_id']) {
                 $sousClasseId = null;
+            } elseif ($nouvelleClasse->niveau_sous_classe > (int) $validated['niveau']) {
+                throw ValidationException::withMessages([
+                    'sous_classe_id' => "Cette sous-classe n'est disponible qu'à partir du niveau {$nouvelleClasse->niveau_sous_classe}.",
+                ]);
             }
+        }
+
+        $anciennesAbilites = $personnage->abilites;
+        $nouvellesAbilites = [
+            'force' => $validated['force'],
+            'dexterite' => $validated['dexterite'],
+            'constitution' => $validated['constitution'],
+            'intelligence' => $validated['intelligence'],
+            'sagesse' => $validated['sagesse'],
+            'charisme' => $validated['charisme'],
+        ];
+        $this->validateAbilityScoreIncrease(
+            $nouvellesAbilites,
+            $anciennesAbilites,
+            $personnage->niveau,
+            $validated['niveau'],
+            $nouvelleClasse,
+        );
+
+        if ((int) $validated['point_de_vie'] !== (int) $personnage->point_de_vie) {
+            $this->validateHitPoints($validated['point_de_vie'], $validated['niveau'], (object) $nouvellesAbilites, $nouvelleClasse);
         }
 
         $personnage->update([
@@ -211,6 +321,7 @@ class PersonnageSheetController extends Controller
             'alignement' => $validated['alignement'] ?? null,
             'description' => $validated['description'] ?? null,
             'point_de_vie' => $validated['point_de_vie'],
+            'langues' => $langues,
         ]);
 
         if ($personnage->abilites) {
@@ -224,9 +335,9 @@ class PersonnageSheetController extends Controller
             ]);
         }
 
-        if ($personnage->listeCompetence && $request->has('competences')) {
+        if ($personnage->listeCompetence) {
             $personnage->listeCompetence->update([
-                'competences' => array_unique($validated['competences'] ?? []),
+                'competences' => $competences,
             ]);
         }
 
@@ -331,5 +442,78 @@ class PersonnageSheetController extends Controller
     protected function getMaxLanguesByLevel(int $niveau): int
     {
         return 2 + (int) floor(($niveau - 1) / 3);
+    }
+
+    protected function validateAbilityScoreIncrease(
+        array $newScores,
+        ?object $oldScores,
+        int $oldLevel,
+        int $newLevel,
+        ?Classe $classe,
+    ): void {
+        if (! $oldScores) {
+            return;
+        }
+
+        $increases = [];
+        foreach (array_keys($newScores) as $ability) {
+            $difference = $newScores[$ability] - (int) $oldScores->{$ability};
+            if ($difference < 0) {
+                throw ValidationException::withMessages([
+                    $ability => 'Une caractéristique ne peut pas diminuer lors d’une amélioration D&D 5e.',
+                ]);
+            }
+            if ($difference > 0) {
+                $increases[$ability] = $difference;
+            }
+        }
+
+        if ($increases === []) {
+            return;
+        }
+
+        $asiCount = count(array_filter(
+            $this->getAbilityScoreImprovementLevels($classe),
+            fn (int $level): bool => $level > $oldLevel && $level <= $newLevel,
+        ));
+        $maximumIncrease = $asiCount * 2;
+
+        if ($asiCount === 0 || array_sum($increases) > $maximumIncrease || count($increases) > 2 || max($increases) > 2) {
+            $message = 'Les caractéristiques ne peuvent augmenter qu’au niveau d’une amélioration de caractéristiques (ASI), avec un maximum de +2 par ASI.';
+            throw ValidationException::withMessages(array_fill_keys(array_keys($increases), $message));
+        }
+    }
+
+    protected function getAbilityScoreImprovementLevels(?Classe $classe): array
+    {
+        $levels = [4, 8, 12, 16, 19];
+        $className = strtolower($classe?->nom ?? '');
+
+        if (str_contains($className, 'guerrier')) {
+            $levels = [4, 6, 8, 12, 14, 16, 19];
+        } elseif (str_contains($className, 'roublard')) {
+            $levels = [4, 8, 10, 12, 16, 19];
+        }
+
+        return $levels;
+    }
+
+    protected function validateHitPoints(int $hitPoints, int $level, ?object $abilities, ?Classe $classe): void
+    {
+        if (! $abilities) {
+            return;
+        }
+
+        $hitDie = (int) preg_replace('/[^0-9]/', '', (string) ($classe?->de_de_vie ?? '10'));
+        $constitutionModifier = (int) floor(((int) $abilities->constitution - 10) / 2);
+        $firstLevelHitPoints = max(1, $hitDie + $constitutionModifier);
+        $minimum = $firstLevelHitPoints + max(0, $level - 1) * max(1, 1 + $constitutionModifier);
+        $maximum = $firstLevelHitPoints + max(0, $level - 1) * max(1, $hitDie + $constitutionModifier);
+
+        if ($hitPoints < $minimum || $hitPoints > $maximum) {
+            throw ValidationException::withMessages([
+                'point_de_vie' => "Les PV doivent être compris entre $minimum et $maximum pour ce niveau, cette classe et cette Constitution.",
+            ]);
+        }
     }
 }
