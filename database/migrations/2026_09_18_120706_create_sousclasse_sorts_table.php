@@ -13,6 +13,7 @@ return new class extends Migration
 
             $table->unsignedBigInteger('id_SousClasse');
             $table->unsignedBigInteger('id_Sort');
+            $table->timestamps();
 
             $table->foreign('id_SousClasse')
                 ->references('id')

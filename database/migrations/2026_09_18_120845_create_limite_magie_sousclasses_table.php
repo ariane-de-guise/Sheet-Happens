@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('LimiteMagieSousClasse', function (Blueprint $table) {
+        Schema::create('limite_magie_sous_classes', function (Blueprint $table) {
             $table->id();
 
             $table->unsignedBigInteger('id_SousClasse');
@@ -26,7 +26,7 @@ return new class extends Migration
 
             $table->foreign('id_LimiteMagie')
                 ->references('id')
-                ->on('LimiteMagie')
+                ->on('limite_magies')
                 ->cascadeOnDelete();
 
             $table->unique(
@@ -38,6 +38,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('LimiteMagieSousClasse');
+        Schema::dropIfExists('limite_magie_sous_classes');
     }
 };

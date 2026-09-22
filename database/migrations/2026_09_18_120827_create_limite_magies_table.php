@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('LimiteMagie', function (Blueprint $table) {
+        Schema::create('limite_magies', function (Blueprint $table) {
             $table->id();
 
             $table->unsignedTinyInteger('TourMagie')
@@ -32,6 +32,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('LimiteMagie');
+        Schema::dropIfExists('limite_magies');
     }
 };

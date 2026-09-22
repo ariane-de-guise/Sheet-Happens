@@ -33,6 +33,14 @@
     background-color: #64748b;
 }
 
+.auth-logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
 .auth-info {
     display: flex;
     flex-direction: column;

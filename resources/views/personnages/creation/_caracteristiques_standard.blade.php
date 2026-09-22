@@ -34,7 +34,7 @@
             @endforeach
         </div>
 
-        <div>
+        <div class="stats-side">
             <div class="label mb-1" style="color:#e6b84d;">Valeurs disponibles</div>
             <div class="value-pool" id="valuePool"
                  ondragover="onPoolDragOver(event)"
@@ -48,17 +48,20 @@
                          onclick="assignToNextEmpty({{ $value }})">{{ $value }}</div>
                 @endforeach
             </div>
+
+            <!-- À côté de la boîte de caractéristiques (2e colonne), collée
+                 en bas (voir .stats-side), pas en dessous de celle-ci. -->
+            <div class="stats-actions">
+                <button type="button" class="btn btn-secondary" onclick="resetStandard()">Réinitialiser</button>
+            </div>
         </div>
     </div>
 
     <input type="hidden" name="points_disponibles" id="pointsDisponibles">
 
     <div class="btn-group-row">
-        <div>
-            <button type="button" class="btn btn-secondary" onclick="resetStandard()">Réinitialiser</button>
-            <button type="submit" class="btn btn-primary" id="btnSuivant">Suivant</button>
-        </div>
         <a href="{{ route('creation.methode') }}" class="btn btn-secondary">Retour</a>
+        <button type="submit" class="btn btn-primary" id="btnSuivant">Suivant</button>
     </div>
 </form>
 

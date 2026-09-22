@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('PersonnageSort', function (Blueprint $table) {
+        Schema::create('personnage_sorts', function (Blueprint $table) {
             $table->id();
 
             $table->unsignedBigInteger('id_Personnage');
@@ -32,27 +32,22 @@ return new class extends Migration
             );
 
             /*
-             * Vérifie que Prepare est compris entre 0 et 2.
-             */
-            $table->check('Prepare >= 0 AND Prepare <= 2');
-
-            /*
              * Foreign keys
              */
             $table->foreign('id_Personnage')
                 ->references('id')
-                ->on('Personnage')
+                ->on('personnages')
                 ->cascadeOnDelete();
 
             $table->foreign('id_Sort')
                 ->references('id')
-                ->on('Sort')
+                ->on('sorts')
                 ->cascadeOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('PersonnageSort');
+        Schema::dropIfExists('personnage_sorts');
     }
 };
