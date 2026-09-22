@@ -326,6 +326,27 @@ class InventaireControllerTest extends TestCase
         $this->assertSame(1, $objet->cout_mains);
     }
 
+    public function test_creer_une_arme_custom_a_distance_avec_une_main_respecte_le_choix_explicite(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $this->actingAs($utilisateur)
+            ->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+                'nom' => 'Arbalète de poing improvisée',
+                'type' => 'arme',
+                'categorie' => 'distance',
+                'cout_mains' => 1,
+                'degats' => '1d6',
+                'type_degats' => 'perforant',
+                'caracteristique_degats' => 'dexterite',
+            ])
+            ->assertRedirect(route('personnages.inventaire.index', $personnage));
+
+        $objet = Objet::where('nom', 'Arbalète de poing improvisée')->firstOrFail();
+        $this->assertSame(1, $objet->cout_mains);
+    }
+
     public function test_un_objet_non_magique_ignore_la_rarete_envoyee(): void
     {
         $utilisateur = Utilisateur::factory()->create();
@@ -380,7 +401,7 @@ class InventaireControllerTest extends TestCase
             ->assertRedirect()
             ->assertSessionHasErrors('objet');
 
-        $this->assertFalse($lignePlates->fresh()->equipe);
+        $this->assertSame(0, $lignePlates->fresh()->quantite_equipee);
     }
 
     public function test_un_proprietaire_peut_equiper_une_arme(): void
@@ -398,7 +419,7 @@ class InventaireControllerTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('success');
 
-        $this->assertTrue($ligne->fresh()->equipe);
+        $this->assertSame(1, $ligne->fresh()->quantite_equipee);
     }
 
     public function test_un_proprietaire_peut_desequiper_une_arme(): void
@@ -416,7 +437,46 @@ class InventaireControllerTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('success');
 
-        $this->assertFalse($ligne->fresh()->equipe);
+        $this->assertSame(0, $ligne->fresh()->quantite_equipee);
+    }
+
+    public function test_un_proprietaire_peut_equiper_deux_exemplaires_de_la_meme_arme(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $ligne = PersonnageObjetFactory::new()->create([
+            'personnage_id' => $personnage->id,
+            'objet_id' => $dague->id,
+            'quantite' => 2,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.inventaire.equiper', [$personnage, $ligne]))
+            ->assertRedirect();
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.inventaire.equiper', [$personnage, $ligne]))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame(2, $ligne->fresh()->quantite_equipee);
+    }
+
+    public function test_la_page_d_inventaire_affiche_le_nombre_de_mains_d_une_arme(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $arc = ObjetFactory::new()->arme('distance', 2)->create(['nom' => 'Arc long']);
+        PersonnageObjetFactory::new()->create(['personnage_id' => $personnage->id, 'objet_id' => $dague->id]);
+        PersonnageObjetFactory::new()->create(['personnage_id' => $personnage->id, 'objet_id' => $arc->id]);
+
+        $this->actingAs($utilisateur)
+            ->get(route('personnages.inventaire.index', $personnage))
+            ->assertOk()
+            ->assertSee('Une main')
+            ->assertSee('Deux mains');
     }
 
     public function test_un_proprietaire_peut_ajuster_la_quantite_d_un_objet(): void
@@ -435,6 +495,25 @@ class InventaireControllerTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame(5, $ligne->fresh()->quantite);
+    }
+
+    public function test_le_bouton_moins_ne_retire_pas_le_dernier_exemplaire_d_un_objet(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+        $objet = ObjetFactory::new()->create();
+        $ligne = PersonnageObjetFactory::new()->create([
+            'personnage_id' => $personnage->id,
+            'objet_id' => $objet->id,
+            'quantite' => 1,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.inventaire.quantite', [$personnage, $ligne]), ['delta' => -1])
+            ->assertRedirect();
+
+        $this->assertSame(1, $ligne->fresh()->quantite);
+        $this->assertSame(1, $personnage->objets()->count());
     }
 
     public function test_utiliser_un_objet_non_consommable_echoue_avec_un_message_d_erreur(): void
