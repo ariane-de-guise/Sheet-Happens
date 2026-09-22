@@ -454,6 +454,7 @@ class PersonnageSheetController extends Controller
             'race', 'sousRace', 'classe', 'sousClasse',
             'abilites', 'listeCompetence',
             'historique', 'ideal', 'defaut', 'attachement', 'personnalite',
+            'objets',
         ]);
 
         $raceTraits = $personnage->race->traits;
@@ -461,6 +462,7 @@ class PersonnageSheetController extends Controller
 
         return Pdf::view('pdf.fiche-personnage', [
             'personnage' => $personnage,
+            'photoDataUri' => $this->photoDataUri($personnage->photo),
             'bonusMaitrise' => $this->fiche->bonusMaitrise($personnage->niveau),
             'jetsDeSauvegarde' => $this->fiche->jetsDeSauvegarde($personnage),
             'competences' => $this->fiche->competences($personnage),
@@ -474,7 +476,21 @@ class PersonnageSheetController extends Controller
             ->withBrowsershot(function (Browsershot $browsershot) {
                 $browsershot->noSandbox();
             })
-            ->name(str($personnage->nom)->slug().'-fiche.pdf');
+            ->download(str($personnage->nom)->slug().'-fiche.pdf');
+    }
+
+    protected function photoDataUri(?string $chemin): ?string
+    {
+        $disque = Storage::disk('public');
+
+        if (! $chemin || ! $disque->exists($chemin)) {
+            return null;
+        }
+
+        $contenu = $disque->get($chemin);
+        $type = $disque->mimeType($chemin) ?: 'image/jpeg';
+
+        return "data:{$type};base64,".base64_encode($contenu);
     }
 
     protected function validateAbilityScoreIncrease(

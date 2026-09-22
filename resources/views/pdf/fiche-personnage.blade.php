@@ -20,7 +20,13 @@
         <div style="display: flex; gap: 2rem; align-items: flex-start; margin-bottom: 2rem;">
             <!-- Avatar & Level -->
             <div style="position: relative;">
-                <div style="width: 120px; height: 120px; border-radius: 50%; background: #e6b84d;"></div>
+                @if($photoDataUri)
+                    <img src="{{ $photoDataUri }}"
+                         alt="Photo de {{ $personnage->nom }}"
+                         style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; display: block;">
+                @else
+                    <div style="width: 120px; height: 120px; border-radius: 50%; background: #e6b84d;"></div>
+                @endif
                 <div style="position: absolute; bottom: -5px; right: -5px; width: 45px; height: 45px; border-radius: 50%; background: #e6b84d; display: flex; align-items: center; justify-content: center; text-align: center; color: #1a0533; font-size: 0.7rem; font-weight: 600;">
                     Niveau<br>{{ $personnage->niveau }}
                 </div>

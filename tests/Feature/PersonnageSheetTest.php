@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\PersonnageSheetController;
 use App\Models\Historique;
 use App\Models\TraitModel;
 use App\Models\Utilisateur;
@@ -13,6 +14,7 @@ use Database\Factories\RaceFactory;
 use Database\Factories\SousClasseFactory;
 use Database\Factories\SousRaceFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Spatie\LaravelPdf\Facades\Pdf;
@@ -225,7 +227,16 @@ class PersonnageSheetTest extends TestCase
             'sous_race_id' => $sousRace->id,
             'classe_id' => $classe->id,
             'nom' => 'Aragorn',
-            'equipement' => ['Épée', 'Sac à dos'],
+        ]);
+        $epee = ObjetFactory::new()->arme()->create(['nom' => 'Épée']);
+        $sacADos = ObjetFactory::new()->create(['nom' => 'Sac à dos']);
+        PersonnageObjetFactory::new()->create([
+            'personnage_id' => $personnage->id,
+            'objet_id' => $epee->id,
+        ]);
+        PersonnageObjetFactory::new()->create([
+            'personnage_id' => $personnage->id,
+            'objet_id' => $sacADos->id,
         ]);
 
         $response = $this->actingAs($utilisateur)
@@ -263,6 +274,29 @@ class PersonnageSheetTest extends TestCase
 
         Pdf::assertRespondedWithPdf(function ($pdf) {
             return $pdf->viewData['sousRaceTraits']->isEmpty();
+        });
+    }
+
+    public function test_le_pdf_inclut_la_photo_du_personnage(): void
+    {
+        Pdf::fake();
+        Storage::fake('public');
+
+        $utilisateur = Utilisateur::factory()->create();
+        $photo = UploadedFile::fake()->image('portrait.jpg');
+        $chemin = $photo->store('personnages', 'public');
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'photo' => $chemin,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get(route('personnage.telecharger', $personnage))
+            ->assertOk();
+
+        Pdf::assertRespondedWithPdf(function ($pdf) use ($photo) {
+            return str_starts_with($pdf->viewData['photoDataUri'], 'data:image/')
+                && str_contains($pdf->viewData['photoDataUri'], base64_encode($photo->get()));
         });
     }
 
@@ -582,6 +616,62 @@ class PersonnageSheetTest extends TestCase
         $this->assertSame(8, $personnage->refresh()->point_de_vie);
     }
 
+    public function test_un_proprietaire_peut_modifier_uniquement_les_points_de_vie_avec_une_valeur_valide(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['de_de_vie' => 'd8']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+            'point_de_vie' => 10,
+        ]);
+
+        $response = $this->actingAs($utilisateur)
+            ->patch("/personnages/{$personnage->id}", ['point_de_vie' => 8]);
+
+        $response->assertRedirect(route('personnages.show', $personnage));
+        $response->assertSessionHas('success', 'Points de vie mis à jour avec succès !');
+        $this->assertSame(8, $personnage->refresh()->point_de_vie);
+    }
+
+    public function test_la_mise_a_jour_refuse_la_diminution_d_une_caracteristique(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+        ]);
+
+        $response = $this->actingAs($utilisateur)
+            ->patch("/personnages/{$personnage->id}", $this->donneesMiseAJour([
+                'race_id' => $personnage->race_id,
+                'classe_id' => $personnage->classe_id,
+                'force' => 9,
+            ]));
+
+        $response->assertSessionHasErrors('force');
+        $this->assertSame(10, $personnage->refresh()->abilites->force);
+    }
+
+    public function test_la_mise_a_jour_refuse_une_augmentation_superieure_a_l_asi(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'niveau' => 3,
+        ]);
+
+        $response = $this->actingAs($utilisateur)
+            ->patch("/personnages/{$personnage->id}", $this->donneesMiseAJour([
+                'race_id' => $personnage->race_id,
+                'classe_id' => $personnage->classe_id,
+                'niveau' => 4,
+                'force' => 13,
+            ]));
+
+        $response->assertSessionHasErrors('force');
+        $this->assertSame(10, $personnage->refresh()->abilites->force);
+    }
+
     public function test_la_mise_a_jour_efface_les_listes_quand_toutes_les_options_sont_decoches(): void
     {
         $utilisateur = Utilisateur::factory()->create();
@@ -805,6 +895,51 @@ class PersonnageSheetTest extends TestCase
         $this->assertSame($sousClasse->id, $personnage->sous_classe_id);
     }
 
+    public function test_la_mise_a_jour_ne_conserve_pas_des_relations_devenues_incompatibles_apres_validation(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create();
+        $autreRace = RaceFactory::new()->create();
+        $classe = ClasseFactory::new()->create(['niveau_sous_classe' => 1]);
+        $autreClasse = ClasseFactory::new()->create();
+        $sousRace = SousRaceFactory::new()->pourRace($race)->create();
+        $sousClasse = SousClasseFactory::new()->pourClasse($classe)->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
+            'classe_id' => $classe->id,
+            'niveau' => 1,
+        ]);
+
+        $donnees = $this->donneesMiseAJour([
+            'race_id' => $race->id,
+            'classe_id' => $classe->id,
+            'sous_race_id' => $sousRace->id,
+            'sous_classe_id' => $sousClasse->id,
+        ]);
+        $sousRace->update(['race_id' => $autreRace->id]);
+        $sousClasse->update(['classe_id' => $autreClasse->id]);
+
+        $request = \Mockery::mock(Request::class);
+        $request->shouldReceive('except')
+            ->once()
+            ->andReturn(array_keys($donnees));
+        $request->shouldReceive('input')
+            ->once()
+            ->with('niveau', $personnage->niveau)
+            ->andReturn($donnees['niveau']);
+        $request->shouldReceive('validate')
+            ->once()
+            ->andReturn($donnees);
+
+        $this->actingAs($utilisateur);
+        $response = $this->app->make(PersonnageSheetController::class)->update($request, $personnage);
+
+        $this->assertSame(route('personnages.show', $personnage), $response->getTargetUrl());
+        $this->assertNull($personnage->refresh()->sous_race_id);
+        $this->assertNull($personnage->sous_classe_id);
+    }
+
     public function test_la_mise_a_jour_refuse_une_classe_avec_sous_classes_sans_sous_classe(): void
     {
         $utilisateur = Utilisateur::factory()->create();
@@ -946,5 +1081,42 @@ class PersonnageSheetTest extends TestCase
                 'photo' => UploadedFile::fake()->image('portrait.jpg'),
             ])
             ->assertForbidden();
+    }
+
+    public function test_les_helpers_de_validation_couvrent_les_classes_speciales_et_les_valeurs_absentes(): void
+    {
+        $controller = app(PersonnageSheetController::class);
+        $classeGuerrier = ClasseFactory::new()->create(['nom' => 'Guerrier']);
+        $classeRoublard = ClasseFactory::new()->create(['nom' => 'Roublard']);
+
+        $this->assertSame(
+            [4, 6, 8, 12, 14, 16, 19],
+            $this->appelerHelper($controller, 'getAbilityScoreImprovementLevels', $classeGuerrier),
+        );
+        $this->assertSame(
+            [4, 8, 10, 12, 16, 19],
+            $this->appelerHelper($controller, 'getAbilityScoreImprovementLevels', $classeRoublard),
+        );
+        $this->assertSame(2, $this->appelerHelper($controller, 'getMaxCompetencesByLevel', 1));
+        $this->assertSame(3, $this->appelerHelper($controller, 'getMaxCompetencesByLevel', 3));
+
+        $this->assertNull($this->appelerHelper(
+            $controller,
+            'validateAbilityScoreIncrease',
+            ['force' => 10],
+            null,
+            1,
+            1,
+            $classeGuerrier,
+        ));
+        $this->assertNull($this->appelerHelper($controller, 'validateHitPoints', 10, 1, null, $classeGuerrier));
+    }
+
+    private function appelerHelper(object $controller, string $method, mixed ...$arguments): mixed
+    {
+        $reflection = new \ReflectionMethod($controller, $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invoke($controller, ...$arguments);
     }
 }
