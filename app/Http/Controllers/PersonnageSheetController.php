@@ -8,8 +8,6 @@ use App\Models\Historique;
 use App\Models\ListeCompetence;
 use App\Models\Personnage;
 use App\Models\Race;
-use App\Models\SousClasse;
-use App\Models\SousRace;
 use App\Models\Utilisateur;
 use App\Services\FicheDePersonnageService;
 use App\Services\MonteeNiveauService;
@@ -193,12 +191,45 @@ class PersonnageSheetController extends Controller
             'competences.*' => 'string|max:50',
             'langues' => ['nullable', 'array'],
             'langues.*' => 'string|max:50',
-            'historique_id' => 'nullable|integer|exists:historiques,id',
-            'ideal_id' => 'nullable|integer|exists:ideaux,id',
-            'defaut_id' => 'nullable|integer|exists:defauts,id',
-            'attachement_id' => 'nullable|integer|exists:attachements,id',
-            'personnalite_id' => 'nullable|integer|exists:personnalites,id',
+            'historique_id' => ['required', 'integer', 'exists:historiques,id'],
+            'ideal_id' => [
+                'required',
+                'integer',
+                Rule::exists('ideaux', 'id')->where(function ($query) use ($request) {
+                    return $query->where('historique_id', $request->input('historique_id'));
+                }),
+            ],
+            'defaut_id' => [
+                'required',
+                'integer',
+                Rule::exists('defauts', 'id')->where(function ($query) use ($request) {
+                    return $query->where('historique_id', $request->input('historique_id'));
+                }),
+            ],
+            'attachement_id' => [
+                'required',
+                'integer',
+                Rule::exists('attachements', 'id')->where(function ($query) use ($request) {
+                    return $query->where('historique_id', $request->input('historique_id'));
+                }),
+            ],
+            'personnalite_id' => [
+                'required',
+                'integer',
+                Rule::exists('personnalites', 'id')->where(function ($query) use ($request) {
+                    return $query->where('historique_id', $request->input('historique_id'));
+                }),
+            ],
         ], [
+            'historique_id.required' => 'Vous devez choisir un historique.',
+            'ideal_id.required' => 'Vous devez choisir un idéal.',
+            'ideal_id.exists' => 'L’idéal choisi ne correspond pas à l’historique sélectionné.',
+            'defaut_id.required' => 'Vous devez choisir un défaut.',
+            'defaut_id.exists' => 'Le défaut choisi ne correspond pas à l’historique sélectionné.',
+            'attachement_id.required' => 'Vous devez choisir un attachement.',
+            'attachement_id.exists' => 'L’attachement choisi ne correspond pas à l’historique sélectionné.',
+            'personnalite_id.required' => 'Vous devez choisir un trait de personnalité.',
+            'personnalite_id.exists' => 'Le trait de personnalité choisi ne correspond pas à l’historique sélectionné.',
         ]);
 
         $race = Race::with('sousRaces')->find($validated['race_id']);
@@ -266,19 +297,10 @@ class PersonnageSheetController extends Controller
         }
 
         $sousRaceId = $validated['sous_race_id'] ?? null;
-        if ($sousRaceId) {
-            $sr = SousRace::find($sousRaceId);
-            if (! $sr || (int) $sr->race_id !== (int) $validated['race_id']) {
-                $sousRaceId = null;
-            }
-        }
 
         $sousClasseId = $validated['sous_classe_id'] ?? null;
         if ($sousClasseId) {
-            $sc = SousClasse::find($sousClasseId);
-            if (! $sc || ! $nouvelleClasse || (int) $sc->classe_id !== (int) $validated['classe_id']) {
-                $sousClasseId = null;
-            } elseif ($nouvelleClasse->niveau_sous_classe > (int) $validated['niveau']) {
+            if ($nouvelleClasse->niveau_sous_classe > (int) $validated['niveau']) {
                 throw ValidationException::withMessages([
                     'sous_classe_id' => "Cette sous-classe n'est disponible qu'à partir du niveau {$nouvelleClasse->niveau_sous_classe}.",
                 ]);
@@ -312,11 +334,11 @@ class PersonnageSheetController extends Controller
             'sous_race_id' => $sousRaceId,
             'classe_id' => $validated['classe_id'],
             'sous_classe_id' => $sousClasseId,
-            'historique_id' => $validated['historique_id'] ?? null,
-            'ideal_id' => $validated['ideal_id'] ?? null,
-            'defaut_id' => $validated['defaut_id'] ?? null,
-            'attachement_id' => $validated['attachement_id'] ?? null,
-            'personnalite_id' => $validated['personnalite_id'] ?? null,
+            'historique_id' => $validated['historique_id'],
+            'ideal_id' => $validated['ideal_id'],
+            'defaut_id' => $validated['defaut_id'],
+            'attachement_id' => $validated['attachement_id'],
+            'personnalite_id' => $validated['personnalite_id'],
             'niveau' => $validated['niveau'],
             'alignement' => $validated['alignement'] ?? null,
             'description' => $validated['description'] ?? null,
@@ -434,11 +456,6 @@ class PersonnageSheetController extends Controller
         abort_unless($personnage->utilisateur_id === Auth::id(), 403);
     }
 
-    protected function getMaxCompetencesByLevel(int $niveau): int
-    {
-        return 2 + (int) floor(($niveau - 1) / 2);
-    }
-
     protected function getMaxLanguesByLevel(int $niveau): int
     {
         return 2 + (int) floor(($niveau - 1) / 3);
@@ -446,15 +463,11 @@ class PersonnageSheetController extends Controller
 
     protected function validateAbilityScoreIncrease(
         array $newScores,
-        ?object $oldScores,
+        object $oldScores,
         int $oldLevel,
         int $newLevel,
         ?Classe $classe,
     ): void {
-        if (! $oldScores) {
-            return;
-        }
-
         $increases = [];
         foreach (array_keys($newScores) as $ability) {
             $difference = $newScores[$ability] - (int) $oldScores->{$ability};
@@ -498,12 +511,8 @@ class PersonnageSheetController extends Controller
         return $levels;
     }
 
-    protected function validateHitPoints(int $hitPoints, int $level, ?object $abilities, ?Classe $classe): void
+    protected function validateHitPoints(int $hitPoints, int $level, object $abilities, ?Classe $classe): void
     {
-        if (! $abilities) {
-            return;
-        }
-
         $hitDie = (int) preg_replace('/[^0-9]/', '', (string) ($classe?->de_de_vie ?? '10'));
         $constitutionModifier = (int) floor(((int) $abilities->constitution - 10) / 2);
         $firstLevelHitPoints = max(1, $hitDie + $constitutionModifier);

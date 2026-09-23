@@ -429,8 +429,8 @@
             <div class="sheet-section">
                 <div class="sheet-section-title">Historique & Contexte</div>
                 <div class="form-group">
-                    <label class="form-label">Historique</label>
-                    <select name="historique_id" id="edit_historique_select" class="form-select-small" onchange="onEditHistoriqueChange(this.value)">
+                    <label class="form-label">Historique *</label>
+                    <select name="historique_id" id="edit_historique_select" class="form-select-small" required onchange="onEditHistoriqueChange(this.value)">
                         <option value="">-- Choisir un historique --</option>
                         @foreach($historiques as $h)
                             <option value="{{ $h->id }}" {{ old('historique_id', $personnage->historique_id) == $h->id ? 'selected' : '' }}>
@@ -440,8 +440,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Idéal</label>
-                    <select name="ideal_id" id="edit_ideal_select" class="form-select-small">
+                    <label class="form-label">Idéal *</label>
+                    <select name="ideal_id" id="edit_ideal_select" class="form-select-small" required>
                         <option value="">-- Choisir un idéal --</option>
                         @foreach($historiques as $h)
                             @foreach($h->ideaux as $item)
@@ -453,8 +453,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Défaut</label>
-                    <select name="defaut_id" id="edit_defaut_select" class="form-select-small">
+                    <label class="form-label">Défaut *</label>
+                    <select name="defaut_id" id="edit_defaut_select" class="form-select-small" required>
                         <option value="">-- Choisir un défaut --</option>
                         @foreach($historiques as $h)
                             @foreach($h->defauts as $item)
@@ -466,8 +466,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Attachement</label>
-                    <select name="attachement_id" id="edit_attachement_select" class="form-select-small">
+                    <label class="form-label">Attachement *</label>
+                    <select name="attachement_id" id="edit_attachement_select" class="form-select-small" required>
                         <option value="">-- Choisir un attachement --</option>
                         @foreach($historiques as $h)
                             @foreach($h->attachements as $item)
@@ -479,8 +479,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Trait de personnalité</label>
-                    <select name="personnalite_id" id="edit_personnalite_select" class="form-select-small">
+                    <label class="form-label">Trait de personnalité *</label>
+                    <select name="personnalite_id" id="edit_personnalite_select" class="form-select-small" required>
                         <option value="">-- Choisir une personnalité --</option>
                         @foreach($historiques as $h)
                             @foreach($h->personnalites as $item)
@@ -505,10 +505,6 @@
                             </label>
                         @endforeach
                     </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Équipement</label>
-                    <a href="{{ route('personnages.inventaire.index', $personnage) }}" class="btn btn-secondary btn-small">Gérer l'inventaire →</a>
                 </div>
             </div>
         </div>
@@ -577,6 +573,19 @@ document.addEventListener('DOMContentLoaded', function () {
     initEditHistoriqueOptionsStore('edit_defaut_select');
     initEditHistoriqueOptionsStore('edit_attachement_select');
     initEditHistoriqueOptionsStore('edit_personnalite_select');
+
+    const form = document.getElementById('editForm');
+    form.addEventListener('invalid', function (event) {
+        if (event.target.validity.valueMissing) {
+            event.target.setCustomValidity(
+                event.target.tagName === 'SELECT'
+                    ? 'Veuillez sélectionner un élément dans la liste.'
+                    : 'Veuillez remplir ce champ.'
+            );
+        }
+    }, true);
+    form.addEventListener('input', event => event.target.setCustomValidity(''));
+    form.addEventListener('change', event => event.target.setCustomValidity(''));
 
     const histSel = document.getElementById('edit_historique_select');
     if (histSel && histSel.value) {
