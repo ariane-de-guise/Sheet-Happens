@@ -70,6 +70,8 @@ Route::middleware('auth')->group(function () {
 
     // Sorts connus
     Route::get('/personnages/{personnage}/sorts', [\App\Http\Controllers\PersonnageSortController::class, 'index'])->name('personnages.sorts.index');
+    Route::patch('/personnages/{personnage}/sorts/{personnageSort}', [\App\Http\Controllers\PersonnageSortController::class, 'updatePrepare'])->name('personnages.sorts.prepare');
+    Route::post('/personnages/{personnage}/sorts', [\App\Http\Controllers\PersonnageSortController::class, 'storePrepare'])->name('personnages.sorts.store');
 
     Route::prefix('personnages/{personnage}/inventaire')->name('personnages.inventaire.')->group(function () {
         Route::get('/', [InventaireController::class, 'index'])->name('index');

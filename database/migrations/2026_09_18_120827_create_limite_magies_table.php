@@ -15,7 +15,8 @@ return new class extends Migration
                 ->default(0);
 
             $table->unsignedTinyInteger('SortConnue')
-                ->default(0);
+                ->nullable()
+                ->default(null);
 
             $table->unsignedTinyInteger('Niveau1')
                 ->default(0);

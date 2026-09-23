@@ -28,44 +28,40 @@ class LimiteMagieSeeder extends Seeder
         */
 
         $this->createClasseMagicLimits(
-            idClasse: 2,
-            progression: [
+            2,
+            [
                 1 => [
                     'TourMagie' => 3,
-                    'SortConnue' => 1,
                     'Niveau1' => 2,
                     'Niveau2' => 0,
                     'Niveau3' => 0,
                 ],
                 2 => [
                     'TourMagie' => 3,
-                    'SortConnue' => 2,
                     'Niveau1' => 3,
                     'Niveau2' => 0,
                     'Niveau3' => 0,
                 ],
                 3 => [
                     'TourMagie' => 3,
-                    'SortConnue' => 3,
                     'Niveau1' => 4,
                     'Niveau2' => 2,
                     'Niveau3' => 0,
                 ],
                 4 => [
                     'TourMagie' => 4,
-                    'SortConnue' => 4,
                     'Niveau1' => 4,
                     'Niveau2' => 3,
                     'Niveau3' => 0,
                 ],
                 5 => [
                     'TourMagie' => 4,
-                    'SortConnue' => 5,
                     'Niveau1' => 4,
                     'Niveau2' => 3,
                     'Niveau3' => 2,
                 ],
-            ]
+            ],
+            'Sagesse'
         );
 
 
@@ -88,44 +84,40 @@ class LimiteMagieSeeder extends Seeder
         */
 
         $this->createClasseMagicLimits(
-            idClasse: 4,
-            progression: [
+            4,
+            [
                 1 => [
                     'TourMagie' => 3,
-                    'SortConnue' => 1,
                     'Niveau1' => 2,
                     'Niveau2' => 0,
                     'Niveau3' => 0,
                 ],
                 2 => [
                     'TourMagie' => 3,
-                    'SortConnue' => 2,
                     'Niveau1' => 3,
                     'Niveau2' => 0,
                     'Niveau3' => 0,
                 ],
                 3 => [
                     'TourMagie' => 3,
-                    'SortConnue' => 3,
                     'Niveau1' => 4,
                     'Niveau2' => 2,
                     'Niveau3' => 0,
                 ],
                 4 => [
                     'TourMagie' => 4,
-                    'SortConnue' => 4,
                     'Niveau1' => 4,
                     'Niveau2' => 3,
                     'Niveau3' => 0,
                 ],
                 5 => [
                     'TourMagie' => 4,
-                    'SortConnue' => 5,
                     'Niveau1' => 4,
                     'Niveau2' => 3,
                     'Niveau3' => 2,
                 ],
-            ]
+            ],
+            'Intelligence'
         );
 
 
@@ -145,8 +137,8 @@ class LimiteMagieSeeder extends Seeder
         */
 
         $this->createSousClasseMagicLimits(
-            idSousClasse: 12,
-            progression: [
+            12,
+            [
                 3 => [
                     'TourMagie' => 2,
                     'SortConnue' => 3,
@@ -168,7 +160,8 @@ class LimiteMagieSeeder extends Seeder
                     'Niveau2' => 0,
                     'Niveau3' => 0,
                 ],
-            ]
+            ],
+            'Intelligence'
         );
 
 
@@ -185,8 +178,8 @@ class LimiteMagieSeeder extends Seeder
         */
 
         $this->createSousClasseMagicLimits(
-            idSousClasse: 23,
-            progression: [
+            23,
+            [
                 3 => [
                     'TourMagie' => 2,
                     'SortConnue' => 3,
@@ -208,7 +201,8 @@ class LimiteMagieSeeder extends Seeder
                     'Niveau2' => 0,
                     'Niveau3' => 0,
                 ],
-            ]
+            ],
+            'Intelligence'
         );
     }
 
@@ -218,21 +212,25 @@ class LimiteMagieSeeder extends Seeder
      */
     private function createClasseMagicLimits(
         int $idClasse,
-        array $progression
+        array $progression,
+        ?string $abiliteMagie = null
     ): void {
         foreach ($progression as $niveau => $valeurs) {
 
             $limiteMagie = LimiteMagie::create([
                 'TourMagie' => $valeurs['TourMagie'],
-                'SortConnue' => $valeurs['SortConnue'],
+                'SortConnue' => $valeurs['SortConnue'] ?? null,
                 'Niveau1' => $valeurs['Niveau1'],
                 'Niveau2' => $valeurs['Niveau2'],
                 'Niveau3' => $valeurs['Niveau3'],
             ]);
 
+            $abilite = $abiliteMagie ?? ($valeurs['AbiliteMagie'] ?? 'Intelligence');
+
             LimiteMagieClasse::create([
                 'id_Classe' => $idClasse,
                 'id_LimiteMagie' => $limiteMagie->id,
+                'AbiliteMagie' => $abilite,
                 'Niveau' => $niveau,
             ]);
         }
@@ -244,21 +242,25 @@ class LimiteMagieSeeder extends Seeder
      */
     private function createSousClasseMagicLimits(
         int $idSousClasse,
-        array $progression
+        array $progression,
+        ?string $abiliteMagie = null
     ): void {
         foreach ($progression as $niveau => $valeurs) {
 
             $limiteMagie = LimiteMagie::create([
                 'TourMagie' => $valeurs['TourMagie'],
-                'SortConnue' => $valeurs['SortConnue'],
+                'SortConnue' => $valeurs['SortConnue'] ?? null,
                 'Niveau1' => $valeurs['Niveau1'],
                 'Niveau2' => $valeurs['Niveau2'],
                 'Niveau3' => $valeurs['Niveau3'],
             ]);
 
+            $abilite = $abiliteMagie ?? ($valeurs['AbiliteMagie'] ?? 'Intelligence');
+
             LimiteMagieSousClasse::create([
                 'id_SousClasse' => $idSousClasse,
                 'id_LimiteMagie' => $limiteMagie->id,
+                'AbiliteMagie' => $abilite,
                 'Niveau' => $niveau,
             ]);
         }

@@ -15,7 +15,10 @@ return new class extends Migration
 
             $table->unsignedBigInteger('id_LimiteMagie');
 
+
             $table->unsignedTinyInteger('Niveau');
+
+            $table->string('AbiliteMagie')->default('Intelligence');
 
             $table->timestamps();
 

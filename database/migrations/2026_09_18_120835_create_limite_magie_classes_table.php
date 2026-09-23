@@ -17,6 +17,8 @@ return new class extends Migration
 
             $table->unsignedTinyInteger('Niveau');
 
+            $table->string('AbiliteMagie')->default('Intelligence');
+
             $table->timestamps();
 
             $table->foreign('id_Classe')
@@ -28,6 +30,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('limite_magies')
                 ->cascadeOnDelete();
+
 
             $table->unique(
                 ['id_Classe', 'Niveau'],

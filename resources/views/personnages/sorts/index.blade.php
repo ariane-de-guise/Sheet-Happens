@@ -96,6 +96,29 @@
             align-items: center;
         }
 
+        /* Make spell name clearly interactive for hover */
+        .spell-hover {
+            cursor: pointer;
+            text-decoration: underline dotted rgba(241,212,132,0.35);
+        }
+        .spell-hover:hover {
+            color: #f1d484;
+            text-decoration-color: #f1d484;
+        }
+
+        .spell-detail {
+            display: none;
+            margin-top: 0.5rem;
+            background: rgba(25,10,50,0.9);
+            border: 1px solid rgba(107,43,138,0.45);
+            padding: 0.6rem;
+            border-radius: 6px;
+            color: #e6b84d;
+            font-size: 0.9rem;
+        }
+
+        .spell-detail .meta { color: #f1d484; font-weight:700; margin-bottom:0.35rem }
+
         /* Checkbox styled as yellow square */
         .prepare-checkbox {
             position: relative;
@@ -164,21 +187,61 @@
         <h2 style="text-align:center; margin-bottom: 0.5rem; color: #e6b84d;">Sorts</h2>
 
         <div class="maquette-header">
-            <div class="spell-slots">
-                <div class="slot-box">Abilité sort: </div>
-                <div class="slot-box">Sauvegarde sort: </div>
-                <div class="slot-box">Modificateur sort: </div>
+            @php
+                // Prefer ability provided by controller (could come from subclass limits)
+                $abiliteMagieNom = $abiliteMagie ?? null;
+
+                $incantationMap = [
+                    'Clerc' => 'sagesse',
+                    'Magicien' => 'intelligence',
+                    'Druide' => 'sagesse',
+                    'Barde' => 'charisme',
+                    'Paladin' => 'charisme',
+                    'Rôdeur' => 'sagesse',
+                    'Ensorceleur' => 'charisme',
+                    'Occultiste' => 'charisme',
+                ];
+
+                if (empty($abiliteMagieNom)) {
+                    $nomClasse = $personnage->classe?->nom ?? null;
+                    $abiliteMagieNom = $incantationMap[$nomClasse] ?? null;
+                }
+
+                $abiliteKey = $abiliteMagieNom ? strtolower($abiliteMagieNom) : null;
+                $abiliteLabel = $abiliteMagieNom ? ucfirst($abiliteMagieNom) : null;
+                $abiliteScore = $abiliteKey ? ($personnage->abilites?->{$abiliteKey} ?? null) : null;
+                $modificateur = $abiliteScore !== null ? (int) floor(($abiliteScore - 10) / 2) : 0;
+                $niveauPersonnage = (int) ($personnage->niveau ?? 0);
+                $bonusMaitrise = 2 + intdiv(max(1, $niveauPersonnage) - 1, 4);
+                $ddSauvegarde = 8 + $bonusMaitrise + $modificateur;
+
+                // Modificateur sort = modificateur d'abilité + bonus de maîtrise
+                $modificateurSort = $modificateur + $bonusMaitrise;
+
+                // Limite sort : utiliser $limiteSort si présent, sinon niveau + modificateur d'abilité
+                $limiteSortAffichee = isset($limiteSort) && $limiteSort !== null ? (int) $limiteSort : ($niveauPersonnage + $modificateur);
+            @endphp
+
+                <div class="spell-slots">
+                @php
+                    $displayAbility = $abiliteMagie ?? $abiliteLabel ?? '—';
+                @endphp
+                <div class="slot-box">Abilité sort: <strong>{{ $displayAbility }}</strong>
+                    @if(!empty($abiliteSource) && $abiliteSource === 'sous_classe')
+                        <span style="font-size:0.8rem; color:#d8b86a; margin-left:0.5rem">(sous-classe)</span>
+                    @endif
+                    @if($abiliteScore !== null) <span>({{ $abiliteScore }})</span>@endif
+                </div>
+                <div class="slot-box">Sauvegarde sort: <strong>{{ $ddSauvegarde }}</strong></div>
+                <div class="slot-box">Modificateur sort: <strong>{{ $modificateurSort >= 0 ? '+' . $modificateurSort : $modificateurSort }}</strong></div>
             </div>
             <div style="font-weight:700; color:#f1d484;">
                 Limite tour de magie : {{ $limiteTour ?? '—' }}
                 <br>
-                Limite sort : {{ $limiteSort ?? '—' }}
-                @if(!empty($slots))
-                    <div style="margin-top:0.5rem; color:#f1d484; font-weight:600;">
-                        Emplacements — N1: {{ $slots['Niveau1'] ?? '—' }}, N2: {{ $slots['Niveau2'] ?? '—' }}, N3: {{ $slots['Niveau3'] ?? '—' }}
-                    </div>
-                @endif
+                Limite sort : {{ $limiteSortAffichee }}
             </div>
+            {{-- Tooltip placé ici entre la boite des bonus et le tour de magie --}}
+            <div id="spell-tooltip" class="spell-tooltip" aria-hidden="true"></div>
         </div>
 
         <div class="cast-bar">
@@ -196,15 +259,30 @@
                     @foreach($cantrips as $c)
                         <div class="cast-item">
                             <label class="prepare-checkbox">
-                                @php $p = (int) ($c->prepare ?? 0); @endphp
-                                <input type="checkbox"
-                                       @if($p === 1) checked @endif
-                                       @if($p === 2) checked disabled @endif
-                                       data-sort-id="{{ $c->sort->id ?? '' }}">
+                                    @php $p = (int) ($c->prepare ?? 0); $psId = $c->personnage_sort_id ?? null; @endphp
+                                        <input type="checkbox"
+                                            class="prepare-toggle"
+                                            data-personnage-sort-id="{{ $psId }}"
+                                            data-sort-level="{{ $c->niveau ?? 0 }}"
+                                            value="1"
+                                            @if($p === 1) checked @endif
+                                            @if($p === 2) checked disabled data-fixed="1" @endif
+                                            data-sort-id="{{ $c->sort->id ?? '' }}">
                                 <span class="box"></span>
                             </label>
                             <div style="display:flex; flex-direction:column;">
-                                <span>{{ $c->sort->Nom ?? 'Sort' }}</span>
+                                  <span class="spell-hover"
+                                      data-name="{{ $c->sort->Nom ?? 'Sort' }}"
+                                      data-niveau="{{ $c->sort->Niveau ?? '' }}"
+                                      data-ecole="{{ $c->sort->Ecole ?? '' }}"
+                                      data-description="{{ e($c->sort->Description ?? '') }}"
+                                      data-temps="{{ $c->sort->TempsActivation ?? '' }}"
+                                      data-duree="{{ $c->sort->Duree ?? '' }}"
+                                      data-distance="{{ $c->sort->Distance ?? '' }}"
+                                      data-composants="{{ $c->sort->Composants ?? '' }}"
+                                      data-att-sauv="{{ $c->sort->AttaqueSauvegarde ?? '' }}"
+                                  >{{ $c->sort->Nom ?? 'Sort' }}</span>
+                                  <div class="spell-detail" aria-hidden="true"></div>
                             </div>
                         </div>
                     @endforeach
@@ -214,37 +292,256 @@
 
         <div class="levels">
             @foreach($levels as $niveau)
+                @php $slotCount = (int) ($slots['Niveau' . $niveau] ?? 0); @endphp
+                @if($slotCount > 0)
                 <div class="level-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
                         <div style="font-weight:800;">Niveau {{ $niveau }}</div>
-                        <div class="slots">Emplacement: •••</div>
+                        <div class="slots">Emplacement: {{ $slotCount }}</div>
                     </div>
 
                     <ul class="spell-list">
                         @foreach(($available ?? collect())->filter(fn($s) => (int) ($s->niveau ?? 1) === (int) $niveau) as $item)
                             <li>
                                 <label class="prepare-checkbox">
-                                    @php $p = (int) ($item->prepare ?? 0); @endphp
-                                    <input type="checkbox"
-                                           @if($p === 1) checked @endif
-                                           @if($p === 2) checked disabled @endif
-                                           data-sort-id="{{ $item->sort->id ?? '' }}">
+                                 @php $p = (int) ($item->prepare ?? 0); $psId = $item->personnage_sort_id ?? null; @endphp
+                                 <input type="checkbox"
+                                     class="prepare-toggle"
+                                     data-personnage-sort-id="{{ $psId }}"
+                                     data-sort-level="{{ $item->niveau ?? 1 }}"
+                                     value="1"
+                                     @if($p === 1) checked @endif
+                                     @if($p === 2) checked disabled data-fixed="1" @endif
+                                     data-sort-id="{{ $item->sort->id ?? '' }}">
                                     <span class="box"></span>
                                 </label>
 
                                 <div style="color:#e6b84d; display:flex; gap:0.5rem; align-items:center;">
-                                    <span>{{ $item->sort->Nom ?? 'Sort' }}</span>
+                                    <span class="spell-hover"
+                                          data-name="{{ $item->sort->Nom ?? 'Sort' }}"
+                                          data-niveau="{{ $item->sort->Niveau ?? '' }}"
+                                          data-ecole="{{ $item->sort->Ecole ?? '' }}"
+                                          data-description="{{ e($item->sort->Description ?? '') }}"
+                                          data-temps="{{ $item->sort->TempsActivation ?? '' }}"
+                                          data-duree="{{ $item->sort->Duree ?? '' }}"
+                                          data-distance="{{ $item->sort->Distance ?? '' }}"
+                                          data-composants="{{ $item->sort->Composants ?? '' }}"
+                                          data-att-sauv="{{ $item->sort->AttaqueSauvegarde ?? '' }}"
+                                    >{{ $item->sort->Nom ?? 'Sort' }}</span>
+                                    <div class="spell-detail" aria-hidden="true"></div>
                                 </div>
                             </li>
                         @endforeach
                     </ul>
                 </div>
+                    @endif
             @endforeach
         </div>
 
         <div class="bottom-actions">
             <a href="{{ route('personnages.show', $personnage) }}" class="btn-yellow">Retour</a>
-            <button class="btn-purple">Ajouter</button>
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        (function(){
+            function savePrepare(personnageId, personnageSortId, sortId, value) {
+                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                if (personnageSortId) {
+                    const url = '/personnages/' + personnageId + '/sorts/' + personnageSortId;
+                    return fetch(url, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': token
+                        },
+                        body: JSON.stringify({ prepare: value })
+                    }).then(r => r.json().then(json => { if (!r.ok) throw json; return json; }));
+                }
+
+                // create new PersonnageSort
+                const url = '/personnages/' + personnageId + '/sorts';
+                return fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({ sort_id: sortId, prepare: value })
+                }).then(r => r.json().then(json => { if (!r.ok) throw json; return json; }));
+            }
+
+                const personnageId = '{{ $personnage->id }}';
+                const limiteSort = {{ $limiteSort ?? 'null' }};
+                const limiteTour = {{ $limiteTour ?? 'null' }};
+
+            let saving = false;
+            document.addEventListener('change', function(e) {
+                const el = e.target;
+                if (!el.classList.contains('prepare-toggle')) return;
+                if (el.disabled || saving) return;
+
+                const psId = el.dataset.personnageSortId;
+                const sortId = el.dataset.sortId;
+                const level = parseInt(el.dataset.sortLevel || '0', 10);
+                const isChecked = el.checked ? 1 : 0;
+
+                // Client-side quick check: enforce limiteTour for level 0, and combined limiteSort for levels 1-3
+                if (isChecked === 1) {
+                    if (level === 0 && limiteTour !== null) {
+                        const current = Array.from(document.querySelectorAll('.prepare-toggle'))
+                            .filter(i => !i.disabled)
+                            .filter(i => parseInt(i.dataset.sortLevel||'0',10) === 0)
+                            .filter(i => i.checked)
+                            .length;
+                        if (current > limiteTour) {
+                            alert('Limite de sorts cantrips préparés atteinte (client).');
+                            el.checked = false;
+                            return;
+                        }
+                    }
+
+                    if ([1,2,3].includes(level) && limiteSort !== null) {
+                        const current = Array.from(document.querySelectorAll('.prepare-toggle'))
+                            .filter(i => !i.disabled)
+                            .filter(i => [1,2,3].includes(parseInt(i.dataset.sortLevel||'0',10)))
+                            .filter(i => i.checked)
+                            .length;
+                        if (current > limiteSort) {
+                            alert('Limite de sorts préparés (niveaux 1-3) atteinte (client).');
+                            el.checked = false;
+                            return;
+                        }
+                    }
+                }
+
+                // Optimistic: disable while saving
+                saving = true;
+                el.disabled = true;
+
+                savePrepare(personnageId, psId, sortId, isChecked)
+                    .then((json) => {
+                                // If a new record was created, store its id on the element
+                                if (json && json.personnage_sort_id) {
+                                    el.dataset.personnageSortId = json.personnage_sort_id;
+                                }
+                                // setup hover handlers for tooltip
+                                document.querySelectorAll('.spell-hover').forEach(function(s){
+                                    s.addEventListener('mouseenter', onSpellHover);
+                                    s.addEventListener('mouseleave', onSpellLeave);
+                                });
+                        el.disabled = false;
+                        saving = false;
+                    })
+                    .catch((err) => {
+                        // revert on error
+                        el.checked = !el.checked;
+                        el.disabled = false;
+                        saving = false;
+                        const msg = err && err.message ? err.message : 'Erreur lors de la sauvegarde';
+                        alert(msg);
+                    });
+
+            // Tooltip handlers
+            const tooltip = document.getElementById('spell-tooltip');
+
+            function onSpellHover(e) {
+                const t = e.currentTarget || e.target;
+                const name = t.dataset.name || '';
+                const niveau = t.dataset.niveau || '';
+                const ecole = t.dataset.ecole || '';
+                const temps = t.dataset.temps || '';
+                const duree = t.dataset.duree || '';
+                const distance = t.dataset.distance || '';
+                const composants = t.dataset.composants || '';
+                const attSauv = t.dataset.attSauv || '';
+                let desc = t.dataset.description || '';
+                // collapse multiple blank lines and render line breaks for HTML
+                desc = desc.replace(/\n\s*\n/g, '\n').replace(/\n/g, '<br>');
+
+                tooltip.innerHTML = '<div class="title">' + name + '</div>' +
+                    '<div class="meta">Niveau ' + niveau + (ecole ? ' • ' + ecole : '') + '</div>' +
+                    '<div class="meta">' + (temps ? ('Temps: ' + temps) : '') + (duree ? ' • Durée: ' + duree : '') + (distance ? ' • Distance: ' + distance : '') + '</div>' +
+                    '<div class="desc">' + (desc || '') + '</div>';
+
+                // show tooltip and position it centered under the hovered name
+                tooltip.classList.add('visible');
+                setTimeout(() => {
+                    const tipRect = tooltip.getBoundingClientRect();
+                    const rect = t.getBoundingClientRect();
+                    // center horizontally relative to hovered element
+                    let left = rect.left + (rect.width - tipRect.width) / 2 + window.scrollX;
+                    left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
+                    // position just below the hovered element
+                    let top = rect.bottom + 8 + window.scrollY;
+                    // if not enough space below, place above
+                    if (top + tipRect.height > window.innerHeight + window.scrollY - 8) {
+                        top = rect.top - tipRect.height - 8 + window.scrollY;
+                    }
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
+                }, 0);
+            }
+
+            function onSpellLeave() {
+                tooltip.classList.remove('visible');
+                // clear after animation
+                setTimeout(() => { tooltip.innerHTML = ''; }, 180);
+            }
+
+            document.querySelectorAll('.spell-hover').forEach(function(s){
+                s.addEventListener('mouseenter', onSpellHover);
+                s.addEventListener('mouseleave', onSpellLeave);
+            });
+            });
+        })();
+    </script>
+    <style>
+        /* Tooltip styled like other page boxes (maquette-header / level-card) */
+        .spell-tooltip {
+            position: absolute;
+            background: rgba(25,10,50,0.95);
+            border: 1px solid rgba(107,43,138,0.6);
+            color: #e6b84d;
+            padding: 0.75rem;
+            border-radius: 8px;
+            max-width: 360px;
+            z-index: 9999;
+            display: block; /* keep in DOM; visibility controlled via opacity */
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 150ms ease, transform 150ms ease;
+            font-size: 0.95rem;
+            pointer-events: none;
+        }
+
+        .spell-tooltip.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .spell-tooltip .title {
+            font-weight: 800;
+            margin-bottom: 0.35rem;
+            color: #e6b84d;
+        }
+
+        .spell-tooltip .meta {
+            font-size: 0.85rem;
+            color: #f1d484;
+            margin-bottom: 0.5rem;
+        }
+
+        .spell-tooltip .desc {
+            color: #e6b84d;
+            max-height: none; /* remove scroll */
+            overflow: visible;
+            white-space: normal;
+        }
+    </style>
+
+@endpush
