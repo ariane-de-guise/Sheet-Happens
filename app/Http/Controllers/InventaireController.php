@@ -95,6 +95,7 @@ class InventaireController extends Controller
             'description' => 'nullable|string|max:1000',
             'type' => ['required', Rule::in(Objet::TYPES)],
             'categorie' => 'nullable|string|max:50',
+            'cout_mains' => 'nullable|integer|in:1,2',
             'quantite' => 'nullable|integer|min:1|max:999',
             'magique' => 'nullable|boolean',
             'rarete' => ['nullable', Rule::in(Objet::RARETES)],
@@ -149,8 +150,7 @@ class InventaireController extends Controller
 
         $coutMains = match (true) {
             $validated['type'] === 'bouclier' => 1,
-            $estArme && $validated['categorie'] === 'une_main' => 1,
-            $estArme && in_array($validated['categorie'], ['deux_mains', 'distance'], true) => 2,
+            $estArme => (int) ($validated['cout_mains'] ?? ($validated['categorie'] === 'une_main' ? 1 : 2)),
             default => 0,
         };
 
@@ -187,7 +187,7 @@ class InventaireController extends Controller
             'delta' => 'required|integer',
         ]);
 
-        $this->inventaire->ajusterQuantite($personnageObjet, $validated['delta']);
+        $this->inventaire->ajusterQuantite($personnageObjet, $validated['delta'], permetSuppression: false);
 
         return back();
     }

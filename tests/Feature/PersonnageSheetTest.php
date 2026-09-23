@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Attachement;
+use App\Models\Defaut;
 use App\Models\Historique;
+use App\Models\Ideal;
+use App\Models\Personnalite;
 use App\Models\TraitModel;
 use App\Models\Utilisateur;
 use Database\Factories\ClasseFactory;
@@ -272,7 +276,15 @@ class PersonnageSheetTest extends TestCase
         $this->actingAs($utilisateur)
             ->get("/personnages/{$personnage->id}/edit")
             ->assertOk()
-            ->assertDontSee('onchange="this.form.submit()"', false);
+            ->assertDontSee('onchange="this.form.submit()"', false)
+            ->assertSee('id="edit_historique_select" class="form-select-small" required', false)
+            ->assertSee('id="edit_ideal_select" class="form-select-small" required', false)
+            ->assertSee('id="edit_defaut_select" class="form-select-small" required', false)
+            ->assertSee('id="edit_attachement_select" class="form-select-small" required', false)
+            ->assertSee('id="edit_personnalite_select" class="form-select-small" required', false)
+            ->assertSee('Veuillez sélectionner un élément dans la liste.', false)
+            ->assertDontSee('Gérer l’inventaire', false)
+            ->assertDontSee('Gérer l\'inventaire', false);
     }
 
     public function test_le_formulaire_edition_preselectionne_l_alignement_calcule_a_la_creation(): void
@@ -418,6 +430,11 @@ class PersonnageSheetTest extends TestCase
 
     private function donneesMiseAJour(array $overrides = []): array
     {
+        $historique = isset($overrides['historique_id'])
+            ? Historique::find($overrides['historique_id'])
+            : null;
+        $historique ??= Historique::create(['nom' => fake()->unique()->words(3, true)]);
+
         return array_merge([
             'nom' => 'Aragorn Mis à jour',
             'niveau' => 1,
@@ -431,6 +448,23 @@ class PersonnageSheetTest extends TestCase
             'intelligence' => 10,
             'sagesse' => 10,
             'charisme' => 10,
+            'historique_id' => $historique->id,
+            'ideal_id' => Ideal::create([
+                'historique_id' => $historique->id,
+                'valeur' => 'Idéal de test',
+            ])->id,
+            'defaut_id' => Defaut::create([
+                'historique_id' => $historique->id,
+                'valeur' => 'Défaut de test',
+            ])->id,
+            'attachement_id' => Attachement::create([
+                'historique_id' => $historique->id,
+                'valeur' => 'Attachement de test',
+            ])->id,
+            'personnalite_id' => Personnalite::create([
+                'historique_id' => $historique->id,
+                'valeur' => 'Qualité de test',
+            ])->id,
         ], $overrides);
     }
 
@@ -466,6 +500,68 @@ class PersonnageSheetTest extends TestCase
         $this->assertSame(['Commun', 'Elfe'], $personnage->langues);
         $this->assertSame(['Athlétisme', 'Perception'], $personnage->listeCompetence->fresh()->competences);
         $this->assertSame(10, $personnage->abilites->fresh()->force);
+    }
+
+    public function test_la_mise_a_jour_refuse_une_personnalite_incomplete(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+        ]);
+        $donnees = $this->donneesMiseAJour([
+            'race_id' => $personnage->race_id,
+            'classe_id' => $personnage->classe_id,
+        ]);
+
+        foreach (['historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id'] as $champ) {
+            $donneesInvalides = $donnees;
+            $donneesInvalides[$champ] = null;
+
+            $this->actingAs($utilisateur)
+                ->patch(route('personnages.update', $personnage), $donneesInvalides)
+                ->assertSessionHasErrors($champ);
+        }
+
+        $personnage->refresh();
+        $this->assertNull($personnage->historique_id);
+        $this->assertNull($personnage->ideal_id);
+        $this->assertNull($personnage->defaut_id);
+        $this->assertNull($personnage->attachement_id);
+        $this->assertNull($personnage->personnalite_id);
+    }
+
+    public function test_la_mise_a_jour_refuse_des_traits_d_un_autre_historique(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+        ]);
+        $donnees = $this->donneesMiseAJour([
+            'race_id' => $personnage->race_id,
+            'classe_id' => $personnage->classe_id,
+        ]);
+        $autreHistorique = Historique::create(['nom' => 'Historique incompatible']);
+
+        $donnees['ideal_id'] = Ideal::create([
+            'historique_id' => $autreHistorique->id,
+            'valeur' => 'Idéal incompatible',
+        ])->id;
+        $donnees['defaut_id'] = Defaut::create([
+            'historique_id' => $autreHistorique->id,
+            'valeur' => 'Défaut incompatible',
+        ])->id;
+        $donnees['attachement_id'] = Attachement::create([
+            'historique_id' => $autreHistorique->id,
+            'valeur' => 'Attachement incompatible',
+        ])->id;
+        $donnees['personnalite_id'] = Personnalite::create([
+            'historique_id' => $autreHistorique->id,
+            'valeur' => 'Qualité incompatible',
+        ])->id;
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.update', $personnage), $donnees)
+            ->assertSessionHasErrors(['ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id']);
     }
 
     public function test_un_proprietaire_peut_changer_la_classe_de_son_personnage(): void
@@ -511,7 +607,7 @@ class PersonnageSheetTest extends TestCase
         $this->assertSame(2, $personnage->refresh()->niveau);
     }
 
-    public function test_un_proprietaire_peut_modifier_uniquement_les_points_de_vie(): void
+    public function test_la_mise_a_jour_partielle_refuse_des_points_de_vie_invalides(): void
     {
         $utilisateur = Utilisateur::factory()->create();
         $personnage = PersonnageFactory::new()->create([
@@ -524,6 +620,24 @@ class PersonnageSheetTest extends TestCase
 
         $response->assertSessionHasErrors(['point_de_vie']);
         $this->assertSame(8, $personnage->refresh()->point_de_vie);
+    }
+
+    public function test_un_proprietaire_peut_modifier_uniquement_les_points_de_vie(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['de_de_vie' => 'd10']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+            'point_de_vie' => 8,
+        ]);
+
+        $response = $this->actingAs($utilisateur)
+            ->patch("/personnages/{$personnage->id}", ['point_de_vie' => 10]);
+
+        $response->assertRedirect(route('personnages.show', $personnage));
+        $response->assertSessionHas('success');
+        $this->assertSame(10, $personnage->refresh()->point_de_vie);
     }
 
     public function test_la_mise_a_jour_efface_les_listes_quand_toutes_les_options_sont_decoches(): void
@@ -604,6 +718,67 @@ class PersonnageSheetTest extends TestCase
         $this->assertSame(20, $personnage->point_de_vie);
         $this->assertSame(12, $personnage->abilites->fresh()->force);
         $this->assertSame($competences, $personnage->listeCompetence->fresh()->competences);
+    }
+
+    public function test_la_mise_a_jour_refuse_de_diminuer_une_caracteristique(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+        ]);
+        $donnees = $this->donneesMiseAJour([
+            'race_id' => $personnage->race_id,
+            'classe_id' => $personnage->classe_id,
+            'force' => 9,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.update', $personnage), $donnees)
+            ->assertSessionHasErrors('force');
+    }
+
+    public function test_la_mise_a_jour_refuse_une_augmentation_hors_asi(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+        ]);
+        $donnees = $this->donneesMiseAJour([
+            'race_id' => $personnage->race_id,
+            'classe_id' => $personnage->classe_id,
+            'force' => 11,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.update', $personnage), $donnees)
+            ->assertSessionHasErrors('force');
+    }
+
+    public function test_les_niveaux_asi_specifiques_du_guerrier_et_du_roublard_sont_acceptes(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+
+        foreach ([['Guerrier', 5, 6], ['Roublard', 9, 10]] as [$nomClasse, $ancienNiveau, $nouveauNiveau]) {
+            $classe = ClasseFactory::new()->create(['nom' => $nomClasse]);
+            $personnage = PersonnageFactory::new()->create([
+                'utilisateur_id' => $utilisateur->id,
+                'classe_id' => $classe->id,
+                'niveau' => $ancienNiveau,
+            ]);
+            $donnees = $this->donneesMiseAJour([
+                'race_id' => $personnage->race_id,
+                'classe_id' => $classe->id,
+                'niveau' => $nouveauNiveau,
+                'point_de_vie' => $personnage->point_de_vie,
+                'force' => 12,
+            ]);
+
+            $this->actingAs($utilisateur)
+                ->patch(route('personnages.update', $personnage), $donnees)
+                ->assertSessionHasNoErrors();
+
+            $this->assertSame(12, $personnage->abilites->fresh()->force);
+        }
     }
 
     public function test_la_mise_a_jour_conserve_une_sous_race_valide_meme_si_race_id_est_une_chaine(): void
