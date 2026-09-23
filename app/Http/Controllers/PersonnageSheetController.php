@@ -463,6 +463,7 @@ class PersonnageSheetController extends Controller
         return Pdf::view('pdf.fiche-personnage', [
             'personnage' => $personnage,
             'photoDataUri' => $this->photoDataUri($personnage->photo),
+            'seuilExperience' => $this->monteeNiveau->xpProchainNiveau($personnage),
             'bonusMaitrise' => $this->fiche->bonusMaitrise($personnage->niveau),
             'jetsDeSauvegarde' => $this->fiche->jetsDeSauvegarde($personnage),
             'competences' => $this->fiche->competences($personnage),
@@ -483,14 +484,20 @@ class PersonnageSheetController extends Controller
     {
         $disque = Storage::disk('public');
 
-        if (! $chemin || ! $disque->exists($chemin)) {
+        if ($chemin && $disque->exists($chemin)) {
+            $contenu = $disque->get($chemin);
+            $type = $disque->mimeType($chemin) ?: 'image/jpeg';
+
+            return "data:{$type};base64,".base64_encode($contenu);
+        }
+
+        $cheminLogo = public_path('images/logo_rmb.png');
+
+        if (! is_file($cheminLogo) || ! is_readable($cheminLogo)) {
             return null;
         }
 
-        $contenu = $disque->get($chemin);
-        $type = $disque->mimeType($chemin) ?: 'image/jpeg';
-
-        return "data:{$type};base64,".base64_encode($contenu);
+        return 'data:image/png;base64,'.base64_encode((string) file_get_contents($cheminLogo));
     }
 
     protected function validateAbilityScoreIncrease(

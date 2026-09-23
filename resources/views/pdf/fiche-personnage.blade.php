@@ -23,9 +23,7 @@
                 @if($photoDataUri)
                     <img src="{{ $photoDataUri }}"
                          alt="Photo de {{ $personnage->nom }}"
-                         style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; display: block;">
-                @else
-                    <div style="width: 120px; height: 120px; border-radius: 50%; background: #e6b84d;"></div>
+                         style="width: 120px; height: 120px; border-radius: 50%; object-fit: {{ $personnage->photo ? 'cover' : 'contain' }}; display: block;">
                 @endif
                 <div style="position: absolute; bottom: -5px; right: -5px; width: 45px; height: 45px; border-radius: 50%; background: #e6b84d; display: flex; align-items: center; justify-content: center; text-align: center; color: #1a0533; font-size: 0.7rem; font-weight: 600;">
                     Niveau<br>{{ $personnage->niveau }}
@@ -53,10 +51,16 @@
                 </div>
                 <div style="font-size: 0.75rem; color: #b8a9c9; display: flex; justify-content: space-between; margin-top: 0.5rem;">
                     <span>Expériences</span>
-                    <span>0/300</span>
+                    <span>
+                        @if($seuilExperience !== null)
+                            {{ $personnage->experience }}/{{ $seuilExperience }}
+                        @else
+                            {{ $personnage->experience }} (niveau maximum)
+                        @endif
+                    </span>
                 </div>
                 <div style="height: 6px; background: rgba(25, 10, 50, 0.9); border-radius: 3px; margin-top: 0.25rem; overflow: hidden;">
-                    <div style="width: 0%; height: 100%; background: #e6b84d; border-radius: 3px;"></div>
+                    <div style="width: {{ $seuilExperience ? min(100, (int) floor($personnage->experience / $seuilExperience * 100)) : 100 }}%; height: 100%; background: #e6b84d; border-radius: 3px;"></div>
                 </div>
             </div>
         </div>

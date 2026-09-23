@@ -300,6 +300,48 @@ class PersonnageSheetTest extends TestCase
         });
     }
 
+    public function test_le_pdf_inclut_l_image_par_defaut_sans_photo(): void
+    {
+        Pdf::fake();
+
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'photo' => null,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get(route('personnage.telecharger', $personnage))
+            ->assertOk();
+
+        Pdf::assertRespondedWithPdf(function ($pdf) {
+            return $pdf->viewData['photoDataUri'] === 'data:image/png;base64,'.base64_encode(
+                file_get_contents(public_path('images/logo_rmb.png')),
+            );
+        });
+    }
+
+    public function test_le_pdf_inclut_le_nombre_d_experience_et_son_seuil(): void
+    {
+        Pdf::fake();
+
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'niveau' => 2,
+            'experience' => 400,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get(route('personnage.telecharger', $personnage))
+            ->assertOk();
+
+        Pdf::assertRespondedWithPdf(function ($pdf) use ($personnage) {
+            return $pdf->viewData['personnage']->is($personnage)
+                && $pdf->viewData['seuilExperience'] === 900;
+        });
+    }
+
     public function test_la_fiche_affiche_l_inventaire_avec_un_lien_vers_la_page_complete(): void
     {
         $utilisateur = Utilisateur::factory()->create();
