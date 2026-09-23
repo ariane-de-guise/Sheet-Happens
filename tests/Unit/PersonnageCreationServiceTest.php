@@ -232,7 +232,7 @@ class PersonnageCreationServiceTest extends TestCase
         $objetOutil = $personnage->objets()->where('nom', 'Kit de calligraphe')->first();
         $this->assertNotNull($objetOutil);
         $this->assertSame(1, $objetOutil->pivot->quantite);
-        $this->assertFalse((bool) $objetOutil->pivot->equipe);
+        $this->assertSame(0, $objetOutil->pivot->quantite_equipee);
     }
 
     public function test_aucun_objet_n_est_ajoute_si_aucun_outil_n_est_choisi(): void

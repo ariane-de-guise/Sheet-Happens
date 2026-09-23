@@ -639,7 +639,7 @@
                     </div>
                     @if($personnage->objets->count() > 0)
                         <div class="text-muted" style="font-size: 0.85rem;">
-                            {{ $personnage->objets->map(fn($objet) => $objet->nom . ($objet->pivot->quantite > 1 ? ' x' . $objet->pivot->quantite : '') . ($objet->pivot->equipe ? ' (équipé)' : ''))->implode(', ') }}
+                            {{ $personnage->objets->map(fn($objet) => $objet->nom . ($objet->pivot->quantite > 1 ? ' x' . $objet->pivot->quantite : '') . ($objet->pivot->quantite_equipee > 0 ? ' (équipé' . ($objet->pivot->quantite_equipee > 1 ? ' x' . $objet->pivot->quantite_equipee : '') . ')' : ''))->implode(', ') }}
                         </div>
                     @else
                         <div class="text-muted" style="font-size: 0.85rem;">Aucun équipement enregistré.</div>

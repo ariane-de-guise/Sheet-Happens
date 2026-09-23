@@ -96,7 +96,7 @@ class Personnage extends Model
     {
         return $this->belongsToMany(Objet::class, 'personnage_objets')
             ->using(PersonnageObjet::class)
-            ->withPivot(['id', 'quantite', 'equipe'])
+            ->withPivot(['id', 'quantite', 'quantite_equipee'])
             ->withTimestamps();
     }
 

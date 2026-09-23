@@ -58,7 +58,7 @@ class FicheDePersonnageServiceTest extends TestCase
     private function objetEquipe(array $attributs, bool $equipe = true, int $quantite = 1): Objet
     {
         $objet = new Objet($attributs);
-        $objet->setRelation('pivot', new PersonnageObjet(['equipe' => $equipe, 'quantite' => $quantite]));
+        $objet->setRelation('pivot', new PersonnageObjet(['quantite_equipee' => $equipe ? 1 : 0, 'quantite' => $quantite]));
 
         return $objet;
     }
