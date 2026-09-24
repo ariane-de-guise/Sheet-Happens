@@ -441,9 +441,10 @@
                         <span class="sheet-box-title" style="margin-bottom: 0;">
                             Traits
                         </span>
-                        <a href="{{ route('personnages.traits', $personnage) }}" class="btn btn-secondary btn-small">
-                            Tous voir
-                        </a>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{{ route('personnages.traits', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
+                            <a href="{{ route('personnages.sorts.index', $personnage) }}" class="btn btn-secondary btn-small">Sorts connus</a>
+                        </div>
                     </div>
                 </div>
                 {{-- Capacités et dons obtenus lors des montées de niveau --}}
