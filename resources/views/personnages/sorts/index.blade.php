@@ -96,6 +96,17 @@
             align-items: center;
         }
 
+        .spell-list-header .col-label {
+            display: inline-block;
+            width: 14px;
+            margin-right: 6px;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #f1d484;
+            line-height: 1;
+        }
+
         /* Make spell name clearly interactive for hover */
         .spell-hover {
             cursor: pointer;
@@ -221,15 +232,13 @@
                 // Limite sort : utiliser $limiteSort si présent, sinon niveau + modificateur d'abilité
                 $limiteSortAffichee = isset($limiteSort) && $limiteSort !== null ? (int) $limiteSort : ($niveauPersonnage + $modificateur);
             @endphp
+            @php $isMagicien = ($personnage->classe?->nom ?? '') === 'Magicien'; @endphp
 
                 <div class="spell-slots">
                 @php
                     $displayAbility = $abiliteMagie ?? $abiliteLabel ?? '—';
                 @endphp
                 <div class="slot-box">Abilité sort: <strong>{{ $displayAbility }}</strong>
-                    @if(!empty($abiliteSource) && $abiliteSource === 'sous_classe')
-                        <span style="font-size:0.8rem; color:#d8b86a; margin-left:0.5rem">(sous-classe)</span>
-                    @endif
                     @if($abiliteScore !== null) <span>({{ $abiliteScore }})</span>@endif
                 </div>
                 <div class="slot-box">Sauvegarde sort: <strong>{{ $ddSauvegarde }}</strong></div>
@@ -301,20 +310,44 @@
                     </div>
 
                     <ul class="spell-list">
+                        <li class="spell-list-header" aria-hidden="true">
+                            @if($isMagicien)
+                                <span class="col-label" title="Grimoire">G</span>
+                            @endif
+                            <span class="col-label" title="Préparé">P</span>
+                        </li>
                         @foreach(($available ?? collect())->filter(fn($s) => (int) ($s->niveau ?? 1) === (int) $niveau) as $item)
                             <li>
-                                <label class="prepare-checkbox">
-                                 @php $p = (int) ($item->prepare ?? 0); $psId = $item->personnage_sort_id ?? null; @endphp
-                                 <input type="checkbox"
-                                     class="prepare-toggle"
-                                     data-personnage-sort-id="{{ $psId }}"
-                                     data-sort-level="{{ $item->niveau ?? 1 }}"
-                                     value="1"
-                                     @if($p === 1) checked @endif
-                                     @if($p === 2) checked disabled data-fixed="1" @endif
-                                     data-sort-id="{{ $item->sort->id ?? '' }}">
-                                    <span class="box"></span>
-                                </label>
+                                        @php $p = (int) ($item->prepare ?? 0); $psId = $item->personnage_sort_id ?? null; $inBook = in_array($p, [1, 2], true); @endphp
+                                        @if($isMagicien)
+                                            <label class="prepare-checkbox" title="Inscrit dans le grimoire">
+                                                <input type="checkbox"
+                                                    class="spellbook-toggle"
+                                                    data-personnage-sort-id="{{ $psId }}"
+                                                    data-sort-level="{{ $item->niveau ?? 1 }}"
+                                                    data-sort-id="{{ $item->sort->id ?? '' }}"
+                                                    value="2"
+                                                    @if($inBook) checked @endif>
+                                                <span class="box"></span>
+                                            </label>
+                                        @endif
+
+                                        <label class="prepare-checkbox">
+                                         <input type="checkbox"
+                                             class="prepare-toggle"
+                                             data-personnage-sort-id="{{ $psId }}"
+                                             data-sort-level="{{ $item->niveau ?? 1 }}"
+                                             value="1"
+                                             @if($isMagicien)
+                                                 @if($p === 1) checked @endif
+                                                 @if(! $inBook) disabled @endif
+                                             @else
+                                                 @if($p === 1) checked @endif
+                                                 @if($p === 2) checked disabled data-fixed="1" @endif
+                                             @endif
+                                             data-sort-id="{{ $item->sort->id ?? '' }}">
+                                            <span class="box"></span>
+                                        </label>
 
                                 <div style="color:#e6b84d; display:flex; gap:0.5rem; align-items:center;">
                                     <span class="spell-hover"
@@ -375,12 +408,51 @@
             }
 
                 const personnageId = '{{ $personnage->id }}';
+                const isMagicien = {{ $isMagicien ? 'true' : 'false' }};
                 const limiteSort = {{ $limiteSort ?? 'null' }};
                 const limiteTour = {{ $limiteTour ?? 'null' }};
 
             let saving = false;
             document.addEventListener('change', function(e) {
                 const el = e.target;
+                // Spellbook toggle (magician only)
+                if (el.classList.contains('spellbook-toggle')) {
+                    if (el.disabled || saving) return;
+                    const psId = el.dataset.personnageSortId;
+                    const sortId = el.dataset.sortId;
+                    const level = parseInt(el.dataset.sortLevel || '0', 10);
+                    // do not show spellbook for cantrips (level 0) — view ensures this
+                    const value = el.checked ? 2 : 0;
+
+                    saving = true;
+                    el.disabled = true;
+                    savePrepare(personnageId, psId, sortId, value)
+                        .then((json) => {
+                            if (json && json.personnage_sort_id) {
+                                // attach id to all related toggles for this sort
+                                document.querySelectorAll('[data-sort-id="' + sortId + '"]').forEach(function(i){ i.dataset.personnageSortId = json.personnage_sort_id; });
+                            }
+
+                            // grimoire coché => préparation possible ; décoché => préparation retirée
+                            let container = el.closest('li') || el.parentElement;
+                            const prepare = container && container.querySelector('.prepare-toggle');
+                            if (prepare) {
+                                prepare.checked = false;
+                                prepare.disabled = value !== 2;
+                            }
+                            el.disabled = false;
+                            saving = false;
+                        })
+                        .catch((err) => {
+                            el.checked = !el.checked;
+                            el.disabled = false;
+                            saving = false;
+                            const msg = err && err.message ? err.message : 'Erreur lors de la sauvegarde';
+                            alert(msg);
+                        });
+                    return;
+                }
+
                 if (!el.classList.contains('prepare-toggle')) return;
                 if (el.disabled || saving) return;
 
@@ -388,6 +460,22 @@
                 const sortId = el.dataset.sortId;
                 const level = parseInt(el.dataset.sortLevel || '0', 10);
                 const isChecked = el.checked ? 1 : 0;
+                let saveValue = isChecked;
+
+                // Magicien : le sort doit être dans le grimoire ; décocher la préparation le laisse dans le grimoire (2)
+                let book = null;
+                if (isMagicien && level > 0) {
+                    const container = el.closest('li') || el.parentElement;
+                    book = container && container.querySelector('.spellbook-toggle');
+                    if (book && !book.checked) {
+                        alert('Ce sort doit être inscrit dans le grimoire pour être préparé.');
+                        el.checked = false;
+                        return;
+                    }
+                    if (book && isChecked === 0) {
+                        saveValue = 2;
+                    }
+                }
 
                 // Client-side quick check: enforce limiteTour for level 0, and combined limiteSort for levels 1-3
                 if (isChecked === 1) {
@@ -421,18 +509,16 @@
                 // Optimistic: disable while saving
                 saving = true;
                 el.disabled = true;
+                if (book) book.disabled = true;
 
-                savePrepare(personnageId, psId, sortId, isChecked)
+                savePrepare(personnageId, psId, sortId, saveValue)
                     .then((json) => {
                                 // If a new record was created, store its id on the element
                                 if (json && json.personnage_sort_id) {
                                     el.dataset.personnageSortId = json.personnage_sort_id;
+                                    if (book) book.dataset.personnageSortId = json.personnage_sort_id;
                                 }
-                                // setup hover handlers for tooltip
-                                document.querySelectorAll('.spell-hover').forEach(function(s){
-                                    s.addEventListener('mouseenter', onSpellHover);
-                                    s.addEventListener('mouseleave', onSpellLeave);
-                                });
+                                if (book) book.disabled = false;
                         el.disabled = false;
                         saving = false;
                     })
@@ -440,31 +526,37 @@
                         // revert on error
                         el.checked = !el.checked;
                         el.disabled = false;
+                        if (book) book.disabled = false;
                         saving = false;
                         const msg = err && err.message ? err.message : 'Erreur lors de la sauvegarde';
                         alert(msg);
                     });
+            });
 
             // Tooltip handlers
             const tooltip = document.getElementById('spell-tooltip');
 
+            function esc(s) {
+                return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            }
+
             function onSpellHover(e) {
                 const t = e.currentTarget || e.target;
-                const name = t.dataset.name || '';
-                const niveau = t.dataset.niveau || '';
-                const ecole = t.dataset.ecole || '';
-                const temps = t.dataset.temps || '';
-                const duree = t.dataset.duree || '';
-                const distance = t.dataset.distance || '';
-                const composants = t.dataset.composants || '';
-                const attSauv = t.dataset.attSauv || '';
-                let desc = t.dataset.description || '';
-                // collapse multiple blank lines and render line breaks for HTML
-                desc = desc.replace(/\n\s*\n/g, '\n').replace(/\n/g, '<br>');
+                const name = esc(t.dataset.name || '');
+                const niveau = (esc(t.dataset.niveau || '') === "0") ? "Tour de magie" : esc(t.dataset.niveau || '');
+                const ecole = esc(t.dataset.ecole || '');
+                const temps = esc(t.dataset.temps || '');
+                const duree = esc(t.dataset.duree || '');
+                const distance = esc(t.dataset.distance || '');
+                let desc = esc(t.dataset.description || '');
+                desc = desc.replace(/\\n+/g, ' ').trim();
+
 
                 tooltip.innerHTML = '<div class="title">' + name + '</div>' +
-                    '<div class="meta">Niveau ' + niveau + (ecole ? ' • ' + ecole : '') + '</div>' +
-                    '<div class="meta">' + (temps ? ('Temps: ' + temps) : '') + (duree ? ' • Durée: ' + duree : '') + (distance ? ' • Distance: ' + distance : '') + '</div>' +
+                    '<div class="meta">Niveau: ' + niveau + (ecole ? ' • ' + ecole : '') + '</div>' +
+                    '<div class="meta">Temps: ' + (temps || '') + '</div>' +
+                    '<div class="meta">Durée: ' + (duree || '') + '</div>' +
+                    '<div class="meta">Distance: ' + (distance || '') + '</div>' +
                     '<div class="desc">' + (desc || '') + '</div>';
 
                 // show tooltip and position it centered under the hovered name
@@ -495,7 +587,6 @@
             document.querySelectorAll('.spell-hover').forEach(function(s){
                 s.addEventListener('mouseenter', onSpellHover);
                 s.addEventListener('mouseleave', onSpellLeave);
-            });
             });
         })();
     </script>

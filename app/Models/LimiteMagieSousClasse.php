@@ -12,5 +12,6 @@ class LimiteMagieSousClasse extends Model
         'id_SousClasse',
         'id_LimiteMagie',
         'Niveau',
+        'AbiliteMagie',
     ];
 }

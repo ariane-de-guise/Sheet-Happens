@@ -108,51 +108,12 @@ class PersonnageSortController extends Controller
         $maxLevel = $available->max('niveau') ?: 3;
         $levels = range(1, max(3, (int) $maxLevel));
 
-        // Calculer les limites de magie : on préfère la sous-classe si elle
-        // définit des limites pour le niveau courant, sinon on prend la
-        // limite de la classe.
-        $limiteTour = null;
-        $limiteSort = null;
-        $slots = null;
-        $niveauPerso = (int) $personnage->niveau;
-        $lm = null;
-
-        if ($personnage->sous_classe_id) {
-            $sousLimite = LimiteMagieSousClasse::query()
-                ->where('id_SousClasse', $personnage->sous_classe_id)
-                ->where('Niveau', '<=', $niveauPerso)
-                ->orderByDesc('Niveau')
-                ->first();
-
-            if ($sousLimite) {
-                $lm = LimiteMagie::find($sousLimite->id_LimiteMagie);
-            }
-        }
-
-        if (! $lm) {
-            $classeLimite = LimiteMagieClasse::query()
-                ->where('id_Classe', $personnage->classe_id)
-                ->where('Niveau', '<=', $niveauPerso)
-                ->orderByDesc('Niveau')
-                ->first();
-
-            if ($classeLimite) {
-                $lm = LimiteMagie::find($classeLimite->id_LimiteMagie);
-            }
-        }
-
-        if ($lm) {
-            $limiteTour = $lm->TourMagie;
-            $limiteSort = $lm->SortConnue;
-            $slots = [
-                'Niveau1' => $lm->Niveau1,
-                'Niveau2' => $lm->Niveau2,
-                'Niveau3' => $lm->Niveau3,
-            ];
-        }
-
-        // expose ability used for spellcasting (may come from subclass limits)
+        // Limites de magie : limite_magie_classes si la classe est magique,
+        // sinon limite_magie_sous_classes si la sous-classe l'est.
         $limitsForView = $this->getLimitsForPersonnage($personnage);
+        $limiteTour = $limitsForView['limiteTour'];
+        $limiteSort = $limitsForView['limiteSort'];
+        $slots = $limitsForView['slots'];
         $abiliteMagie = $limitsForView['abiliteMagie'] ?? null;
         $abiliteSource = $limitsForView['abiliteSource'] ?? null;
 
@@ -176,11 +137,17 @@ class PersonnageSortController extends Controller
             return response()->json(['message' => 'Mauvaise ressource'], 403);
         }
 
-        $value = (int) $request->input('prepare', 0) === 1 ? 1 : 0;
+        $isMagicien = $this->isMagicien($personnage);
+        $value = $this->normalizePrepare($request->input('prepare', 0), $isMagicien);
 
-        // Do not allow changing items prepared by subclass (2)
-        if ((int) $personnageSort->Prepare === 2) {
+        // Do not allow changing items prepared by subclass (2) — for Magicien, 2 = inscrit au grimoire
+        if (! $isMagicien && (int) $personnageSort->Prepare === 2) {
             return response()->json(['message' => 'Ce sort est préparé par la classe et ne peut pas être modifié.'], 403);
+        }
+
+        $niveauSort = (int) ($personnageSort->sort->Niveau ?? 0);
+        if ($isMagicien && $value === 1 && $niveauSort > 0 && (int) $personnageSort->Prepare === 0) {
+            return response()->json(['message' => 'Ce sort doit être inscrit dans le grimoire pour être préparé.'], 400);
         }
 
         // If enabling prepare, check limits with pessimistic lock to avoid races
@@ -260,7 +227,8 @@ class PersonnageSortController extends Controller
     public function storePrepare(Request $request, Personnage $personnage)
     {
         $sortId = (int) $request->input('sort_id');
-        $prepare = (int) $request->input('prepare', 0) === 1 ? 1 : 0;
+        $isMagicien = $this->isMagicien($personnage);
+        $prepare = $this->normalizePrepare($request->input('prepare', 0), $isMagicien);
 
         if (! $sortId) {
             return response()->json(['message' => 'Invalid sort_id'], 400);
@@ -299,6 +267,10 @@ class PersonnageSortController extends Controller
         }
 
         $niveau = (int) ($sort->Niveau ?? 0);
+
+        if ($isMagicien && $prepare === 1 && $niveau > 0 && (! $ps || (int) $ps->Prepare === 0)) {
+            return response()->json(['message' => 'Ce sort doit être inscrit dans le grimoire pour être préparé.'], 400);
+        }
 
         if ($prepare === 1) {
             // use transaction + lock to avoid concurrent inserts exceeding limit
@@ -350,8 +322,8 @@ class PersonnageSortController extends Controller
                 'Prepare' => $prepare,
             ]);
         } else {
-            // protect subclass-prepared
-            if ((int) $ps->Prepare === 2) {
+            // protect subclass-prepared (Magicien: 2 = grimoire, modifiable)
+            if (! $isMagicien && (int) $ps->Prepare === 2) {
                 return response()->json(['message' => 'Ce sort est préparé par la classe et ne peut pas être modifié.'], 403);
             }
 
@@ -362,54 +334,87 @@ class PersonnageSortController extends Controller
         return response()->json(['success' => true, 'personnage_sort_id' => $ps->id, 'prepare' => $ps->Prepare]);
     }
 
+    private function isMagicien(Personnage $personnage): bool
+    {
+        return ($personnage->classe?->nom ?? null) === 'Magicien';
+    }
+
+    /**
+     * 0 = non préparé, 1 = préparé, 2 = inscrit au grimoire (Magicien uniquement).
+     */
+    private function normalizePrepare($input, bool $isMagicien): int
+    {
+        $value = (int) $input;
+
+        if ($value === 1) {
+            return 1;
+        }
+
+        return ($isMagicien && $value === 2) ? 2 : 0;
+    }
+
     private function getLimitsForPersonnage(Personnage $personnage): array
     {
         $limiteTour = null;
         $limiteSort = null;
         $abiliteSource = null;
 
+        $slots = null;
+        $abiliteMagie = null;
+
         $niveauPerso = (int) $personnage->niveau;
 
         $lm = null;
+        $limiteRow = null;
 
-        if ($personnage->sous_classe_id) {
-            $sousLimite = LimiteMagieSousClasse::query()
-                ->where('id_SousClasse', $personnage->sous_classe_id)
-                ->where('Niveau', '<=', $niveauPerso)
-                ->orderByDesc('Niveau')
-                ->first();
+        // 1) La classe est magique : utiliser limite_magie_classes
+        $classeEstMagique = LimiteMagieClasse::query()
+            ->where('id_Classe', $personnage->classe_id)
+            ->exists();
 
-            if ($sousLimite) {
-                $lm = LimiteMagie::find($sousLimite->id_LimiteMagie);
-                $abiliteSource = 'sous_classe';
-            }
-        }
-
-        if (! $lm) {
-            $classeLimite = LimiteMagieClasse::query()
+        if ($classeEstMagique) {
+            $limiteRow = LimiteMagieClasse::query()
                 ->where('id_Classe', $personnage->classe_id)
                 ->where('Niveau', '<=', $niveauPerso)
                 ->orderByDesc('Niveau')
                 ->first();
 
-            if ($classeLimite) {
-                $lm = LimiteMagie::find($classeLimite->id_LimiteMagie);
-                if ($abiliteSource === null) {
-                    $abiliteSource = 'classe';
-                }
+            if ($limiteRow) {
+                $abiliteSource = 'classe';
+            }
+        } elseif ($personnage->sous_classe_id) {
+            // 2) Classe non magique mais sous-classe magique : utiliser limite_magie_sous_classes
+            $limiteRow = LimiteMagieSousClasse::query()
+                ->where('id_SousClasse', $personnage->sous_classe_id)
+                ->where('Niveau', '<=', $niveauPerso)
+                ->orderByDesc('Niveau')
+                ->first();
+
+            if ($limiteRow) {
+                $abiliteSource = 'sous_classe';
             }
         }
 
-        $abiliteMagie = null;
+        if ($limiteRow) {
+            $lm = LimiteMagie::find($limiteRow->id_LimiteMagie);
+            // AbiliteMagie est stockée sur la table de liaison, pas sur limite_magies
+            $abiliteMagie = $limiteRow->AbiliteMagie ?? null;
+        }
+
         if ($lm) {
             $limiteTour = $lm->TourMagie;
             $limiteSort = $lm->SortConnue;
-            $abiliteMagie = $lm->AbiliteMagie ?? null;
+            $slots = [
+                'Niveau1' => $lm->Niveau1,
+                'Niveau2' => $lm->Niveau2,
+                'Niveau3' => $lm->Niveau3,
+            ];
         }
 
         return [
             'limiteTour' => $limiteTour !== null ? (int) $limiteTour : null,
             'limiteSort' => $limiteSort !== null ? (int) $limiteSort : null,
+            'slots' => $slots,
             'abiliteMagie' => $abiliteMagie,
             'abiliteSource' => $abiliteSource,
         ];
