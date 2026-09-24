@@ -480,7 +480,6 @@
                         </span>
                         <div style="display: flex; gap: 0.5rem;">
                             <a href="{{ route('personnages.traits', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
-                            <a href="{{ route('personnages.sorts.index', $personnage) }}" class="btn btn-secondary btn-small">Sorts connus</a>
                         </div>
                     </div>
                 </div>
@@ -527,8 +526,13 @@
                 @endif
                 {{-- Actions : sorts ou attaques selon la classe --}}
                 <div class="sheet-box mb-3">
-                    <div class="sheet-box-title">
-                        Actions
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span class="sheet-box-title" style="margin-bottom: 0;">
+                            Actions
+                        </span>
+                        @if ($aDesSorts)
+                            <a href="{{ route('personnages.sorts.index', $personnage) }}" class="btn btn-secondary btn-small">Sorts connus</a>
+                        @endif
                     </div>
                     @if ($personnage->sousClasse)
                         <div class="text-muted mb-2" style="font-size: 0.8rem;">

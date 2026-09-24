@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Abilite;
 use App\Models\Classe;
 use App\Models\Historique;
+use App\Models\LimiteMagie;
+use App\Models\LimiteMagieClasse;
+use App\Models\LimiteMagieSousClasse;
 use App\Models\ListeCompetence;
 use App\Models\Personnage;
 use App\Models\Race;
@@ -59,6 +62,7 @@ class PersonnageSheetController extends Controller
             'perceptionPassive' => $this->fiche->perceptionPassive($personnage),
             'classeArmure' => $this->fiche->classeArmure($personnage),
             'actions' => $this->fiche->actions($personnage),
+            'aDesSorts' => $this->aDesSorts($personnage),
             'seuilExperience' => $this->monteeNiveau->xpProchainNiveau($personnage),
         ]);
         // Section "Traits" volontairement vide pour l'instant (à faire plus
@@ -454,6 +458,40 @@ class PersonnageSheetController extends Controller
     protected function authorizeOwner(Personnage $personnage): void
     {
         abort_unless($personnage->utilisateur_id === Auth::id(), 403);
+    }
+
+    /**
+     * Même règle que la page des sorts : limites de la classe si elle est
+     * magique, sinon de la sous-classe, au niveau atteint. Vrai seulement si
+     * elles accordent au moins un tour de magie ou un emplacement de sort.
+     */
+    protected function aDesSorts(Personnage $personnage): bool
+    {
+        $niveau = (int) $personnage->niveau;
+
+        if (LimiteMagieClasse::query()->where('id_Classe', $personnage->classe_id)->exists()) {
+            $ligne = LimiteMagieClasse::query()
+                ->where('id_Classe', $personnage->classe_id)
+                ->where('Niveau', '<=', $niveau)
+                ->orderByDesc('Niveau')
+                ->first();
+        } elseif ($personnage->sous_classe_id) {
+            $ligne = LimiteMagieSousClasse::query()
+                ->where('id_SousClasse', $personnage->sous_classe_id)
+                ->where('Niveau', '<=', $niveau)
+                ->orderByDesc('Niveau')
+                ->first();
+        } else {
+            return false;
+        }
+
+        $limite = $ligne ? LimiteMagie::find($ligne->id_LimiteMagie) : null;
+
+        return $limite !== null
+            && ((int) $limite->TourMagie > 0
+                || (int) $limite->Niveau1 > 0
+                || (int) $limite->Niveau2 > 0
+                || (int) $limite->Niveau3 > 0);
     }
 
     protected function getMaxLanguesByLevel(int $niveau): int

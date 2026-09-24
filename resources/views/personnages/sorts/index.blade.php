@@ -6,12 +6,12 @@
         .sorts-page {
             max-width: 880px;
             margin: 0 auto;
-            color: #e6b84d;
+            color: var(--or);
         }
 
         .maquette-header {
-            background: rgba(25,10,50,0.95);
-            border: 1px solid #6b2b8a;
+            background: var(--panneau);
+            border: 1px solid var(--or-bordure);
             padding: 1rem;
             border-radius: 8px;
             margin-bottom: 1rem;
@@ -28,17 +28,17 @@
 
         .slot-box {
             flex: 1;
-            border: 1px dashed rgba(107,43,138,0.6);
+            border: 1px dashed var(--or-bordure);
             padding: 0.75rem;
             text-align: center;
             border-radius: 6px;
-            background: rgba(107,43,138,0.04);
-            color: #f1d484;
+            background: var(--or-halo-faible);
+            color: var(--or-doux);
         }
 
         .cast-bar {
-            background: rgba(25,10,50,0.95);
-            border: 1px solid rgba(107,43,138,0.6);
+            background: var(--panneau);
+            border: 1px solid var(--or-bordure);
             padding: 1rem;
             border-radius: 8px;
             margin-bottom: 1rem;
@@ -56,7 +56,7 @@
             display: flex;
             align-items: center;
             gap: 0.6rem;
-            color: #f1d484;
+            color: var(--or-doux);
             font-weight: 600;
         }
 
@@ -67,17 +67,17 @@
         }
 
         .level-card {
-            background: rgba(25,10,50,0.95);
-            border: 1px solid rgba(107,43,138,0.6);
+            background: var(--panneau);
+            border: 1px solid var(--or-bordure);
             padding: 0.75rem;
             border-radius: 8px;
             min-height: 300px;
-            color: #e6b84d;
+            color: var(--or);
         }
 
         .level-card .slots {
             margin-bottom: 0.75rem;
-            color: #f1d484;
+            color: var(--or-doux);
             font-weight: 700;
         }
 
@@ -103,32 +103,32 @@
             text-align: center;
             font-size: 0.75rem;
             font-weight: 800;
-            color: #f1d484;
+            color: var(--or-doux);
             line-height: 1;
         }
 
         /* Make spell name clearly interactive for hover */
         .spell-hover {
             cursor: pointer;
-            text-decoration: underline dotted rgba(241,212,132,0.35);
+            text-decoration: underline dotted var(--or-ligne-forte);
         }
         .spell-hover:hover {
-            color: #f1d484;
-            text-decoration-color: #f1d484;
+            color: var(--or-doux);
+            text-decoration-color: var(--or-doux);
         }
 
         .spell-detail {
             display: none;
             margin-top: 0.5rem;
-            background: rgba(25,10,50,0.9);
-            border: 1px solid rgba(107,43,138,0.45);
+            background: var(--panneau);
+            border: 1px solid var(--or-bordure);
             padding: 0.6rem;
             border-radius: 6px;
-            color: #e6b84d;
+            color: var(--or);
             font-size: 0.9rem;
         }
 
-        .spell-detail .meta { color: #f1d484; font-weight:700; margin-bottom:0.35rem }
+        .spell-detail .meta { color: var(--or-doux); font-weight:700; margin-bottom:0.35rem }
 
         /* Checkbox styled as yellow square */
         .prepare-checkbox {
@@ -153,14 +153,14 @@
             width: 14px;
             height: 14px;
             border-radius: 3px;
-            background: rgba(241,212,132,0.15);
-            border: 1px solid rgba(241,212,132,0.35);
+            background: var(--or-halo-moyen);
+            border: 1px solid var(--or-bordure);
             display: inline-block;
         }
 
         .prepare-checkbox input[type="checkbox"]:checked + .box {
-            background: #f1d484;
-            border-color: #f1d484;
+            background: var(--or-vif);
+            border-color: var(--or-vif);
         }
 
         .prepare-checkbox input[type="checkbox"]:disabled + .box {
@@ -174,28 +174,12 @@
             margin-top: 1rem;
             gap: 1rem;
         }
-
-        .btn-yellow {
-            background: #f1d484;
-            color: #1a0533;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            border: none;
-        }
-
-        .btn-purple {
-            background: #6b2b8a;
-            color: #f1d484;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            border: none;
-        }
     </style>
 @endpush
 
 @section('content')
     <div class="sorts-page">
-        <h2 style="text-align:center; margin-bottom: 0.5rem; color: #e6b84d;">Sorts</h2>
+        <h2 style="text-align:center; margin-bottom: 0.5rem; color: var(--or);">Sorts</h2>
 
         <div class="maquette-header">
             @php
@@ -244,7 +228,7 @@
                 <div class="slot-box">Sauvegarde sort: <strong>{{ $ddSauvegarde }}</strong></div>
                 <div class="slot-box">Modificateur sort: <strong>{{ $modificateurSort >= 0 ? '+' . $modificateurSort : $modificateurSort }}</strong></div>
             </div>
-            <div style="font-weight:700; color:#f1d484;">
+            <div style="font-weight:700; color:var(--or-doux);">
                 Limite tour de magie : {{ $limiteTour ?? '—' }}
                 <br>
                 Limite sort : {{ $limiteSortAffichee }}
@@ -254,7 +238,7 @@
         </div>
 
         <div class="cast-bar">
-            <div style="text-align:center; font-weight:700; margin-bottom:0.6rem; color:#e6b84d">Tour magie</div>
+            <div style="text-align:center; font-weight:700; margin-bottom:0.6rem; color:var(--or)">Tour magie</div>
             <div class="cast-grid">
                 @php $cantrips = $level0 ?? collect(); @endphp
                 @if($cantrips->isEmpty())
@@ -349,7 +333,7 @@
                                             <span class="box"></span>
                                         </label>
 
-                                <div style="color:#e6b84d; display:flex; gap:0.5rem; align-items:center;">
+                                <div style="color:var(--or); display:flex; gap:0.5rem; align-items:center;">
                                     <span class="spell-hover"
                                           data-name="{{ $item->sort->Nom ?? 'Sort' }}"
                                           data-niveau="{{ $item->sort->Niveau ?? '' }}"
@@ -372,7 +356,7 @@
         </div>
 
         <div class="bottom-actions">
-            <a href="{{ route('personnages.show', $personnage) }}" class="btn-yellow">Retour</a>
+            <a href="{{ route('personnages.show', $personnage) }}" class="btn btn-secondary btn-small">← Retour à la fiche</a>
         </div>
     </div>
 @endsection
@@ -594,9 +578,9 @@
         /* Tooltip styled like other page boxes (maquette-header / level-card) */
         .spell-tooltip {
             position: absolute;
-            background: rgba(25,10,50,0.95);
-            border: 1px solid rgba(107,43,138,0.6);
-            color: #e6b84d;
+            background: var(--panneau-opaque);
+            border: 1px solid var(--or-bordure);
+            color: var(--or);
             padding: 0.75rem;
             border-radius: 8px;
             max-width: 360px;
@@ -618,17 +602,17 @@
         .spell-tooltip .title {
             font-weight: 800;
             margin-bottom: 0.35rem;
-            color: #e6b84d;
+            color: var(--or);
         }
 
         .spell-tooltip .meta {
             font-size: 0.85rem;
-            color: #f1d484;
+            color: var(--or-doux);
             margin-bottom: 0.5rem;
         }
 
         .spell-tooltip .desc {
-            color: #e6b84d;
+            color: var(--or);
             max-height: none; /* remove scroll */
             overflow: visible;
             white-space: normal;
