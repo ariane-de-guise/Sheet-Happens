@@ -30,6 +30,12 @@ class DatabaseSeeder extends Seeder
             RaceTraitSeeder::class,
             SousRaceTraitSeeder::class,
             ObjetsSeeder::class,
+            DegatSeeder::class,
+            SortSeeder::class,
+            ClasseSortSeeder::class,
+            SousclasseSortSeeder::class,
+            LimiteMagieSeeder::class,
+            PersonnageSortSeeder::class,
         ]);
     }
 }

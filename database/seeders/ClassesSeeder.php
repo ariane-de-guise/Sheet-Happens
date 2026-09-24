@@ -90,6 +90,7 @@ class ClassesSeeder extends Seeder
                 'sous_classes' => [
                     ['nom' => 'Champion', 'description' => 'Un combattant direct et puissant. Il se concentre sur la force brute et l’optimisation des coups critiques, ce qui lui permet de réussir des attaques dévastatrices plus souvent que les autres.'],
                     ['nom' => 'Maître de guerre', 'description' => 'Un tacticien hors pair. Il utilise des « dés de supériorité » pour exécuter des manœuvres spéciales afin de perturber ses ennemis, contrôler le terrain ou protéger ses alliés'],
+                    ['nom' => 'Chevalier Eldritch', 'description' => 'la maîtrise martiale commune à tous les combattants avec une étude attentive de la magie, ce combattants utilise des techniques magiques similaires à celles pratiquées par les sorciers.'],
                 ],
             ],
         ];
