@@ -134,95 +134,89 @@
 }
 
 [data-theme="light"] {
-    /* Palette claire « mauve pâque », reprise de la maquette
-       maquette-mauve-paque.pdf (alias mauve_jaune_paque.pdf) : un
-       mauve/lavande moyen (et non un fond blanc) avec les mêmes
-       accents dorés que le thème sombre. Les teintes ci-dessous
-       sont calées sur les couleurs exactes de la maquette (fond
-       #a397ce, panneaux #907dd4, encarts #7962ce, or #edbb47,
-       bordures #d3ae76), légèrement assombries/ajustées pour
-       conserver un contraste de texte suffisant. */
-    --fond: #8f7fc4;
-    --surface: #7c68c9;
-    --champ-fond: #6a56b8;
-    --bordure: #d9b876;
+    /* Palette claire reprise des maquettes Figma : fond beige,
+       boutons/pastilles mauves, accents dorés, texte foncé. */
+    --fond: #e8dcc4;
+    --surface: #e8dcc4;
+    --champ-fond: #b8aedd;
+    --bordure: #f0c04a;
 
-    --primaire: #6b46c1;
-    --primaire-survol: #7c5ce0;
-    --primaire-halo: rgba(107, 70, 193, 0.25);
-    --primaire-halo-faible: rgba(107, 70, 193, 0.12);
+    --primaire: #9682d6;
+    --primaire-survol: #8571ce;
+    --primaire-halo: rgba(150, 130, 214, 0.3);
+    --primaire-halo-faible: rgba(150, 130, 214, 0.15);
 
-    --secondaire: #f59e0b;
-    --secondaire-survol: #fbbf24;
-    --secondaire-halo: rgba(245, 158, 11, 0.3);
-    --bouton-texte: #2a1a4d;
+    --secondaire: #f0c04a;
+    --secondaire-survol: #f5cd6f;
+    --secondaire-halo: rgba(240, 192, 74, 0.35);
+    --bouton-texte: #2b2540;
 
-    --texte: #f7f4ff;
-    --texte-secondaire: #d9d0f0;
-    --texte-espace-reserve: #b4a6dd;
-    --texte-inverse: #3d2a6b;
-    --texte-neutre: #cdd8cb;
-    --texte-positif: #7be0a0;
-    --texte-negatif: #ff9a9a;
+    --texte: #2b2540;
+    --texte-secondaire: #4a4260;
+    --texte-espace-reserve: #6f6785;
+    --texte-inverse: #2b2540;
+    --texte-neutre: #5a5a5a;
+    --texte-positif: #1f7a45;
+    --texte-negatif: #b3261e;
 
-    --or: #f0c25c;
-    --or-doux: #f3d9a0;
-    --or-bordure: #d9b876;
-    --or-vif: #edbb47;
-    --bordure-option: #a996d6;
-    --niveau-max-fond: #a99bd9;
-    --niveau-max-texte: #3d2a6b;
+    --or: #8a6410;
+    --or-doux: #8a6410;
+    --or-bordure: #f0c04a;
+    --or-vif: #f0c04a;
+    --bordure-option: #9682d6;
+    --niveau-max-fond: #b8aedd;
+    --niveau-max-texte: #2b2540;
     --or-vif-clair: #f5cd6f;
 
-    --or-halo-faible: rgba(237, 187, 71, 0.12);
-    --or-halo-moyen: rgba(237, 187, 71, 0.2);
-    --or-halo-fort: rgba(237, 187, 71, 0.3);
-    --or-halo-actif: rgba(237, 187, 71, 0.4);
-    --or-halo-actif-opaque: #d4b483;
-    --or-ligne-faible: rgba(217, 184, 118, 0.3);
-    --or-ligne-moyenne: rgba(217, 184, 118, 0.4);
-    --or-ligne-forte: rgba(217, 184, 118, 0.45);
-    --point-inactif: rgba(217, 208, 240, 0.3);
+    --or-halo-faible: rgba(240, 192, 74, 0.12);
+    --or-halo-moyen: rgba(240, 192, 74, 0.2);
+    --or-halo-fort: rgba(240, 192, 74, 0.3);
+    --or-halo-actif: rgba(240, 192, 74, 0.4);
+    --or-halo-actif-opaque: #f0c04a;
+    --or-ligne-faible: rgba(138, 100, 16, 0.25);
+    --or-ligne-moyenne: rgba(138, 100, 16, 0.35);
+    --or-ligne-forte: rgba(138, 100, 16, 0.45);
+    --point-inactif: rgba(150, 130, 214, 0.3);
 
-    --panneau: #7c68c9;
-    --panneau-opaque: #7c68c9;
-    --panneau-survol: #8b78d6;
-    --panneau-vif: #6a56b8;
-    --panneau-vif-survol: #7a63c9;
-    --panneau-secondaire: #8f7fc4;
-    --panneau-secondaire-survol: #9a8bd0;
-    --panneau-carte: #7c68c9;
-    --panneau-profil: #8571ce;
+    --panneau: #efe5d0;
+    --panneau-opaque: #efe5d0;
+    --panneau-survol: #f4ecdb;
+    --panneau-vif: #b8aedd;
+    --panneau-vif-survol: #a89bd4;
+    --panneau-secondaire: #b8aedd;
+    --panneau-secondaire-survol: #c5bce4;
+    --panneau-carte: #efe5d0;
+    --panneau-profil: #efe5d0;
 
     --ombre-sombre: rgba(41, 23, 82, 0.35);
     --ombre-modal: rgba(30, 15, 55, 0.55);
 
-    --danger-fond: #7a2e3a;
-    --danger-texte: #ffd9df;
+    --danger-fond: #f6d5d5;
+    --danger-texte: #7a1f1f;
     --danger-bordure: #c85a6a;
-    --danger-fond-survol: #96414f;
-    --danger-texte-survol: #ffffff;
+    --danger-fond-survol: #efbcbc;
+    --danger-texte-survol: #5c1414;
 
     --modal-overlay-fond: rgba(30, 15, 55, 0.6);
     --avatar-overlay-fond: rgba(20, 5, 40, 0.75);
 
-    --alerte-erreur-fond: #5c2340;
-    --alerte-erreur-bordure: #e2668f;
-    --alerte-erreur-texte: #ffd6e4;
-    --alerte-succes-fond: #234a3a;
-    --alerte-succes-bordure: #4fd18a;
-    --alerte-succes-texte: #d6f7e6;
+    --alerte-erreur-fond: #f6d5d5;
+    --alerte-erreur-bordure: #c85a6a;
+    --alerte-erreur-texte: #7a1f1f;
+    --alerte-succes-fond: #d4ecdc;
+    --alerte-succes-bordure: #3f9d68;
+    --alerte-succes-texte: #14532d;
 
-    --badge-fond: #7c68c9;
-    --badge-bordure: #d9b876;
-    --badge-texte: #f7f4ff;
-    --badge-email: #ece7fb;
-    --badge-lien: #ffd77a;
-    --badge-logout-bordure: #b9a3e0;
-    --badge-logout-texte: #e5defa;
-    --badge-dot-online: #6be08f;
-    --badge-dot-online-halo: rgba(107, 224, 143, 0.5);
-    --badge-dot-offline: #b9a3e0;
+    --badge-fond: #b8aedd;
+    --badge-bordure: #f0c04a;
+    --badge-texte: #2b2540;
+    --badge-email: #4a4260;
+    --badge-lien: #8a6410;
+    --badge-logout-bordure: #9682d6;
+    --badge-logout-texte: #2b2540;
+    --badge-dot-online: #3f9d68;
+    --badge-dot-online-halo: rgba(63, 157, 104, 0.4);
+    --badge-dot-offline: #9682d6;
     --badge-ombre: rgba(41, 23, 82, 0.3);
     --badge-danger: #ef4444;
     --badge-danger-texte: #ffffff;
