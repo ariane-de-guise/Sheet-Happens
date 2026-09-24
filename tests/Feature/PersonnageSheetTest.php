@@ -321,6 +321,51 @@ class PersonnageSheetTest extends TestCase
         });
     }
 
+    public function test_le_pdf_inclut_l_image_par_defaut_si_la_photo_est_introuvable(): void
+    {
+        Pdf::fake();
+        Storage::fake('public');
+
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'photo' => 'personnages/photo-introuvable.jpg',
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get(route('personnage.telecharger', $personnage))
+            ->assertOk();
+
+        Pdf::assertRespondedWithPdf(function ($pdf) {
+            return $pdf->viewData['photoDataUri'] === 'data:image/png;base64,'.base64_encode(
+                file_get_contents(public_path('images/logo_rmb.png')),
+            );
+        });
+    }
+
+    public function test_photo_data_uri_retourne_null_si_le_logo_par_defaut_est_indisponible(): void
+    {
+        $cheminLogo = public_path('images/logo_rmb.png');
+        $cheminSauvegarde = $cheminLogo.'.test-backup';
+
+        $this->assertFileExists($cheminLogo);
+        $this->assertTrue(rename($cheminLogo, $cheminSauvegarde));
+
+        try {
+            $methode = new ReflectionMethod(PersonnageSheetController::class, 'photoDataUri');
+            $methode->setAccessible(true);
+
+            $resultat = $methode->invoke(
+                app(PersonnageSheetController::class),
+                null,
+            );
+
+            $this->assertNull($resultat);
+        } finally {
+            rename($cheminSauvegarde, $cheminLogo);
+        }
+    }
+
     public function test_le_pdf_inclut_le_nombre_d_experience_et_son_seuil(): void
     {
         Pdf::fake();
