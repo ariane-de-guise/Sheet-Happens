@@ -78,7 +78,7 @@
             const remaining = totalBudget - used;
             const display = document.getElementById('pointsRestants');
             display.textContent = remaining;
-            display.style.color = remaining < 0 ? '#e05555' : '#e6b84d';
+            display.style.color = remaining < 0 ? 'var(--texte-negatif)' : 'var(--or)';
             document.getElementById('btnSuivant').disabled = remaining !== 0;
         }
 

@@ -30,8 +30,8 @@
 }
 
 .stat-block {
-    background: rgba(25, 10, 50, 0.9);
-    border: 2px solid #c49a3c;
+    background: var(--panneau);
+    border: 2px solid var(--or-bordure);
     border-radius: 12px;
     padding: 0.75rem;
     text-align: center;
@@ -40,7 +40,7 @@
 
 .stat-block-label {
     font-size: 0.7rem;
-    color: #b8a9c9;
+    color: var(--texte-secondaire);
     text-transform: uppercase;
     margin-bottom: 0.25rem;
 }
@@ -48,24 +48,24 @@
 .stat-block-value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #e6b84d;
+    color: var(--or);
 }
 
 .stat-block input {
     width: 50px;
     text-align: center;
-    background: rgba(60, 15, 90, 0.8);
-    border: 1px solid #c49a3c;
+    background: var(--panneau-vif);
+    border: 1px solid var(--or-bordure);
     border-radius: 6px;
-    color: #e6b84d;
+    color: var(--or);
     font-size: 1.3rem;
     font-weight: 700;
     padding: 0.2rem;
 }
 
 .sheet-section {
-    background: rgba(25, 10, 50, 0.9);
-    border: 1px solid #c49a3c;
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
     border-radius: 12px;
     padding: 1.25rem;
     margin-bottom: 1rem;
@@ -74,10 +74,10 @@
 .sheet-section-title {
     font-size: 1rem;
     font-weight: 600;
-    color: #e6b84d;
+    color: var(--or);
     margin-bottom: 0.75rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(196, 154, 60, 0.3);
+    border-bottom: 1px solid var(--or-ligne-moyenne);
 }
 
 .sheet-grid-2 {
@@ -105,8 +105,8 @@
 }
 
 .ability-box {
-    background: rgba(15, 5, 30, 0.9);
-    border: 2px solid #c49a3c;
+    background: var(--panneau-carte);
+    border: 2px solid var(--or-bordure);
     border-radius: 10px;
     padding: 0.75rem 0.5rem;
     text-align: center;
@@ -114,7 +114,7 @@
 
 .ability-name {
     font-size: 0.75rem;
-    color: #b8a9c9;
+    color: var(--texte-secondaire);
     text-transform: uppercase;
     margin-bottom: 0.4rem;
 }
@@ -122,10 +122,10 @@
 .ability-input {
     width: 50px;
     text-align: center;
-    background: rgba(60, 15, 90, 0.8);
-    border: 1px solid #c49a3c;
+    background: var(--panneau-vif);
+    border: 1px solid var(--or-bordure);
     border-radius: 6px;
-    color: #e6b84d;
+    color: var(--or);
     font-size: 1.4rem;
     font-weight: 700;
     padding: 0.3rem;
@@ -134,39 +134,39 @@
 
 .ability-mod {
     font-size: 0.9rem;
-    color: #e6b84d;
+    color: var(--or);
     font-weight: 600;
 }
 
 .form-input-small {
     width: 100%;
     padding: 0.4rem 0.6rem;
-    background: rgba(25, 10, 50, 0.9);
-    border: 1px solid #c49a3c;
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
     border-radius: 6px;
-    color: #e8d5b5;
+    color: var(--or-doux);
     font-size: 0.85rem;
     outline: none;
 }
 
 .form-input-small:focus {
-    border-color: #e6b84d;
+    border-color: var(--or);
 }
 
 .form-select-small {
     width: 100%;
     padding: 0.4rem 0.6rem;
-    background: rgba(25, 10, 50, 0.9);
-    border: 1px solid #c49a3c;
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
     border-radius: 6px;
-    color: #e8d5b5;
+    color: var(--or-doux);
     font-size: 0.85rem;
     outline: none;
     cursor: pointer;
 }
 
 .form-select-small:focus {
-    border-color: #e6b84d;
+    border-color: var(--or);
 }
 
 .checkbox-grid {
@@ -180,28 +180,28 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.3rem 0.5rem;
-    background: rgba(15, 5, 30, 0.6);
+    background: var(--panneau-carte);
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.8rem;
-    color: #e8d5b5;
+    color: var(--or-doux);
 }
 
 .checkbox-item:hover {
-    background: rgba(40, 15, 70, 0.8);
+    background: var(--panneau-survol);
 }
 
 .checkbox-item input[type="checkbox"] {
-    accent-color: #e6b84d;
+    accent-color: var(--or);
 }
 
 .textarea-small {
     width: 100%;
     padding: 0.5rem 0.7rem;
-    background: rgba(25, 10, 50, 0.9);
-    border: 1px solid #c49a3c;
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
     border-radius: 8px;
-    color: #e8d5b5;
+    color: var(--or-doux);
     font-size: 0.85rem;
     outline: none;
     resize: vertical;
@@ -209,7 +209,7 @@
 }
 
 .textarea-small:focus {
-    border-color: #e6b84d;
+    border-color: var(--or);
 }
 
 @media (max-width: 900px) {

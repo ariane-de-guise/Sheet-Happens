@@ -35,7 +35,7 @@
         </div>
 
         <div class="stats-side">
-            <div class="label mb-1" style="color:#e6b84d;">Valeurs disponibles</div>
+            <div class="label mb-1" style="color:var(--or);">Valeurs disponibles</div>
             <div class="value-pool" id="valuePool"
                  ondragover="onPoolDragOver(event)"
                  ondragleave="onPoolDragLeave(event)"

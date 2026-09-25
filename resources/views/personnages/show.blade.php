@@ -20,8 +20,8 @@
         }
 
         .sheet-box {
-            background: rgba(25, 10, 50, 0.9);
-            border: 1px solid #c49a3c;
+            background: var(--panneau);
+            border: 1px solid var(--or-bordure);
             border-radius: 12px;
             padding: 1rem;
         }
@@ -29,7 +29,7 @@
         .sheet-box-title {
             font-size: 0.85rem;
             font-weight: 600;
-            color: #e6b84d;
+            color: var(--or);
             margin-bottom: 0.5rem;
         }
 
@@ -38,7 +38,7 @@
             justify-content: space-between;
             gap: 0.75rem;
             font-size: 0.8rem;
-            color: #b8a9c9;
+            color: var(--texte-secondaire);
             padding: 0.2rem 0;
         }
 
@@ -61,16 +61,16 @@
             height: 8px;
             border-radius: 50%;
             margin-right: 0.4rem;
-            background: rgba(184, 169, 201, 0.25);
+            background: var(--point-inactif);
             vertical-align: middle;
         }
 
         .sheet-row .maitrise-dot.actif {
-            background: #e6b84d;
+            background: var(--or-vif);
         }
 
         .sheet-row .valeur {
-            color: #e8d5b5;
+            color: var(--or-doux);
             font-weight: 600;
             flex: 1;
             min-width: 0;
@@ -84,8 +84,8 @@
             height: 120px;
             border-radius: 50%;
             overflow: hidden;
-            background: rgba(15, 5, 30, 0.9);
-            border: 2px solid #c49a3c;
+            background: var(--panneau-carte);
+            border: 2px solid var(--or-bordure);
             position: relative;
         }
 
@@ -112,8 +112,8 @@
         .avatar-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(20, 5, 40, 0.7);
-            color: #e6b84d;
+            background: var(--avatar-overlay-fond);
+            color: var(--or);
             font-size: 0.7rem;
             font-weight: 600;
             display: flex;
@@ -135,13 +135,13 @@
             width: 45px;
             height: 45px;
             border-radius: 50%;
-            background: #1a0533;
-            border: 2px solid #e6b84d;
+            background: var(--texte-inverse);
+            border: 2px solid var(--or);
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            color: #e6b84d;
+            color: var(--or);
             font-size: 0.65rem;
             font-weight: 700;
             line-height: 1.1;
@@ -155,16 +155,17 @@
             <div class="text-gold mb-3" style="font-size: 1.1rem;">
                 Sheet Happens
             </div>
-            <div style="border-top: 1px solid #c49a3c; padding-top: 1rem;">
+            <div style="border-top: 1px solid var(--or-bordure); padding-top: 1rem;">
                 <a href="{{ route('personnages.index') }}" class="text-muted"
-                    style="text-decoration: none; font-size: 0.85rem;">
+                   style="text-decoration: none; font-size: 0.85rem;">
                     ← Retour à la sélection de personnages
                 </a>
             </div>
         </div>
+
         <div>
             <div class="card" style="height: fit-content;">
-                <!-- Informations principales du personnage -->
+
                 <div style="display: flex; gap: 2rem; align-items: flex-start; margin-bottom: 2rem;">
                     <!-- Avatar, CA et Niveau -->
                     <div style="position: relative;">
@@ -182,18 +183,28 @@
 
                         <div class="badge-ca">CA<br>{{ $classeArmure }}</div>
 
-                        <div style="position: absolute; bottom: -5px; right: -5px; width: 45px; height: 45px; border-radius: 50%; background: #e6b84d; display: flex; align-items: center; justify-content: center; text-align: center; color: #1a0533; font-size: 0.7rem; font-weight: 600;">
+                        <div
+                            style="
+                           position: absolute;
+                           bottom: -5px;
+                           right: -5px;
+                           width: 45px;
+                           height: 45px;
+                           border-radius: 50%;
+                           background: var(--or-vif);
+                           display: flex;
+                           align-items: center;
+                           justify-content: center;
+                           text-align: center;
+                           color: var(--texte-inverse);
+                           font-size: 0.7rem;
+                           font-weight: 600;
+                       ">
                             Niveau<br>{{ $personnage->niveau }}
                         </div>
                     </div>
-                    <div
-                        style="
-                       flex: 1;
-                       background: rgba(25, 10, 50, 0.9);
-                       border: 1px solid #c49a3c;
-                       border-radius: 12px;
-                       padding: 1.25rem;
-                   ">
+
+                    <div style="flex: 1; background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1.25rem;">
                         <div
                             style="
                            display: flex;
@@ -206,29 +217,19 @@
                                     style="
                                    font-size: 1.3rem;
                                    font-weight: 700;
-                                   color: #e6b84d;
+                                   color: var(--or);
                                    margin-bottom: 0.5rem;
                                ">
                                     {{ $personnage->nom }}
                                 </div>
-                                <div
-                                    style="
-                                   font-size: 0.9rem;
-                                   color: #b8a9c9;
-                                   margin-bottom: 0.25rem;
-                               ">
+                                <div style="font-size: 0.9rem; color: var(--texte-secondaire); margin-bottom: 0.25rem;">
                                     {{ $personnage->classe->nom }} - {{ $personnage->race->nom }}
                                     @if ($personnage->sousRace)
                                         {{ $personnage->sousRace->nom }}
                                     @endif
                                 </div>
                                 @if ($personnage->alignement)
-                                    <div
-                                        style="
-                                       font-size: 0.9rem;
-                                       color: #b8a9c9;
-                                       margin-bottom: 0.75rem;
-                                   ">
+                                    <div style="font-size: 0.9rem; color: var(--texte-secondaire); margin-bottom: 0.75rem;">
                                         {{ $personnage->alignement }}
                                     </div>
                                 @endif
@@ -241,19 +242,41 @@
                                align-items: flex-end;
                                gap: 0.5rem;
                            ">
+                                <!-- Montée de niveau -->
+                                @if ($personnage->niveau < 5)
+                                    <a href="{{ route('personnages.montee-niveau', $personnage) }}" class="btn btn-small"
+                                       style="
+                                           background: var(--or-vif);
+                                           color: var(--texte-inverse);
+                                           font-weight: 800;
+                                           text-align: center;
+                                           text-decoration: none;
+                                       ">
+                                        ✦ Monter de niveau
+                                    </a>
+                                @else
+                                    <span class="btn btn-small"
+                                          style="
+                                           background: var(--niveau-max-fond);
+                                           color: var(--niveau-max-texte);
+                                           cursor: default;
+                                       ">
+                                        Niveau maximum
+                                    </span>
+                                @endif
                                 <!-- Modifier -->
                                 <button type="button" class="btn btn-secondary btn-small" style="text-align: center;"
-                                    onclick="window.location.href='{{ route('personnages.edit', $personnage) }}'">
+                                        onclick="window.location.href='{{ route('personnages.edit', $personnage) }}'">
                                     Modifier
                                 </button>
                                 <!-- Supprimer -->
                                 <form id="form-supprimer-personnage"
-                                    action="{{ route('personnages.destroy', $personnage) }}" method="POST"
-                                    style="margin: 0;">
+                                      action="{{ route('personnages.destroy', $personnage) }}" method="POST"
+                                      style="margin: 0;">
                                     @csrf
                                     @method('DELETE')
                                     <button type="button" class="btn btn-danger btn-small"
-                                        onclick="ouvrirModalSuppression(
+                                            onclick="ouvrirModalSuppression(
                                            'form-supprimer-personnage',
                                            '{{ addslashes($personnage->nom) }}'
                                        )">
@@ -262,11 +285,12 @@
                                 </form>
                             </div>
                         </div>
+
                         <!-- Expérience -->
                         <div
                             style="
                            font-size: 0.75rem;
-                           color: #b8a9c9;
+                           color: var(--texte-secondaire);
                            display: flex;
                            justify-content: space-between;
                            margin-top: 0.5rem;
@@ -283,7 +307,7 @@
                         <div
                             style="
                            height: 6px;
-                           background: rgba(25, 10, 50, 0.9);
+                           background: var(--panneau);
                            border-radius: 3px;
                            margin-top: 0.25rem;
                            overflow: hidden;
@@ -292,31 +316,31 @@
                                 style="
                                width: {{ $seuilExperience ? min(100, (int) floor($personnage->experience / $seuilExperience * 100)) : 100 }}%;
                                height: 100%;
-                               background: #e6b84d;
+                               background: var(--or-vif);
                                border-radius: 3px;
                            ">
                             </div>
                         </div>
                         @if ($seuilExperience !== null)
                             <form action="{{ route('personnages.experience.ajouter', $personnage) }}" method="POST"
-                                style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+                                  style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
                                 @csrf
                                 <input type="number" name="experience" min="1" max="1000000" required
-                                    placeholder="Points d'XP"
-                                    style="
+                                       placeholder="Points d'XP"
+                                       style="
                                        flex: 1;
                                        min-width: 0;
-                                       background: rgba(15, 5, 30, 0.9);
-                                       border: 1px solid #c49a3c;
+                                       background: var(--panneau-carte);
+                                       border: 1px solid var(--or-bordure);
                                        border-radius: 6px;
-                                       color: #e8d5b5;
+                                       color: var(--or-doux);
                                        padding: 0.3rem 0.5rem;
                                        font-size: 0.8rem;
                                    ">
                                 <button type="submit" class="btn btn-small"
-                                    style="
-                                       background: #e6b84d;
-                                       color: #1a0533;
+                                        style="
+                                       background: var(--or-vif);
+                                       color: var(--texte-inverse);
                                        font-weight: 800;
                                        text-align: center;
                                        white-space: nowrap;
@@ -325,9 +349,9 @@
                                 </button>
                             </form>
                             @error('experience')
-                                <div style="color: #e07a7a; font-size: 0.75rem; margin-top: 0.25rem;">
-                                    {{ $message }}
-                                </div>
+                            <div style="color: var(--texte-negatif); font-size: 0.75rem; margin-top: 0.25rem;">
+                                {{ $message }}
+                            </div>
                             @enderror
                         @endif
                     </div>
@@ -419,8 +443,21 @@
                         @endforeach
                     </div>
 
-                    <div style="border-top: 1px solid rgba(196, 154, 60, 0.35); margin-top: 0.75rem; padding-top: 0.75rem;">
-                        <div style="font-size: 0.8rem; font-weight: 600; color: #e6b84d; margin-bottom: 0.35rem;">Langues</div>
+                    <div
+                        style="
+                       border-top: 1px solid var(--or-ligne-forte);
+                       margin-top: 0.75rem;
+                       padding-top: 0.75rem;
+                   ">
+                        <div
+                            style="
+                           font-size: 0.8rem;
+                           font-weight: 600;
+                           color: var(--or);
+                           margin-bottom: 0.35rem;
+                       ">
+                            Langues
+                        </div>
                         <div class="sheet-row">
                             <span>Langues</span>
                             <span class="valeur">
@@ -443,7 +480,6 @@
                         </span>
                         <div style="display: flex; gap: 0.5rem;">
                             <a href="{{ route('personnages.traits', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
-                            <a href="{{ route('personnages.sorts.index', $personnage) }}" class="btn btn-secondary btn-small">Sorts connus</a>
                         </div>
                     </div>
                 </div>
@@ -490,8 +526,13 @@
                 @endif
                 {{-- Actions : sorts ou attaques selon la classe --}}
                 <div class="sheet-box mb-3">
-                    <div class="sheet-box-title">
-                        Actions
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span class="sheet-box-title" style="margin-bottom: 0;">
+                            Actions
+                        </span>
+                        @if ($aDesSorts)
+                            <a href="{{ route('personnages.sorts.index', $personnage) }}" class="btn btn-secondary btn-small">Sorts connus</a>
+                        @endif
                     </div>
                     @if ($personnage->sousClasse)
                         <div class="text-muted mb-2" style="font-size: 0.8rem;">
@@ -549,8 +590,8 @@
                 {{-- Historique & Contexte --}}
                 <div
                     style="
-                   background: rgba(25, 10, 50, 0.9);
-                   border: 1px solid #c49a3c;
+                   background: var(--panneau);
+                   border: 1px solid var(--or-bordure);
                    border-radius: 12px;
                    padding: 1rem;
                    margin-bottom: 1rem;
@@ -559,37 +600,37 @@
                         style="
                        font-size: 0.85rem;
                        font-weight: 600;
-                       color: #e6b84d;
+                       color: var(--or);
                        margin-bottom: 0.5rem;
                    ">
                         Historique &amp; Contexte
                     </div>
                     @if ($personnage->historique)
-                        <div style="font-size: 0.8rem; color: #b8a9c9;">
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
                             <strong>Historique:</strong>
                             {{ $personnage->historique->nom }}
                         </div>
                     @endif
                     @if ($personnage->ideal)
-                        <div style="font-size: 0.8rem; color: #b8a9c9;">
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
                             <strong>Idéal:</strong>
                             {{ $personnage->ideal->valeur }}
                         </div>
                     @endif
                     @if ($personnage->defaut)
-                        <div style="font-size: 0.8rem; color: #b8a9c9;">
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
                             <strong>Défaut:</strong>
                             {{ $personnage->defaut->valeur }}
                         </div>
                     @endif
                     @if ($personnage->attachement)
-                        <div style="font-size: 0.8rem; color: #b8a9c9;">
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
                             <strong>Attachement:</strong>
                             {{ $personnage->attachement->valeur }}
                         </div>
                     @endif
                     @if ($personnage->personnalite)
-                        <div style="font-size: 0.8rem; color: #b8a9c9;">
+                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
                             <strong>Personnalité:</strong>
                             {{ $personnage->personnalite->valeur }}
                         </div>
