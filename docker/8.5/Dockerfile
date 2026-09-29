@@ -86,7 +86,7 @@ RUN if [ -n "$PHP_EXTENSIONS" ]; then \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*; \
 fi
 
-RUN npx pupeteer browsers install chrome-headless-shell
+RUN npx -y puppeteer@25.11.0 browsers install chrome-headless-shell
 
 RUN setcap "cap_net_bind_service=+ep" /usr/bin/php8.5
 
