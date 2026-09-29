@@ -1,10 +1,10 @@
-@if(session('success'))
-    <div id="popup-succes" class="modal-overlay active">
-        <div class="modal-box">
+@if(session('succes'))
+    <div id="popup-succes" class="modale-voile active">
+        <div class="modale-boite">
             <h2>Succès</h2>
-            <p>{{ session('success') }}</p>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-primary btn-small" style="flex: 1;" onclick="fermerPopupSucces()">OK</button>
+            <p>{{ session('succes') }}</p>
+            <div class="modale-actions">
+                <button type="button" class="bouton bouton-principal bouton-petit" style="flex: 1;" onclick="fermerPopupSucces()">OK</button>
             </div>
         </div>
     </div>

@@ -27,7 +27,6 @@ class SousRace extends Model
 
     public function traits(): BelongsToMany
     {
-        return $this->belongsToMany(TraitModel::class, 'sous_race_trait', 'sous_race_id', 'trait_id')
-            ->withTimestamps();
+        return $this->belongsToMany(TraitRacial::class, 'sous_race_trait', 'sous_race_id', 'trait_id');
     }
 }

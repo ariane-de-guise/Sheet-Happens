@@ -33,7 +33,6 @@ class Race extends Model
 
     public function traits(): BelongsToMany
     {
-        return $this->belongsToMany(TraitModel::class, 'race_trait', 'race_id', 'trait_id')
-            ->withTimestamps();
+        return $this->belongsToMany(TraitRacial::class, 'race_trait', 'race_id', 'trait_id');
     }
 }

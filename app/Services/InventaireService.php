@@ -7,6 +7,7 @@ use App\Models\Objet;
 use App\Models\Personnage;
 use App\Models\PersonnageObjet;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -38,26 +39,41 @@ class InventaireService
             'personnage_id' => $personnage->id,
             'objet_id' => $objet->id,
             'quantite' => $quantite,
-            'equipe' => false,
+            'quantite_equipee' => 0,
         ]);
     }
 
     /**
      * Ajuste la quantité d'une ligne d'inventaire (delta positif ou
-     * négatif). La ligne est supprimée si la quantité tombe à 0, en
-     * déséquipant d'abord l'objet s'il l'était.
+     * négatif). Si la quantité restante passe sous le nombre d'exemplaires
+     * équipés (ex. on vend une dague dual-wieldée), l'excédent équipé est
+     * retiré automatiquement.
+     *
+     * Avec $permetSuppression à false (les boutons +/- de l'inventaire),
+     * la quantité est plafonnée à 1 au lieu de faire disparaître l'objet :
+     * seul retirer() doit pouvoir enlever un objet de l'inventaire. Avec
+     * $permetSuppression à true (ex. consommer le dernier exemplaire d'une
+     * potion via utiliser()), la ligne est supprimée quand la quantité
+     * tombe à 0.
      */
-    public function ajusterQuantite(PersonnageObjet $ligne, int $delta): void
+    public function ajusterQuantite(PersonnageObjet $ligne, int $delta, bool $permetSuppression = true): void
     {
         $nouvelleQuantite = $ligne->quantite + $delta;
 
         if ($nouvelleQuantite <= 0) {
+            if (! $permetSuppression) {
+                return;
+            }
+
             $ligne->delete();
 
             return;
         }
 
-        $ligne->update(['quantite' => $nouvelleQuantite]);
+        $ligne->update([
+            'quantite' => $nouvelleQuantite,
+            'quantite_equipee' => min($ligne->quantite_equipee, $nouvelleQuantite),
+        ]);
     }
 
     public function retirer(PersonnageObjet $ligne): void
@@ -66,10 +82,15 @@ class InventaireService
     }
 
     /**
-     * Équipe un objet, après validation des règles DnD 5e d'équipement.
+     * Équipe un exemplaire de plus de cet objet (jusqu'à la quantité
+     * possédée), après validation des règles DnD 5e d'équipement. Appelé
+     * une fois par exemplaire à équiper : équiper deux dagues identiques
+     * dans chaque main, c'est appeler equiper() deux fois sur la même
+     * ligne, tant qu'on en possède au moins deux.
      *
-     * @throws ValidationException si la règle d'armure unique ou de budget
-     *                             de mains est violée.
+     * @throws ValidationException si aucun exemplaire supplémentaire n'est
+     *                             disponible, ou si la règle d'armure
+     *                             unique ou de budget de mains est violée.
      */
     public function equiper(Personnage $personnage, PersonnageObjet $ligne): void
     {
@@ -81,21 +102,38 @@ class InventaireService
             ]);
         }
 
-        $equipes = $this->objetsEquipes($personnage)->reject(fn (PersonnageObjet $l) => $l->id === $ligne->id);
+        if ($ligne->quantite_equipee >= $ligne->quantite) {
+            throw ValidationException::withMessages([
+                'objet' => ["Impossible d'équiper un exemplaire de plus de {$objet->nom} : vous n'en possédez pas d'autre exemplaire disponible."],
+            ]);
+        }
+
+        // Note : on ne rejette PAS la ligne courante ici, contrairement à
+        // l'ancien modèle booléen — elle peut déjà contribuer au budget de
+        // mains (ex. un premier exemplaire de cette même dague déjà en
+        // main) et ce budget doit être compté avant d'ajouter l'exemplaire
+        // suivant.
+        $autresArmuresEquipees = $this->objetsEquipes($personnage)
+            ->reject(fn (PersonnageObjet $l) => $l->id === $ligne->id)
+            ->first(fn (PersonnageObjet $l) => $l->objet->type === 'armure');
 
         if ($objet->type === 'armure') {
-            $armureDejaEquipee = $equipes->first(fn (PersonnageObjet $l) => $l->objet->type === 'armure');
-
-            if ($armureDejaEquipee) {
+            if ($autresArmuresEquipees) {
                 throw ValidationException::withMessages([
-                    'objet' => ["Impossible d'équiper {$objet->nom} : {$armureDejaEquipee->objet->nom} est déjà portée. Déséquipez-la d'abord."],
+                    'objet' => ["Impossible d'équiper {$objet->nom} : {$autresArmuresEquipees->objet->nom} est déjà portée. Déséquipez-la d'abord."],
+                ]);
+            }
+
+            if ($ligne->quantite_equipee >= 1) {
+                throw ValidationException::withMessages([
+                    'objet' => ["{$objet->nom} est déjà portée : une armure ne peut être équipée qu'en un seul exemplaire."],
                 ]);
             }
         }
 
         if (in_array($objet->type, ['arme', 'bouclier'], true)) {
-            $occupantMains = $equipes->filter(fn (PersonnageObjet $l) => in_array($l->objet->type, ['arme', 'bouclier'], true));
-            $mainsUtilisees = $occupantMains->sum(fn (PersonnageObjet $l) => $l->objet->cout_mains);
+            $occupantMains = $this->objetsEquipes($personnage)->filter(fn (PersonnageObjet $l) => in_array($l->objet->type, ['arme', 'bouclier'], true));
+            $mainsUtilisees = $occupantMains->sum(fn (PersonnageObjet $l) => $l->objet->cout_mains * $l->quantite_equipee);
 
             if ($mainsUtilisees + $objet->cout_mains > self::BUDGET_MAINS) {
                 $dejaEquipes = $occupantMains->map(fn (PersonnageObjet $l) => $l->objet->nom)->implode(' et ');
@@ -106,12 +144,16 @@ class InventaireService
             }
         }
 
-        $ligne->update(['equipe' => true]);
+        $ligne->update(['quantite_equipee' => $ligne->quantite_equipee + 1]);
     }
 
+    /**
+     * Déséquipe un exemplaire de cet objet (appelé une fois par exemplaire
+     * à retirer).
+     */
     public function desequiper(PersonnageObjet $ligne): void
     {
-        $ligne->update(['equipe' => false]);
+        $ligne->update(['quantite_equipee' => max(0, $ligne->quantite_equipee - 1)]);
     }
 
     /**
@@ -136,27 +178,31 @@ class InventaireService
             ]);
         }
 
-        $effet = $objet->effet_utilisation ?? [];
+        // Soin, effet temporaire et consommation forment un tout : soit tout
+        // est enregistré, soit rien (pas de potion consommée sans effet).
+        DB::transaction(function () use ($personnage, $objet, $ligne): void {
+            $effet = $objet->effet_utilisation ?? [];
 
-        if (! empty($effet['pv'])) {
-            $personnage->update(['point_de_vie' => max(0, $personnage->point_de_vie + (int) $effet['pv'])]);
-        }
+            if (! empty($effet['pv'])) {
+                $personnage->modifierPointsDeVieActuels((int) $effet['pv']);
+            }
 
-        if (! empty($effet['bonus']) && ! empty($effet['duree_valeur'])) {
-            $enTours = ($effet['duree_unite'] ?? 'tours') === 'tours';
+            if (! empty($effet['bonus']) && ! empty($effet['duree_valeur'])) {
+                $enTours = ($effet['duree_unite'] ?? 'tours') === 'tours';
 
-            EffetActif::create([
-                'personnage_id' => $personnage->id,
-                'objet_id' => $objet->id,
-                'nom' => $objet->nom,
-                'bonus' => $effet['bonus'],
-                'unite' => $enTours ? 'tours' : 'minutes',
-                'tours_restants' => $enTours ? (int) $effet['duree_valeur'] : null,
-                'expire_a' => $enTours ? null : now()->addSeconds((int) $effet['duree_secondes']),
-            ]);
-        }
+                EffetActif::create([
+                    'personnage_id' => $personnage->id,
+                    'objet_id' => $objet->id,
+                    'nom' => $objet->nom,
+                    'bonus' => $effet['bonus'],
+                    'unite' => $enTours ? 'tours' : 'minutes',
+                    'tours_restants' => $enTours ? (int) $effet['duree_valeur'] : null,
+                    'expire_a' => $enTours ? null : now()->addSeconds((int) $effet['duree_secondes']),
+                ]);
+            }
 
-        $this->ajusterQuantite($ligne, -1);
+            $this->ajusterQuantite($ligne, -1);
+        });
     }
 
     /**
@@ -200,7 +246,7 @@ class InventaireService
     {
         return PersonnageObjet::query()
             ->where('personnage_id', $personnage->id)
-            ->where('equipe', true)
+            ->where('quantite_equipee', '>', 0)
             ->with('objet')
             ->get();
     }
@@ -219,7 +265,7 @@ class InventaireService
         $bonus = [];
 
         foreach ($personnage->objets as $objet) {
-            $equipe = (bool) $objet->pivot->equipe;
+            $equipe = $objet->pivot->quantite_equipee > 0;
 
             if (! $equipe && ! $objet->bonus_toujours_actif) {
                 continue;
@@ -245,13 +291,16 @@ class InventaireService
 
     /**
      * Objets équipés de type "arme", pour la section "Actions" de la fiche.
+     * Une arme dual-wieldée (2 exemplaires identiques équipés) apparaît
+     * deux fois, pour refléter les deux attaques disponibles.
      *
      * @return Collection<int, Objet>
      */
     public function armesEquipees(Personnage $personnage): Collection
     {
         return $personnage->objets
-            ->filter(fn (Objet $objet) => $objet->type === 'arme' && (bool) $objet->pivot->equipe)
+            ->filter(fn (Objet $objet) => $objet->type === 'arme' && $objet->pivot->quantite_equipee > 0)
+            ->flatMap(fn (Objet $objet) => array_fill(0, $objet->pivot->quantite_equipee, $objet))
             ->values();
     }
 
@@ -264,7 +313,7 @@ class InventaireService
      */
     public function classeArmure(Personnage $personnage, int $modificateurDexterite): int
     {
-        $armure = $personnage->objets->first(fn (Objet $objet) => $objet->type === 'armure' && (bool) $objet->pivot->equipe);
+        $armure = $personnage->objets->first(fn (Objet $objet) => $objet->type === 'armure' && $objet->pivot->quantite_equipee > 0);
 
         $ca = match ($armure?->categorie) {
             'legere' => (int) $armure->ca_base + $modificateurDexterite,

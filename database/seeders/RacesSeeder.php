@@ -149,10 +149,10 @@ class RacesSeeder extends Seeder
             ],
         ];
 
-        foreach ($races as $raceData) {
-            $sousRaces = $raceData['sous_races'];
-            unset($raceData['sous_races']);
-            $race = Race::create($raceData);
+        foreach ($races as $donneesRace) {
+            $sousRaces = $donneesRace['sous_races'];
+            unset($donneesRace['sous_races']);
+            $race = Race::create($donneesRace);
 
             foreach ($sousRaces as $sr) {
                 SousRace::create([

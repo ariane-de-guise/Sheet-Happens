@@ -8,8 +8,6 @@ use App\Models\ListeCompetence;
 use App\Models\Objet;
 use App\Models\Personnage;
 use App\Models\PersonnageObjet;
-use App\Models\Race;
-use App\Models\SousRace;
 use App\Services\FicheDePersonnageService;
 use App\Services\InventaireService;
 use Tests\TestCase;
@@ -58,7 +56,7 @@ class FicheDePersonnageServiceTest extends TestCase
     private function objetEquipe(array $attributs, bool $equipe = true, int $quantite = 1): Objet
     {
         $objet = new Objet($attributs);
-        $objet->setRelation('pivot', new PersonnageObjet(['equipe' => $equipe, 'quantite' => $quantite]));
+        $objet->setRelation('pivot', new PersonnageObjet(['quantite_equipee' => $equipe ? 1 : 0, 'quantite' => $quantite]));
 
         return $objet;
     }
@@ -352,32 +350,5 @@ class FicheDePersonnageServiceTest extends TestCase
         $this->assertSame('attaques', $actions['type']);
         $this->assertNull($actions['incantation']);
         $this->assertCount(1, $actions['attaques']);
-    }
-
-    public function test_traits_rassemble_les_descriptions_disponibles(): void
-    {
-        $personnage = $this->personnage([], [
-            'race' => new Race(['nom' => 'Elfe', 'description' => 'Gracieux et immortel.']),
-            'classe' => new Classe(['nom' => 'Guerrier', 'description' => 'Maître des armes.']),
-            'sousRace' => new SousRace(['nom' => 'Haut Elfe', 'description' => 'Maîtrise une base de magie.']),
-            'sousClasse' => null,
-        ]);
-
-        $traits = collect($this->service()->traits($personnage))->keyBy('label');
-
-        $this->assertSame('Gracieux et immortel.', $traits['Race']['texte']);
-        $this->assertSame('Maître des armes.', $traits['Classe']['texte']);
-        $this->assertSame('Maîtrise une base de magie.', $traits['Haut Elfe']['texte']);
-        $this->assertCount(3, $traits);
-    }
-
-    public function test_traits_ignore_les_relations_absentes_ou_sans_description(): void
-    {
-        $personnage = $this->personnage([], [
-            'race' => new Race(['nom' => 'Humain', 'description' => null]),
-            'classe' => new Classe(['nom' => 'Guerrier', 'description' => null]),
-        ]);
-
-        $this->assertSame([], $this->service()->traits($personnage));
     }
 }

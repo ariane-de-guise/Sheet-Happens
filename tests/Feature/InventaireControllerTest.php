@@ -45,7 +45,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->get(route('personnages.inventaire.ajouter-custom-page', $personnage))
+            ->get(route('personnages.inventaire.ajouter-personnalise-page', $personnage))
             ->assertOk()
             ->assertSee('Créer un objet custom')
             ->assertSee('Objet magique');
@@ -58,7 +58,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $proprietaire->id]);
 
         $this->actingAs($autre)
-            ->get(route('personnages.inventaire.ajouter-custom-page', $personnage))
+            ->get(route('personnages.inventaire.ajouter-personnalise-page', $personnage))
             ->assertForbidden();
     }
 
@@ -144,7 +144,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+            ->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
                 'nom' => 'Amulette du hasard',
                 'description' => 'Un porte-bonheur douteux.',
                 'type' => 'autre',
@@ -167,7 +167,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+            ->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
                 'nom' => 'Décoction de courage',
                 'description' => 'Un liquide amer.',
                 'type' => 'potion',
@@ -191,7 +191,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+            ->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
                 'nom' => 'Élixir de vigueur',
                 'description' => 'Un liquide amer.',
                 'type' => 'potion',
@@ -304,7 +304,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+            ->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
                 'nom' => 'Lame des étoiles',
                 'type' => 'arme',
                 'categorie' => 'une_main',
@@ -326,12 +326,33 @@ class InventaireControllerTest extends TestCase
         $this->assertSame(1, $objet->cout_mains);
     }
 
+    public function test_creer_une_arme_custom_a_distance_avec_une_main_respecte_le_choix_explicite(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $this->actingAs($utilisateur)
+            ->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
+                'nom' => 'Arbalète de poing improvisée',
+                'type' => 'arme',
+                'categorie' => 'distance',
+                'cout_mains' => 1,
+                'degats' => '1d6',
+                'type_degats' => 'perforant',
+                'caracteristique_degats' => 'dexterite',
+            ])
+            ->assertRedirect(route('personnages.inventaire.index', $personnage));
+
+        $objet = Objet::where('nom', 'Arbalète de poing improvisée')->firstOrFail();
+        $this->assertSame(1, $objet->cout_mains);
+    }
+
     public function test_un_objet_non_magique_ignore_la_rarete_envoyee(): void
     {
         $utilisateur = Utilisateur::factory()->create();
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
-        $this->actingAs($utilisateur)->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+        $this->actingAs($utilisateur)->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
             'nom' => 'Bâton ordinaire',
             'type' => 'autre',
             'rarete' => 'legendaire',
@@ -347,7 +368,7 @@ class InventaireControllerTest extends TestCase
         $utilisateur = Utilisateur::factory()->create();
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
-        $this->actingAs($utilisateur)->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+        $this->actingAs($utilisateur)->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
             'nom' => 'Grimoire personnel',
             'type' => 'autre',
         ]);
@@ -380,7 +401,7 @@ class InventaireControllerTest extends TestCase
             ->assertRedirect()
             ->assertSessionHasErrors('objet');
 
-        $this->assertFalse($lignePlates->fresh()->equipe);
+        $this->assertSame(0, $lignePlates->fresh()->quantite_equipee);
     }
 
     public function test_un_proprietaire_peut_equiper_une_arme(): void
@@ -396,9 +417,9 @@ class InventaireControllerTest extends TestCase
         $this->actingAs($utilisateur)
             ->patch(route('personnages.inventaire.equiper', [$personnage, $ligne]))
             ->assertRedirect()
-            ->assertSessionHas('success');
+            ->assertSessionHas('succes');
 
-        $this->assertTrue($ligne->fresh()->equipe);
+        $this->assertSame(1, $ligne->fresh()->quantite_equipee);
     }
 
     public function test_un_proprietaire_peut_desequiper_une_arme(): void
@@ -414,9 +435,48 @@ class InventaireControllerTest extends TestCase
         $this->actingAs($utilisateur)
             ->patch(route('personnages.inventaire.desequiper', [$personnage, $ligne]))
             ->assertRedirect()
-            ->assertSessionHas('success');
+            ->assertSessionHas('succes');
 
-        $this->assertFalse($ligne->fresh()->equipe);
+        $this->assertSame(0, $ligne->fresh()->quantite_equipee);
+    }
+
+    public function test_un_proprietaire_peut_equiper_deux_exemplaires_de_la_meme_arme(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $ligne = PersonnageObjetFactory::new()->create([
+            'personnage_id' => $personnage->id,
+            'objet_id' => $dague->id,
+            'quantite' => 2,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.inventaire.equiper', [$personnage, $ligne]))
+            ->assertRedirect();
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.inventaire.equiper', [$personnage, $ligne]))
+            ->assertRedirect()
+            ->assertSessionHas('succes');
+
+        $this->assertSame(2, $ligne->fresh()->quantite_equipee);
+    }
+
+    public function test_la_page_d_inventaire_affiche_le_nombre_de_mains_d_une_arme(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $arc = ObjetFactory::new()->arme('distance', 2)->create(['nom' => 'Arc long']);
+        PersonnageObjetFactory::new()->create(['personnage_id' => $personnage->id, 'objet_id' => $dague->id]);
+        PersonnageObjetFactory::new()->create(['personnage_id' => $personnage->id, 'objet_id' => $arc->id]);
+
+        $this->actingAs($utilisateur)
+            ->get(route('personnages.inventaire.index', $personnage))
+            ->assertOk()
+            ->assertSee('Une main')
+            ->assertSee('Deux mains');
     }
 
     public function test_un_proprietaire_peut_ajuster_la_quantite_d_un_objet(): void
@@ -435,6 +495,25 @@ class InventaireControllerTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame(5, $ligne->fresh()->quantite);
+    }
+
+    public function test_le_bouton_moins_ne_retire_pas_le_dernier_exemplaire_d_un_objet(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+        $objet = ObjetFactory::new()->create();
+        $ligne = PersonnageObjetFactory::new()->create([
+            'personnage_id' => $personnage->id,
+            'objet_id' => $objet->id,
+            'quantite' => 1,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.inventaire.quantite', [$personnage, $ligne]), ['delta' => -1])
+            ->assertRedirect();
+
+        $this->assertSame(1, $ligne->fresh()->quantite);
+        $this->assertSame(1, $personnage->objets()->count());
     }
 
     public function test_utiliser_un_objet_non_consommable_echoue_avec_un_message_d_erreur(): void
@@ -460,7 +539,8 @@ class InventaireControllerTest extends TestCase
         $utilisateur = Utilisateur::factory()->create();
         $personnage = PersonnageFactory::new()->create([
             'utilisateur_id' => $utilisateur->id,
-            'point_de_vie' => 5,
+            'point_de_vie' => 20,
+            'point_de_vie_actuel' => 5,
         ]);
         $potion = ObjetFactory::new()->potion(['pv' => 7])->create();
         $ligne = PersonnageObjetFactory::new()->create([
@@ -473,7 +553,7 @@ class InventaireControllerTest extends TestCase
             ->post(route('personnages.inventaire.utiliser', [$personnage, $ligne]))
             ->assertRedirect();
 
-        $this->assertSame(12, $personnage->fresh()->point_de_vie);
+        $this->assertSame(12, $personnage->fresh()->point_de_vie_actuel);
         $this->assertSame(0, $personnage->objets()->count());
     }
 

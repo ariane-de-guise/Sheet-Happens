@@ -1,29 +1,29 @@
 @extends('layouts.app')
 
-@section('title', 'Créer un personnage - Caractéristiques')
+@section('titre', 'Créer un personnage - Caractéristiques')
 
-@section('content')
-    <div class="card">
-        <div class="text-center mb-3">
-            <span class="text-gold">Créer un personnage</span>
+@section('contenu')
+    <div class="carte">
+        <div class="texte-centre marge-bas-3">
+            <span class="texte-or">Créer un personnage</span>
         </div>
 
-        <div class="progress-bar">
-            <div class="progress-line">
-                <div class="progress-fill" style="width: 60%;"></div>
+        <div class="barre-progression">
+            <div class="ligne-progression">
+                <div class="remplissage-progression" style="width: 60%;"></div>
             </div>
-            <div class="progress-step completed">1</div>
-            <div class="progress-step completed">2</div>
-            <div class="progress-step completed">3</div>
-            <div class="progress-step active">4</div>
-            <div class="progress-step">5</div>
-            <div class="progress-step">6</div>
+            <div class="etape-progression terminee">1</div>
+            <div class="etape-progression terminee">2</div>
+            <div class="etape-progression terminee">3</div>
+            <div class="etape-progression active">4</div>
+            <div class="etape-progression">5</div>
+            <div class="etape-progression">6</div>
         </div>
 
-        <h2 class="title-section text-center">Répartissez vos caractéristiques</h2>
+        <h2 class="titre-section texte-centre">Répartissez vos caractéristiques</h2>
 
-        @if(session('error'))
-            <div class="alert alert-error">{{ session('error') }}</div>
+        @if(session('erreur'))
+            <div class="alerte alerte-erreur">{{ session('erreur') }}</div>
         @endif
 
         @php
@@ -35,7 +35,7 @@
             // des caractéristiques elle-même (voir
             // _caracteristiques_bonus.blade.php, inclus dans chacune des 3
             // méthodes ci-dessous).
-            $labels = [
+            $libelles = [
                 'force' => 'Force',
                 'dexterite' => 'Dextérité',
                 'constitution' => 'Constitution',
@@ -43,14 +43,14 @@
                 'sagesse' => 'Sagesse',
                 'charisme' => 'Charisme',
             ];
-            $formatBonusFixe = function (array $bonuses) use ($labels): array {
-                $formatted = [];
-                foreach ($bonuses as $key => $value) {
-                    if (isset($labels[$key]) && is_numeric($value) && (int) $value !== 0) {
-                        $formatted[] = $labels[$key] . ' +' . $value;
+            $formaterBonusFixe = function (array $listeBonus) use ($libelles): array {
+                $formate = [];
+                foreach ($listeBonus as $caracteristique => $valeur) {
+                    if (isset($libelles[$caracteristique]) && is_numeric($valeur) && (int) $valeur !== 0) {
+                        $formate[] = $libelles[$caracteristique] . ' +' . $valeur;
                     }
                 }
-                return $formatted;
+                return $formate;
             };
             $sourcesBonus = [
                 'race' => $race->nom ?? null,
@@ -62,7 +62,7 @@
                 if (! $nomSource) {
                     continue;
                 }
-                $fixes = $formatBonusFixe($bonusAptitudes[$cle] ?? []);
+                $fixes = $formaterBonusFixe($bonusAptitudes[$cle] ?? []);
                 if ($fixes) {
                     $bonusFixeMentions[] = implode(', ', $fixes) . ' (' . $nomSource . ')';
                 }
@@ -73,20 +73,20 @@
             // "au choix" pas encore assignés ne sont pas comptés ici — une
             // fois choisis, le JS de _caracteristiques_bonus.blade.php met
             // ces badges à jour en direct (voir bonus_choix_au_choix.js).
-            $bonusParAptitude = array_fill_keys(array_keys($labels), 0);
+            $bonusParAptitude = array_fill_keys(array_keys($libelles), 0);
             foreach ([$bonusAptitudes['race'] ?? [], $bonusAptitudes['sous_race'] ?? [], $bonusAptitudes['classe'] ?? []] as $bonus) {
-                foreach ($bonus as $key => $value) {
-                    if (isset($bonusParAptitude[$key]) && is_numeric($value)) {
-                        $bonusParAptitude[$key] += (int) $value;
+                foreach ($bonus as $caracteristique => $valeur) {
+                    if (isset($bonusParAptitude[$caracteristique]) && is_numeric($valeur)) {
+                        $bonusParAptitude[$caracteristique] += (int) $valeur;
                     }
                 }
             }
             // Les bonus "au choix" déjà sélectionnés (retour en arrière,
             // erreur de validation) comptent aussi dans le total affiché.
             foreach ($auChoixDisponibles as $source => $config) {
-                foreach ($bonusChoix[$source] ?? [] as $key) {
-                    if (isset($bonusParAptitude[$key])) {
-                        $bonusParAptitude[$key] += (int) $config['bonus'];
+                foreach ($bonusChoix[$source] ?? [] as $caracteristique) {
+                    if (isset($bonusParAptitude[$caracteristique])) {
+                        $bonusParAptitude[$caracteristique] += (int) $config['bonus'];
                     }
                 }
             }
@@ -95,7 +95,7 @@
         @if($methode === 'points')
             @include('personnages.creation._caracteristiques_points', [
                 'abilites' => $abilites,
-                'labels' => $labels,
+                'labels' => $libelles,
                 'bonusFixeMentions' => $bonusFixeMentions,
                 'auChoixDisponibles' => $auChoixDisponibles,
                 'bonusChoix' => $bonusChoix,
@@ -104,16 +104,16 @@
         @elseif($methode === 'standard')
             @include('personnages.creation._caracteristiques_standard', [
                 'abilites' => $abilites,
-                'labels' => $labels,
+                'labels' => $libelles,
                 'bonusFixeMentions' => $bonusFixeMentions,
                 'auChoixDisponibles' => $auChoixDisponibles,
                 'bonusChoix' => $bonusChoix,
                 'bonusParAptitude' => $bonusParAptitude,
             ])
         @else
-            @include('personnages.creation._caracteristiques_dice', [
+            @include('personnages.creation._caracteristiques_des', [
                 'abilites' => $abilites,
-                'labels' => $labels,
+                'labels' => $libelles,
                 'bonusFixeMentions' => $bonusFixeMentions,
                 'auChoixDisponibles' => $auChoixDisponibles,
                 'bonusChoix' => $bonusChoix,

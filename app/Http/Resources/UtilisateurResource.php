@@ -12,8 +12,8 @@ class UtilisateurResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request): array
+    public function toArray(Request $requete): array
     {
-        return parent::toArray($request);
+        return parent::toArray($requete);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Capacite;
 use App\Models\Classe;
 use App\Models\Personnage;
 use App\Models\Race;
@@ -24,7 +25,7 @@ class PersonnageCreationServiceTest extends TestCase
         return $this->app->make(PersonnageCreationService::class);
     }
 
-    private function payloadDeBase(): array
+    private function donneesDeBase(): array
     {
         $utilisateur = UtilisateurFactory::new()->create();
         $race = RaceFactory::new()->create();
@@ -55,9 +56,9 @@ class PersonnageCreationServiceTest extends TestCase
 
     public function test_cree_un_personnage_complet_avec_ses_relations(): void
     {
-        $payload = $this->payloadDeBase();
+        $donneesPersonnage = $this->donneesDeBase();
 
-        $personnage = $this->service()->create($payload);
+        $personnage = $this->service()->create($donneesPersonnage);
 
         $this->assertInstanceOf(Personnage::class, $personnage);
         $this->assertSame('Aragorn', $personnage->nom);
@@ -71,27 +72,45 @@ class PersonnageCreationServiceTest extends TestCase
 
     public function test_cree_un_personnage_avec_sous_race_et_sous_classe_valides(): void
     {
-        $payload = $this->payloadDeBase();
-        $race = Race::find($payload['race_id']);
+        $donneesPersonnage = $this->donneesDeBase();
+        $race = Race::find($donneesPersonnage['race_id']);
         $sousRace = SousRaceFactory::new()->pourRace($race)->create();
-        $classe = Classe::find($payload['classe_id']);
+        $classe = Classe::find($donneesPersonnage['classe_id']);
         $sousClasse = SousClasseFactory::new()->pourClasse($classe)->create();
 
-        $payload['sous_race_id'] = $sousRace->id;
-        $payload['sous_classe_id'] = $sousClasse->id;
+        $donneesPersonnage['sous_race_id'] = $sousRace->id;
+        $donneesPersonnage['sous_classe_id'] = $sousClasse->id;
 
-        $personnage = $this->service()->create($payload);
+        $personnage = $this->service()->create($donneesPersonnage);
 
         $this->assertSame($sousRace->id, $personnage->sous_race_id);
         $this->assertSame($sousClasse->id, $personnage->sous_classe_id);
     }
 
+    public function test_la_creation_rattache_les_capacites_de_niveau_1_de_la_classe_et_de_la_sous_classe(): void
+    {
+        $donneesPersonnage = $this->donneesDeBase();
+        $classe = Classe::find($donneesPersonnage['classe_id']);
+        $sousClasse = SousClasseFactory::new()->pourClasse($classe)->create();
+        $donneesPersonnage['sous_classe_id'] = $sousClasse->id;
+        $incantation = Capacite::create(['classe_id' => $classe->id, 'nom' => 'Incantation', 'niveau' => 1]);
+        $disciple = Capacite::create(['classe_id' => $classe->id, 'sous_classe_id' => $sousClasse->id, 'nom' => 'Disciple de la vie', 'niveau' => 1]);
+        Capacite::create(['classe_id' => $classe->id, 'nom' => 'Canalisation d’énergie divine', 'niveau' => 2]);
+
+        $personnage = $this->service()->create($donneesPersonnage);
+
+        $this->assertEqualsCanonicalizing(
+            [$incantation->id, $disciple->id],
+            $personnage->capacites()->pluck('capacites.id')->all(),
+        );
+    }
+
     public function test_cree_un_personnage_sans_competences_ni_niveau_fournis(): void
     {
-        $payload = $this->payloadDeBase();
-        unset($payload['competences'], $payload['niveau'], $payload['alignement'], $payload['description'], $payload['sous_race_id'], $payload['sous_classe_id']);
+        $donneesPersonnage = $this->donneesDeBase();
+        unset($donneesPersonnage['competences'], $donneesPersonnage['niveau'], $donneesPersonnage['alignement'], $donneesPersonnage['description'], $donneesPersonnage['sous_race_id'], $donneesPersonnage['sous_classe_id']);
 
-        $personnage = $this->service()->create($payload);
+        $personnage = $this->service()->create($donneesPersonnage);
 
         $this->assertSame(1, $personnage->niveau);
         $this->assertNull($personnage->alignement);
@@ -103,16 +122,16 @@ class PersonnageCreationServiceTest extends TestCase
 
     public function test_refuse_une_sous_race_qui_ne_correspond_pas_a_la_race(): void
     {
-        $payload = $this->payloadDeBase();
+        $donneesPersonnage = $this->donneesDeBase();
         $autreRace = RaceFactory::new()->create();
         $sousRace = SousRaceFactory::new()->pourRace($autreRace)->create();
 
-        $payload['sous_race_id'] = $sousRace->id;
+        $donneesPersonnage['sous_race_id'] = $sousRace->id;
 
         $this->expectException(ValidationException::class);
 
         try {
-            $this->service()->create($payload);
+            $this->service()->create($donneesPersonnage);
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('sous_race_id', $e->errors());
 
@@ -122,13 +141,13 @@ class PersonnageCreationServiceTest extends TestCase
 
     public function test_refuse_une_race_inexistante(): void
     {
-        $payload = $this->payloadDeBase();
-        $payload['race_id'] = 99999;
+        $donneesPersonnage = $this->donneesDeBase();
+        $donneesPersonnage['race_id'] = 99999;
 
         $this->expectException(ValidationException::class);
 
         try {
-            $this->service()->create($payload);
+            $this->service()->create($donneesPersonnage);
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('race_id', $e->errors());
 
@@ -138,26 +157,26 @@ class PersonnageCreationServiceTest extends TestCase
 
     public function test_refuse_une_classe_inexistante(): void
     {
-        $payload = $this->payloadDeBase();
-        $payload['classe_id'] = 99999;
+        $donneesPersonnage = $this->donneesDeBase();
+        $donneesPersonnage['classe_id'] = 99999;
 
         $this->expectException(ValidationException::class);
 
-        $this->service()->create($payload);
+        $this->service()->create($donneesPersonnage);
     }
 
     public function test_refuse_une_sous_classe_qui_ne_correspond_pas_a_la_classe(): void
     {
-        $payload = $this->payloadDeBase();
+        $donneesPersonnage = $this->donneesDeBase();
         $autreClasse = ClasseFactory::new()->create(['niveau_sous_classe' => 1]);
         $sousClasse = SousClasseFactory::new()->pourClasse($autreClasse)->create();
 
-        $payload['sous_classe_id'] = $sousClasse->id;
+        $donneesPersonnage['sous_classe_id'] = $sousClasse->id;
 
         $this->expectException(ValidationException::class);
 
         try {
-            $this->service()->create($payload);
+            $this->service()->create($donneesPersonnage);
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('sous_classe_id', $e->errors());
 
@@ -167,26 +186,26 @@ class PersonnageCreationServiceTest extends TestCase
 
     public function test_refuse_une_sous_classe_si_le_niveau_est_insuffisant(): void
     {
-        $payload = $this->payloadDeBase();
-        $classe = Classe::find($payload['classe_id']);
+        $donneesPersonnage = $this->donneesDeBase();
+        $classe = Classe::find($donneesPersonnage['classe_id']);
         $classe->update(['niveau_sous_classe' => 3]);
         $sousClasse = SousClasseFactory::new()->pourClasse($classe)->create();
 
-        $payload['sous_classe_id'] = $sousClasse->id;
-        $payload['niveau'] = 1;
+        $donneesPersonnage['sous_classe_id'] = $sousClasse->id;
+        $donneesPersonnage['niveau'] = 1;
 
         $this->expectException(ValidationException::class);
 
-        $this->service()->create($payload);
+        $this->service()->create($donneesPersonnage);
     }
 
     public function test_la_transaction_est_annulee_si_la_validation_echoue(): void
     {
-        $payload = $this->payloadDeBase();
-        $payload['race_id'] = 99999;
+        $donneesPersonnage = $this->donneesDeBase();
+        $donneesPersonnage['race_id'] = 99999;
 
         try {
-            $this->service()->create($payload);
+            $this->service()->create($donneesPersonnage);
         } catch (ValidationException) {
             // Attendu.
         }
@@ -205,10 +224,10 @@ class PersonnageCreationServiceTest extends TestCase
      */
     public function test_l_equipement_de_depart_de_l_historique_est_ajoute_a_l_inventaire(): void
     {
-        $payload = $this->payloadDeBase();
-        $payload['equipement'] = ['Symbole sacré', 'Symbole sacré', 'Épée'];
+        $donneesPersonnage = $this->donneesDeBase();
+        $donneesPersonnage['equipement'] = ['Symbole sacré', 'Symbole sacré', 'Épée'];
 
-        $personnage = $this->service()->create($payload);
+        $personnage = $this->service()->create($donneesPersonnage);
 
         $this->assertSame(2, $personnage->objets()->count());
         $this->assertSame(2, $personnage->objets()->where('nom', 'Symbole sacré')->first()->pivot->quantite);
@@ -223,23 +242,23 @@ class PersonnageCreationServiceTest extends TestCase
      */
     public function test_l_outil_choisi_est_ajoute_a_l_inventaire_plutot_que_stocke_en_texte(): void
     {
-        $payload = $this->payloadDeBase();
-        $payload['outil'] = 'Kit de calligraphe';
+        $donneesPersonnage = $this->donneesDeBase();
+        $donneesPersonnage['outil'] = 'Kit de calligraphe';
 
-        $personnage = $this->service()->create($payload);
+        $personnage = $this->service()->create($donneesPersonnage);
 
         $this->assertFalse(array_key_exists('outil', $personnage->getAttributes()));
         $objetOutil = $personnage->objets()->where('nom', 'Kit de calligraphe')->first();
         $this->assertNotNull($objetOutil);
         $this->assertSame(1, $objetOutil->pivot->quantite);
-        $this->assertFalse((bool) $objetOutil->pivot->equipe);
+        $this->assertSame(0, $objetOutil->pivot->quantite_equipee);
     }
 
     public function test_aucun_objet_n_est_ajoute_si_aucun_outil_n_est_choisi(): void
     {
-        $payload = $this->payloadDeBase();
+        $donneesPersonnage = $this->donneesDeBase();
 
-        $personnage = $this->service()->create($payload);
+        $personnage = $this->service()->create($donneesPersonnage);
 
         $this->assertSame(0, $personnage->objets()->count());
     }
@@ -253,11 +272,11 @@ class PersonnageCreationServiceTest extends TestCase
      */
     public function test_l_outil_choisi_qui_double_un_equipement_deja_accorde_cumule_la_quantite(): void
     {
-        $payload = $this->payloadDeBase();
-        $payload['equipement'] = ['Kit de calligraphe'];
-        $payload['outil'] = 'Kit de calligraphe';
+        $donneesPersonnage = $this->donneesDeBase();
+        $donneesPersonnage['equipement'] = ['Kit de calligraphe'];
+        $donneesPersonnage['outil'] = 'Kit de calligraphe';
 
-        $personnage = $this->service()->create($payload);
+        $personnage = $this->service()->create($donneesPersonnage);
 
         $this->assertSame(1, $personnage->objets()->count());
         $this->assertSame(2, $personnage->objets()->where('nom', 'Kit de calligraphe')->first()->pivot->quantite);

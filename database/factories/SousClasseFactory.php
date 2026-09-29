@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class SousClasseFactory extends Factory
 {
-    protected $model = SousClasse::class;
+    protected $modele = SousClasse::class;
 
     public function definition(): array
     {

@@ -3,20 +3,20 @@
     top: 16px;
     left: 16px;
     z-index: 1000;
-    background: #0f172a;
-    color: #f8fafc;
-    border: 1px solid #1e293b;
+    background: var(--badge-fond);
+    color: var(--badge-texte);
+    border: 1px solid var(--badge-bordure);
     padding: 10px 14px;
     border-radius: 8px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 0.8125rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 4px 12px var(--badge-ombre);
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.auth-status-dot {
+.auth-point-statut {
     width: 8px;
     height: 8px;
     border-radius: 50%;
@@ -24,13 +24,8 @@
     flex-shrink: 0;
 }
 
-.dot-online {
-    background-color: #22c55e;
-    box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
-}
-
-.dot-offline {
-    background-color: #64748b;
+.point-hors-ligne {
+    background-color: var(--badge-dot-offline);
 }
 
 .auth-logo {
@@ -48,16 +43,16 @@
     line-height: 1.2;
 }
 
-.auth-email {
-    color: #e2e8f0;
+.auth-courriel {
+    color: var(--badge-email);
     font-weight: 500;
 }
 
-.auth-btn-logout {
+.auth-bouton-deconnexion {
     margin: 0;
     background: transparent;
-    border: 1px solid #334155;
-    color: #cbd5e1;
+    border: 1px solid var(--badge-logout-bordure);
+    color: var(--badge-logout-texte);
     padding: 4px 8px;
     border-radius: 5px;
     font-size: 0.75rem;
@@ -65,19 +60,19 @@
     transition: all 0.15s ease-in-out;
 }
 
-.auth-btn-logout:hover {
-    background: #ef4444;
-    border-color: #ef4444;
-    color: #ffffff;
+.auth-bouton-deconnexion:hover {
+    background: var(--badge-danger);
+    border-color: var(--badge-danger);
+    color: var(--badge-danger-texte);
 }
 
-.auth-link {
-    color: #38bdf8;
+.auth-lien {
+    color: var(--badge-lien);
     text-decoration: none;
     font-size: 0.75rem;
     font-weight: 500;
 }
 
-.auth-link:hover {
+.auth-lien:hover {
     text-decoration: underline;
 }

@@ -25,11 +25,19 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RacesSeeder::class,
             ClassesSeeder::class,
+            CapaciteSeeder::class,
+            DonSeeder::class,
             HistoriquesSeeder::class,
             TraitSeeder::class,
             RaceTraitSeeder::class,
             SousRaceTraitSeeder::class,
             ObjetsSeeder::class,
+            DegatSeeder::class,
+            SortSeeder::class,
+            ClasseSortSeeder::class,
+            SousclasseSortSeeder::class,
+            LimiteMagieSeeder::class,
+            PersonnageSortSeeder::class,
         ]);
     }
 }

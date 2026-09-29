@@ -21,4 +21,10 @@ class Classe extends Model
     {
         return $this->hasMany(SousClasse::class);
     }
+
+    /** Capacités propres à la classe (hors sous-classes). */
+    public function capacites(): HasMany
+    {
+        return $this->hasMany(Capacite::class)->whereNull('sous_classe_id');
+    }
 }

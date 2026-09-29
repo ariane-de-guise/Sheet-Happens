@@ -54,6 +54,19 @@ class InventaireServiceTest extends TestCase
         $this->assertSame(0, $personnage->objets()->count());
     }
 
+    public function test_ajuster_quantite_sans_permettre_la_suppression_plafonne_a_1(): void
+    {
+        $personnage = $this->personnage();
+        $objet = ObjetFactory::new()->create();
+        $service = $this->service();
+
+        $ligne = $service->ajouter($personnage, $objet, 1);
+        $service->ajusterQuantite($ligne, -1, permetSuppression: false);
+
+        $this->assertSame(1, $ligne->fresh()->quantite);
+        $this->assertSame(1, $personnage->objets()->count());
+    }
+
     public function test_equiper_une_armure_refuse_si_une_autre_armure_est_deja_equipee(): void
     {
         $personnage = $this->personnage();
@@ -82,7 +95,7 @@ class InventaireServiceTest extends TestCase
 
         $service->desequiper($ligne);
 
-        $this->assertFalse($ligne->fresh()->equipe);
+        $this->assertSame(0, $ligne->fresh()->quantite_equipee);
     }
 
     public function test_equiper_deux_armes_a_une_main_est_permis(): void
@@ -100,6 +113,95 @@ class InventaireServiceTest extends TestCase
         $service->equiper($personnage, $ligne2);
 
         $this->assertCount(2, $service->objetsEquipes($personnage));
+    }
+
+    public function test_equiper_deux_exemplaires_de_la_meme_arme_a_une_main_est_permis(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $ligne = $service->ajouter($personnage, $dague, 2);
+
+        $service->equiper($personnage, $ligne);
+        $service->equiper($personnage, $ligne);
+
+        $this->assertSame(2, $ligne->fresh()->quantite_equipee);
+    }
+
+    public function test_equiper_un_troisieme_exemplaire_de_la_meme_arme_refuse_faute_de_mains_libres(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $ligne = $service->ajouter($personnage, $dague, 3);
+
+        $service->equiper($personnage, $ligne);
+        $service->equiper($personnage, $ligne);
+
+        $this->expectException(ValidationException::class);
+        $service->equiper($personnage, $ligne);
+    }
+
+    public function test_equiper_refuse_un_exemplaire_qu_on_ne_possede_pas(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $ligne = $service->ajouter($personnage, $dague, 1);
+
+        $service->equiper($personnage, $ligne);
+
+        $this->expectException(ValidationException::class);
+        $service->equiper($personnage, $ligne);
+    }
+
+    public function test_equiper_deux_fois_la_meme_armure_est_refuse(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $cuir = ObjetFactory::new()->armure('legere', 11)->create(['nom' => 'Armure de cuir']);
+        $ligne = $service->ajouter($personnage, $cuir, 2);
+
+        $service->equiper($personnage, $ligne);
+
+        $this->expectException(ValidationException::class);
+        $service->equiper($personnage, $ligne);
+    }
+
+    public function test_ajuster_quantite_replafonne_le_nombre_equipe_si_la_quantite_diminue(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague']);
+        $ligne = $service->ajouter($personnage, $dague, 2);
+        $service->equiper($personnage, $ligne);
+        $service->equiper($personnage, $ligne);
+
+        $service->ajusterQuantite($ligne, -1);
+
+        $ligne->refresh();
+        $this->assertSame(1, $ligne->quantite);
+        $this->assertSame(1, $ligne->quantite_equipee);
+    }
+
+    public function test_armes_equipees_repete_une_arme_dual_wieldee(): void
+    {
+        $personnage = $this->personnage();
+        $service = $this->service();
+
+        $dague = ObjetFactory::new()->arme('une_main', 1)->create(['nom' => 'Dague', 'degats' => '1d4']);
+        $ligne = $service->ajouter($personnage, $dague, 2);
+        $service->equiper($personnage, $ligne);
+        $service->equiper($personnage, $ligne);
+
+        $armes = $service->armesEquipees($personnage->fresh(['objets']));
+
+        $this->assertCount(2, $armes);
     }
 
     public function test_equiper_une_troisieme_arme_a_une_main_refuse_faute_de_mains_libres(): void
@@ -169,7 +271,7 @@ class InventaireServiceTest extends TestCase
     public function test_utiliser_une_potion_de_soin_ajoute_les_pv_et_consomme_une_unite(): void
     {
         $personnage = $this->personnage();
-        $personnage->update(['point_de_vie' => 5]);
+        $personnage->update(['point_de_vie' => 20, 'point_de_vie_actuel' => 5]);
         $service = $this->service();
 
         $potion = ObjetFactory::new()->potion(['pv' => 7])->create();
@@ -177,14 +279,39 @@ class InventaireServiceTest extends TestCase
 
         $service->utiliser($personnage, $ligne);
 
-        $this->assertSame(12, $personnage->fresh()->point_de_vie);
+        // Le soin touche les PV actuels ; le maximum ne bouge pas.
+        $this->assertSame(12, $personnage->fresh()->point_de_vie_actuel);
+        $this->assertSame(20, $personnage->fresh()->point_de_vie);
         $this->assertSame(1, $personnage->objets()->first()->pivot->quantite);
+    }
+
+    public function test_une_potion_de_soin_ne_depasse_pas_le_maximum_de_pv(): void
+    {
+        $personnage = $this->personnage();
+        $personnage->update(['point_de_vie' => 20, 'point_de_vie_actuel' => 18]);
+        $service = $this->service();
+
+        $service->utiliser($personnage, $service->ajouter($personnage, ObjetFactory::new()->potion(['pv' => 7])->create()));
+
+        $this->assertSame(20, $personnage->fresh()->point_de_vie_actuel);
+    }
+
+    public function test_un_effet_negatif_ne_descend_pas_sous_zero_pv(): void
+    {
+        $personnage = $this->personnage();
+        $personnage->update(['point_de_vie' => 20, 'point_de_vie_actuel' => 3]);
+        $service = $this->service();
+
+        $service->utiliser($personnage, $service->ajouter($personnage, ObjetFactory::new()->potion(['pv' => -10])->create()));
+
+        $this->assertSame(0, $personnage->fresh()->point_de_vie_actuel);
+        $this->assertSame(20, $personnage->fresh()->point_de_vie);
     }
 
     public function test_utiliser_une_potion_sans_effet_pv_se_contente_de_la_consommer(): void
     {
         $personnage = $this->personnage();
-        $personnage->update(['point_de_vie' => 5]);
+        $personnage->update(['point_de_vie' => 20, 'point_de_vie_actuel' => 5]);
         $service = $this->service();
 
         $potion = ObjetFactory::new()->create(['type' => 'potion', 'est_consommable' => true, 'effet_utilisation' => null]);
@@ -192,7 +319,7 @@ class InventaireServiceTest extends TestCase
 
         $service->utiliser($personnage, $ligne);
 
-        $this->assertSame(5, $personnage->fresh()->point_de_vie);
+        $this->assertSame(5, $personnage->fresh()->point_de_vie_actuel);
         $this->assertSame(0, $personnage->objets()->count());
     }
 

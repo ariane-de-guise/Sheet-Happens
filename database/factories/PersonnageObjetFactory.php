@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class PersonnageObjetFactory extends Factory
 {
-    protected $model = PersonnageObjet::class;
+    protected $modele = PersonnageObjet::class;
 
     public function definition(): array
     {
@@ -18,12 +18,12 @@ class PersonnageObjetFactory extends Factory
             'personnage_id' => PersonnageFactory::new(),
             'objet_id' => ObjetFactory::new(),
             'quantite' => 1,
-            'equipe' => false,
+            'quantite_equipee' => 0,
         ];
     }
 
     public function equipe(): self
     {
-        return $this->state(fn () => ['equipe' => true]);
+        return $this->state(fn () => ['quantite_equipee' => 1]);
     }
 }

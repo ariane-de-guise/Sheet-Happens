@@ -55,3 +55,4 @@ Thumbs.db
 
 /vendor
 .env
+/public/storage

@@ -1,35 +1,35 @@
 // Étape "Compétences" de la création de personnage.
-// Les données (window.CompetencesCreationData) sont injectées par
+// Les données (window.DonneesCreationCompetences) sont injectées par
 // competences.blade.php.
-const maxCompetences = (window.CompetencesCreationData && window.CompetencesCreationData.max) || 0;
-const selected = (window.CompetencesCreationData && window.CompetencesCreationData.selected) || [];
+const maxCompetences = (window.DonneesCreationCompetences && window.DonneesCreationCompetences.max) || 0;
+const selectionnees = (window.DonneesCreationCompetences && window.DonneesCreationCompetences.selectionnees) || [];
 
-function toggleCompetence(comp, element) {
+function basculerCompetence(comp, element) {
     const checkbox = element.querySelector('input[type="checkbox"]');
 
     if (checkbox.checked) {
-        const idx = selected.indexOf(comp);
-        if (idx > -1) selected.splice(idx, 1);
+        const idx = selectionnees.indexOf(comp);
+        if (idx > -1) selectionnees.splice(idx, 1);
     } else {
-        if (selected.length >= maxCompetences) return;
-        selected.push(comp);
+        if (selectionnees.length >= maxCompetences) return;
+        selectionnees.push(comp);
     }
 
     checkbox.checked = !checkbox.checked;
-    element.classList.toggle('selected');
-    document.getElementById('competencesErrors').style.display = 'none';
-    updateCount();
+    element.classList.toggle('selectionne');
+    document.getElementById('competencesErreurs').style.display = 'none';
+    majCompteur();
 }
 
-function updateCount() {
-    document.getElementById('countDisplay').textContent = selected.length + ' / ' + maxCompetences + ' sélectionnées';
+function majCompteur() {
+    document.getElementById('affichageCompte').textContent = selectionnees.length + ' / ' + maxCompetences + ' sélectionnées';
 }
 
-document.getElementById('competencesForm').addEventListener('submit', function (event) {
-    if (selected.length < maxCompetences) {
-        event.preventDefault();
-        document.getElementById('competencesErrors').style.display = 'block';
+document.getElementById('competencesFormulaire').addEventListener('submit', function (evenement) {
+    if (selectionnees.length < maxCompetences) {
+        evenement.preventDefault();
+        document.getElementById('competencesErreurs').style.display = 'block';
     }
 });
 
-updateCount();
+majCompteur();
