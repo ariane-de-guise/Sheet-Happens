@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', $personnage->nom . ' — Sorts connus')
+@section('titre', $personnage->nom . ' — Sorts connus')
 
 @push('styles')
     <style>
@@ -177,7 +177,7 @@
     </style>
 @endpush
 
-@section('content')
+@section('contenu')
     <div class="page-sorts">
         <h2 style="text-align:center; margin-bottom: 0.5rem; color: var(--or);">Sorts</h2>
 
@@ -240,16 +240,16 @@
                             </label>
                             <div style="display:flex; flex-direction:column;">
                                   <span class="sort-survol"
-                                      data-name="{{ $c->sort->Nom ?? 'Sort' }}"
-                                      data-niveau="{{ $c->sort->Niveau ?? '' }}"
-                                      data-ecole="{{ $c->sort->Ecole ?? '' }}"
-                                      data-description="{{ e($c->sort->Description ?? '') }}"
-                                      data-temps="{{ $c->sort->TempsActivation ?? '' }}"
-                                      data-duree="{{ $c->sort->Duree ?? '' }}"
-                                      data-distance="{{ $c->sort->Distance ?? '' }}"
-                                      data-composants="{{ $c->sort->Composants ?? '' }}"
-                                      data-att-sauv="{{ $c->sort->AttaqueSauvegarde ?? '' }}"
-                                  >{{ $c->sort->Nom ?? 'Sort' }}</span>
+                                      data-name="{{ $c->sort->nom ?? 'Sort' }}"
+                                      data-niveau="{{ $c->sort->niveau ?? '' }}"
+                                      data-ecole="{{ $c->sort->ecole ?? '' }}"
+                                      data-description="{{ e($c->sort->description ?? '') }}"
+                                      data-temps="{{ $c->sort->temps_activation ?? '' }}"
+                                      data-duree="{{ $c->sort->duree ?? '' }}"
+                                      data-distance="{{ $c->sort->distance ?? '' }}"
+                                      data-composants="{{ $c->sort->composants ?? '' }}"
+                                      data-att-sauv="{{ $c->sort->attaque_sauvegarde ?? '' }}"
+                                  >{{ $c->sort->nom ?? 'Sort' }}</span>
                                   <div class="sort-detail" aria-hidden="true"></div>
                             </div>
                         </div>
@@ -260,7 +260,7 @@
 
         <div class="niveaux">
             @foreach($niveaux as $niveau)
-                @php $nombreEmplacements = (int) ($emplacements['Niveau' . $niveau] ?? 0); @endphp
+                @php $nombreEmplacements = (int) ($emplacements['emplacements_niveau_' . $niveau] ?? 0); @endphp
                 @if($nombreEmplacements > 0)
                 <div class="carte-niveau">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
@@ -310,16 +310,16 @@
 
                                 <div style="color:var(--or); display:flex; gap:0.5rem; align-items:center;">
                                     <span class="sort-survol"
-                                          data-name="{{ $element->sort->Nom ?? 'Sort' }}"
-                                          data-niveau="{{ $element->sort->Niveau ?? '' }}"
-                                          data-ecole="{{ $element->sort->Ecole ?? '' }}"
-                                          data-description="{{ e($element->sort->Description ?? '') }}"
-                                          data-temps="{{ $element->sort->TempsActivation ?? '' }}"
-                                          data-duree="{{ $element->sort->Duree ?? '' }}"
-                                          data-distance="{{ $element->sort->Distance ?? '' }}"
-                                          data-composants="{{ $element->sort->Composants ?? '' }}"
-                                          data-att-sauv="{{ $element->sort->AttaqueSauvegarde ?? '' }}"
-                                    >{{ $element->sort->Nom ?? 'Sort' }}</span>
+                                          data-name="{{ $element->sort->nom ?? 'Sort' }}"
+                                          data-niveau="{{ $element->sort->niveau ?? '' }}"
+                                          data-ecole="{{ $element->sort->ecole ?? '' }}"
+                                          data-description="{{ e($element->sort->description ?? '') }}"
+                                          data-temps="{{ $element->sort->temps_activation ?? '' }}"
+                                          data-duree="{{ $element->sort->duree ?? '' }}"
+                                          data-distance="{{ $element->sort->distance ?? '' }}"
+                                          data-composants="{{ $element->sort->composants ?? '' }}"
+                                          data-att-sauv="{{ $element->sort->attaque_sauvegarde ?? '' }}"
+                                    >{{ $element->sort->nom ?? 'Sort' }}</span>
                                     <div class="sort-detail" aria-hidden="true"></div>
                                 </div>
                             </li>

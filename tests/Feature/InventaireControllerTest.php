@@ -539,7 +539,8 @@ class InventaireControllerTest extends TestCase
         $utilisateur = Utilisateur::factory()->create();
         $personnage = PersonnageFactory::new()->create([
             'utilisateur_id' => $utilisateur->id,
-            'point_de_vie' => 5,
+            'point_de_vie' => 20,
+            'point_de_vie_actuel' => 5,
         ]);
         $potion = ObjetFactory::new()->potion(['pv' => 7])->create();
         $ligne = PersonnageObjetFactory::new()->create([
@@ -552,7 +553,7 @@ class InventaireControllerTest extends TestCase
             ->post(route('personnages.inventaire.utiliser', [$personnage, $ligne]))
             ->assertRedirect();
 
-        $this->assertSame(12, $personnage->fresh()->point_de_vie);
+        $this->assertSame(12, $personnage->fresh()->point_de_vie_actuel);
         $this->assertSame(0, $personnage->objets()->count());
     }
 

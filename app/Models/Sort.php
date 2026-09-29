@@ -10,21 +10,21 @@ class Sort extends Model
     protected $table = 'sorts';
 
     protected $fillable = [
-        'id_Degat',
-        'Nom',
-        'NomAnglais',
-        'Description',
-        'Niveau',
-        'TempsActivation',
-        'Duree',
-        'Ecole',
-        'Distance',
-        'AttaqueSauvegarde',
-        'Composants',
+        'degat_id',
+        'nom',
+        'nom_anglais',
+        'description',
+        'niveau',
+        'temps_activation',
+        'duree',
+        'ecole',
+        'distance',
+        'attaque_sauvegarde',
+        'composants',
     ];
 
     public function degat(): BelongsTo
     {
-        return $this->belongsTo(Degat::class, 'id_Degat');
+        return $this->belongsTo(Degat::class, 'degat_id');
     }
 }

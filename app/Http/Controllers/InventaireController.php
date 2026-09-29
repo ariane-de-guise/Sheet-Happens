@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AjouterObjetPersonnaliseRequest;
 use App\Models\EffetActif;
 use App\Models\Objet;
 use App\Models\Personnage;
@@ -24,8 +25,6 @@ class InventaireController extends Controller
 
     public function index(Personnage $personnage): View
     {
-        $this->verifierProprietaire($personnage);
-
         $this->inventaire->purgerEffetsExpires($personnage);
         $personnage->load(['race', 'classe', 'objets', 'effetsActifs']);
 
@@ -38,8 +37,6 @@ class InventaireController extends Controller
 
     public function pageAjout(Personnage $personnage): View
     {
-        $this->verifierProprietaire($personnage);
-
         $catalogue = Objet::query()
             ->where(function ($requeteSql) {
                 $requeteSql->whereNull('utilisateur_id')->orWhere('utilisateur_id', Auth::id());
@@ -56,8 +53,6 @@ class InventaireController extends Controller
 
     public function pageAjoutPersonnalise(Personnage $personnage): View
     {
-        $this->verifierProprietaire($personnage);
-
         return view('personnages.inventaire-ajouter-personnalise', [
             'personnage' => $personnage,
         ]);
@@ -65,8 +60,6 @@ class InventaireController extends Controller
 
     public function ajouter(Request $requete, Personnage $personnage): RedirectResponse
     {
-        $this->verifierProprietaire($personnage);
-
         $donneesValidees = $requete->validate([
             'objet_id' => [
                 'required',
@@ -86,30 +79,9 @@ class InventaireController extends Controller
             ->with('succes', "{$objet->nom} ajouté à l'inventaire.");
     }
 
-    public function ajouterPersonnalise(Request $requete, Personnage $personnage): RedirectResponse
+    public function ajouterPersonnalise(AjouterObjetPersonnaliseRequest $requete, Personnage $personnage): RedirectResponse
     {
-        $this->verifierProprietaire($personnage);
-
-        $donneesValidees = $requete->validate([
-            'nom' => 'required|string|max:100',
-            'description' => 'nullable|string|max:1000',
-            'type' => ['required', Rule::in(Objet::TYPES)],
-            'categorie' => 'nullable|string|max:50',
-            'cout_mains' => 'nullable|integer|in:1,2',
-            'quantite' => 'nullable|integer|min:1|max:999',
-            'magique' => 'nullable|boolean',
-            'rarete' => ['nullable', Rule::in(Objet::RARETES)],
-            'bonus_toujours_actif' => 'nullable|boolean',
-            'bonus' => 'nullable|array',
-            'bonus.*' => 'nullable|integer|min:-20|max:20',
-            'degats' => 'nullable|string|max:20',
-            'type_degats' => ['nullable', Rule::in(['tranchant', 'perforant', 'contondant'])],
-            'caracteristique_degats' => ['nullable', Rule::in(['force', 'dexterite'])],
-            'ca_base' => 'nullable|integer|min:1|max:30',
-            'effet_pv' => 'nullable|integer|min:-100|max:100',
-            'duree_valeur' => 'nullable|integer|min:1|max:999',
-            'duree_unite' => ['nullable', Rule::in(['tours', 'minutes'])],
-        ]);
+        $donneesValidees = $requete->validated();
 
         $estPotion = $donneesValidees['type'] === 'potion';
         $estArme = $donneesValidees['type'] === 'arme';
@@ -254,20 +226,13 @@ class InventaireController extends Controller
         return back();
     }
 
-    private function verifierProprietaire(Personnage $personnage): void
-    {
-        abort_unless($personnage->utilisateur_id === Auth::id(), 403);
-    }
-
     private function verifierLigne(Personnage $personnage, PersonnageObjet $personnageObjet): void
     {
-        $this->verifierProprietaire($personnage);
         abort_unless($personnageObjet->personnage_id === $personnage->id, 404);
     }
 
     private function verifierEffet(Personnage $personnage, EffetActif $effetActif): void
     {
-        $this->verifierProprietaire($personnage);
         abort_unless($effetActif->personnage_id === $personnage->id, 404);
     }
 }

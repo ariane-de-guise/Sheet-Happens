@@ -27,7 +27,7 @@ class DegatSeeder extends Seeder
 
         foreach ($degats as $degat) {
             Degat::create([
-                'Nom' => $degat,
+                'nom' => $degat,
             ]);
         }
     }

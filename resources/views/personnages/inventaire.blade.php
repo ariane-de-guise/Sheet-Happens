@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Inventaire de ' . $personnage->nom)
+@section('titre', 'Inventaire de ' . $personnage->nom)
 
 @push('styles')
     <style>
@@ -121,7 +121,7 @@
     </style>
 @endpush
 
-@section('content')
+@section('contenu')
     <div class="fiche-conteneur" style="max-width: 900px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
             <div>

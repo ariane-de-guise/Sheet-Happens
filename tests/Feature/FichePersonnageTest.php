@@ -191,8 +191,8 @@ class FichePersonnageTest extends TestCase
     {
         $utilisateur = Utilisateur::factory()->create();
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
-        $limite = LimiteMagie::create(['TourMagie' => 3, 'SortConnue' => 2, 'Niveau1' => 2]);
-        LimiteMagieClasse::create(['id_Classe' => $classe->id, 'id_LimiteMagie' => $limite->id, 'Niveau' => 1, 'AbiliteMagie' => 'Sagesse']);
+        $limite = LimiteMagie::create(['tours_de_magie' => 3, 'sorts_prepares' => 2, 'emplacements_niveau_1' => 2]);
+        LimiteMagieClasse::create(['classe_id' => $classe->id, 'limite_magie_id' => $limite->id, 'niveau' => 1, 'caracteristique_magie' => 'Sagesse']);
         $personnage = PersonnageFactory::new()->create([
             'utilisateur_id' => $utilisateur->id,
             'classe_id' => $classe->id,
@@ -491,6 +491,139 @@ class FichePersonnageTest extends TestCase
         ], $surcharges);
     }
 
+    public function test_un_nouveau_personnage_demarre_avec_tous_ses_points_de_vie(): void
+    {
+        $personnage = PersonnageFactory::new()->create(['point_de_vie' => 14]);
+
+        $this->assertSame(14, $personnage->fresh()->point_de_vie_actuel);
+    }
+
+    public function test_la_fiche_affiche_les_points_de_vie_actuels_sur_le_maximum(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id, 'point_de_vie' => 20]);
+        $personnage->update(['point_de_vie_actuel' => 13]);
+
+        $this->actingAs($utilisateur)->get(route('personnages.show', $personnage))
+            ->assertOk()
+            ->assertSee('13 / 20');
+    }
+
+    public function test_des_degats_puis_des_soins_modifient_les_points_de_vie_actuels_dans_les_bornes(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id, 'point_de_vie' => 20]);
+        $route = route('personnages.points-de-vie', $personnage);
+
+        $this->actingAs($utilisateur)->patch($route, ['montant' => 8, 'type' => 'degats'])
+            ->assertRedirect(route('personnages.show', $personnage));
+        $this->assertSame(12, $personnage->fresh()->point_de_vie_actuel);
+
+        $this->actingAs($utilisateur)->patch($route, ['montant' => 50, 'type' => 'soins']);
+        $this->assertSame(20, $personnage->fresh()->point_de_vie_actuel);
+
+        $this->actingAs($utilisateur)->patch($route, ['montant' => 99, 'type' => 'degats']);
+        $this->assertSame(0, $personnage->fresh()->point_de_vie_actuel);
+        $this->assertSame(20, $personnage->fresh()->point_de_vie);
+    }
+
+    public function test_ajuster_les_points_de_vie_exige_un_montant_et_un_type_valides(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.points-de-vie', $personnage), ['montant' => 0, 'type' => 'autre'])
+            ->assertSessionHasErrors(['montant', 'type']);
+    }
+
+    public function test_un_autre_utilisateur_ne_peut_pas_modifier_les_points_de_vie(): void
+    {
+        $personnage = PersonnageFactory::new()->create(['point_de_vie' => 20]);
+
+        $this->actingAs(Utilisateur::factory()->create())
+            ->patch(route('personnages.points-de-vie', $personnage), ['montant' => 5, 'type' => 'degats'])
+            ->assertForbidden();
+
+        $this->assertSame(20, $personnage->fresh()->point_de_vie_actuel);
+    }
+
+    public function test_le_niveau_et_les_caracteristiques_ne_changent_pas_depuis_l_edition(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'niveau' => 1,
+            'experience' => 6500,
+        ]);
+        $forceAvant = $personnage->abilites->force;
+
+        $this->actingAs($utilisateur)->patch(route('personnages.update', $personnage), $this->donneesMiseAJour([
+            'race_id' => $personnage->race_id,
+            'classe_id' => $personnage->classe_id,
+            'niveau' => 4,
+            'force' => 20,
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $personnage->fresh()->niveau);
+        $this->assertSame($forceAvant, $personnage->abilites->fresh()->force);
+    }
+
+    public function test_le_formulaire_d_edition_affiche_le_niveau_et_les_caracteristiques_sans_champ_modifiable(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $this->actingAs($utilisateur)->get(route('personnages.edit', $personnage))
+            ->assertOk()
+            ->assertDontSee('name="niveau"', false)
+            ->assertDontSee('name="force"', false)
+            ->assertSee('évoluent uniquement par la montée de niveau');
+    }
+
+    public function test_modifier_le_maximum_de_pv_conserve_les_degats_subis(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['de_de_vie' => '10']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+            'niveau' => 3,
+            'point_de_vie' => 20,
+        ]);
+        $personnage->update(['point_de_vie_actuel' => 15]); // 5 dégâts subis
+
+        $this->actingAs($utilisateur)->patch(route('personnages.update', $personnage), $this->donneesMiseAJour([
+            'race_id' => $personnage->race_id,
+            'classe_id' => $classe->id,
+            'niveau' => 3,
+            'point_de_vie' => 24,
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame(24, $personnage->fresh()->point_de_vie);
+        $this->assertSame(19, $personnage->fresh()->point_de_vie_actuel);
+    }
+
+    public function test_le_maximum_de_pv_reste_borne_selon_le_niveau_et_la_classe(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['de_de_vie' => '10']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+            'niveau' => 1,
+            'point_de_vie' => 10,
+        ]);
+
+        $this->actingAs($utilisateur)->patch(route('personnages.update', $personnage), $this->donneesMiseAJour([
+            'race_id' => $personnage->race_id,
+            'classe_id' => $classe->id,
+            'point_de_vie' => 50,
+        ]))->assertSessionHasErrors('point_de_vie');
+
+        $this->assertSame(10, $personnage->fresh()->point_de_vie);
+    }
+
     public function test_un_proprietaire_peut_mettre_a_jour_son_personnage(): void
     {
         $utilisateur = Utilisateur::factory()->create();
@@ -618,13 +751,13 @@ class FichePersonnageTest extends TestCase
     private function sort(string $nom): Sort
     {
         return Sort::create([
-            'Nom' => $nom,
-            'Description' => 'Sort de test',
-            'Niveau' => 0,
-            'TempsActivation' => '1 action',
-            'Duree' => 'Instantanée',
-            'Ecole' => 'Évocation',
-            'Distance' => '18 mètres',
+            'nom' => $nom,
+            'description' => 'Sort de test',
+            'niveau' => 0,
+            'temps_activation' => '1 action',
+            'duree' => 'Instantanée',
+            'ecole' => 'Évocation',
+            'distance' => '18 mètres',
         ]);
     }
 
@@ -641,7 +774,7 @@ class FichePersonnageTest extends TestCase
             'niveau' => 1,
         ]);
         foreach (['Lumière', 'Flamme sacrée'] as $nom) {
-            PersonnageSort::create(['id_Personnage' => $personnage->id, 'id_Sort' => $this->sort($nom)->id, 'Prepare' => 1]);
+            PersonnageSort::create(['personnage_id' => $personnage->id, 'sort_id' => $this->sort($nom)->id, 'preparation' => 1]);
         }
 
         $reponse = $this->actingAs($utilisateur)->patch("/personnages/{$personnage->id}", $this->donneesMiseAJour([
@@ -651,7 +784,7 @@ class FichePersonnageTest extends TestCase
 
         $reponse->assertSessionHasNoErrors();
         $reponse->assertSessionHas('succes', fn ($message) => str_contains($message, 'sorts ont été réinitialisés'));
-        $this->assertDatabaseMissing('personnage_sorts', ['id_Personnage' => $personnage->id]);
+        $this->assertDatabaseMissing('personnage_sorts', ['personnage_id' => $personnage->id]);
     }
 
     public function test_modifier_le_personnage_sans_changer_de_classe_conserve_les_sorts(): void
@@ -666,14 +799,14 @@ class FichePersonnageTest extends TestCase
             'niveau' => 1,
         ]);
         $sort = $this->sort('Lumière');
-        PersonnageSort::create(['id_Personnage' => $personnage->id, 'id_Sort' => $sort->id, 'Prepare' => 1]);
+        PersonnageSort::create(['personnage_id' => $personnage->id, 'sort_id' => $sort->id, 'preparation' => 1]);
 
         $this->actingAs($utilisateur)->patch("/personnages/{$personnage->id}", $this->donneesMiseAJour([
             'race_id' => $race->id,
             'classe_id' => $classe->id,
         ]))->assertSessionHasNoErrors();
 
-        $this->assertDatabaseHas('personnage_sorts', ['id_Personnage' => $personnage->id, 'id_Sort' => $sort->id, 'Prepare' => 1]);
+        $this->assertDatabaseHas('personnage_sorts', ['personnage_id' => $personnage->id, 'sort_id' => $sort->id, 'preparation' => 1]);
     }
 
     public function test_changer_de_classe_remplace_les_capacites_de_l_ancienne_classe(): void
@@ -699,59 +832,6 @@ class FichePersonnageTest extends TestCase
         ]))->assertSessionHasNoErrors();
 
         $this->assertSame([$nouvelle->id], $personnage->refresh()->capacites->modelKeys());
-    }
-
-    public function test_la_mise_a_jour_refuse_un_niveau_superieur_sans_assez_d_experience(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-            'niveau' => 1,
-            'experience' => 299,
-        ]);
-
-        $this->actingAs($utilisateur)
-            ->patch(route('personnages.update', $personnage), $this->donneesMiseAJour([
-                'race_id' => $personnage->race_id,
-                'classe_id' => $personnage->classe_id,
-                'niveau' => 2,
-            ]))
-            ->assertSessionHasErrors('niveau');
-
-        $this->assertSame(1, $personnage->refresh()->niveau);
-    }
-
-    public function test_la_mise_a_jour_partielle_refuse_des_points_de_vie_invalides(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-            'point_de_vie' => 8,
-        ]);
-
-        $reponse = $this->actingAs($utilisateur)
-            ->patch("/personnages/{$personnage->id}", ['point_de_vie' => 25]);
-
-        $reponse->assertSessionHasErrors(['point_de_vie']);
-        $this->assertSame(8, $personnage->refresh()->point_de_vie);
-    }
-
-    public function test_un_proprietaire_peut_modifier_uniquement_les_points_de_vie(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $classe = ClasseFactory::new()->create(['de_de_vie' => 'd10']);
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-            'classe_id' => $classe->id,
-            'point_de_vie' => 8,
-        ]);
-
-        $reponse = $this->actingAs($utilisateur)
-            ->patch("/personnages/{$personnage->id}", ['point_de_vie' => 10]);
-
-        $reponse->assertRedirect(route('personnages.show', $personnage));
-        $reponse->assertSessionHas('succes');
-        $this->assertSame(10, $personnage->refresh()->point_de_vie);
     }
 
     public function test_la_mise_a_jour_efface_les_listes_quand_toutes_les_options_sont_decoches(): void
@@ -801,72 +881,6 @@ class FichePersonnageTest extends TestCase
         $personnage->refresh();
         $this->assertSame('Nom conservé', $personnage->nom);
         $this->assertSame($competences, $personnage->listeCompetence->fresh()->competences);
-    }
-
-    public function test_les_statistiques_pv_et_niveau_sont_acceptes_avec_un_asi_valide(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-            'niveau' => 3,
-            'experience' => 2700,
-            'point_de_vie' => 10,
-        ]);
-        $competences = ['Athlétisme', 'Perception', 'Nature'];
-        $personnage->listeCompetence->update(['competences' => $competences]);
-
-        $donnees = $this->donneesMiseAJour([
-            'race_id' => $personnage->race_id,
-            'classe_id' => $personnage->classe_id,
-            'niveau' => 4,
-            'point_de_vie' => 20,
-            'force' => 12,
-            'competences' => $competences,
-        ]);
-
-        $reponse = $this->actingAs($utilisateur)
-            ->patch("/personnages/{$personnage->id}", $donnees);
-
-        $reponse->assertRedirect(route('personnages.show', $personnage));
-        $personnage->refresh();
-        $this->assertSame(4, $personnage->niveau);
-        $this->assertSame(20, $personnage->point_de_vie);
-        $this->assertSame(12, $personnage->abilites->fresh()->force);
-        $this->assertSame($competences, $personnage->listeCompetence->fresh()->competences);
-    }
-
-    public function test_la_mise_a_jour_refuse_de_diminuer_une_caracteristique(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-        ]);
-        $donnees = $this->donneesMiseAJour([
-            'race_id' => $personnage->race_id,
-            'classe_id' => $personnage->classe_id,
-            'force' => 9,
-        ]);
-
-        $this->actingAs($utilisateur)
-            ->patch(route('personnages.update', $personnage), $donnees)
-            ->assertSessionHasErrors('force');
-    }
-
-    public function test_la_mise_a_jour_refuse_une_augmentation_hors_asi(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-        ]);
-        $donnees = $this->donneesMiseAJour([
-            'race_id' => $personnage->race_id,
-            'classe_id' => $personnage->classe_id,
-            'force' => 11,
-        ]);
-
-        $this->actingAs($utilisateur)
-            ->patch(route('personnages.update', $personnage), $donnees)
-            ->assertSessionHasErrors('force');
     }
 
     public function test_la_mise_a_jour_conserve_une_sous_race_valide_meme_si_race_id_est_une_chaine(): void

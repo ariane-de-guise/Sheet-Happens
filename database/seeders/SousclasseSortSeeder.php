@@ -88,7 +88,7 @@ class SousClasseSortSeeder extends Seeder
         foreach ($sousClasses as $idSousClasse => $niveaux) {
             foreach ($niveaux as $sorts) {
                 foreach ($sorts as $nomAnglais) {
-                    $sort = Sort::where('NomAnglais', $nomAnglais)->first();
+                    $sort = Sort::where('nom_anglais', $nomAnglais)->first();
 
                     if (! $sort) {
                         throw new \RuntimeException(
@@ -99,8 +99,8 @@ class SousClasseSortSeeder extends Seeder
 
                     SousClasseSort::updateOrCreate(
                         [
-                            'id_SousClasse' => $idSousClasse,
-                            'id_Sort' => $sort->id,
+                            'sous_classe_id' => $idSousClasse,
+                            'sort_id' => $sort->id,
                         ],
                         []
                     );

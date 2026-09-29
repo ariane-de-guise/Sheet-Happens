@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Modifier ' . $personnage->nom)
+@section('titre', 'Modifier ' . $personnage->nom)
 
 @push('styles')
 <style>
@@ -120,6 +120,18 @@
     margin-bottom: 0.3rem;
 }
 
+.stat-bloc-valeur-fixe {
+    font-weight: 700;
+    color: var(--or);
+    text-align: center;
+}
+
+.note-montee-niveau {
+    font-size: 0.75rem;
+    color: var(--texte-secondaire);
+    margin: 0 0 0.75rem;
+}
+
 .mod-aptitude {
     font-size: 0.9rem;
     color: var(--or);
@@ -220,7 +232,7 @@
 </style>
 @endpush
 
-@section('content')
+@section('contenu')
 <div class="fiche-conteneur">
     @if ($errors->any())
         <div class="alerte alerte-danger" role="alert">
@@ -249,8 +261,7 @@
         <div class="fiche-entete-droite">
             <div class="stat-bloc">
                 <div class="stat-bloc-etiquette">Niveau</div>
-                <input type="number" name="niveau" value="{{ old('niveau', $personnage->niveau) }}" min="1" max="20"
-                    style="width:45px;">
+                <div class="stat-bloc-valeur-fixe" title="Le niveau évolue par la montée de niveau">{{ $personnage->niveau }}</div>
             </div>
             <div class="stat-bloc">
                 <div class="stat-bloc-etiquette">PV</div>
@@ -360,6 +371,7 @@
 
         <div class="fiche-section">
             <div class="fiche-section-titre">Caractéristiques</div>
+            <p class="note-montee-niveau">Le niveau et les caractéristiques évoluent uniquement par la montée de niveau (amélioration de caractéristiques ou don).</p>
             <div class="fiche-grille-6">
                 @php
                     $stats = [
@@ -373,16 +385,14 @@
                 @endphp
                 @foreach($stats as $cle => $libelle)
                     @php
-                        $valeur = old($cle, $personnage->abilites->$cle ?? 10);
+                        $valeur = $personnage->abilites->$cle ?? 10;
                         $mod = floor(($valeur - 10) / 2);
                         $modChaine = $mod >= 0 ? '+' . $mod : $mod;
                     @endphp
                     <div class="boite-aptitude">
                         <div class="nom-aptitude">{{ $libelle }}</div>
-                        <input type="number" name="{{ $cle }}" value="{{ $valeur }}" min="1" max="20"
-                            class="champ-aptitude"
-                            oninput="majModificateur(this)">
-                        <div class="mod-aptitude" id="mod-{{ $cle }}">{{ $modChaine }}</div>
+                        <div class="champ-aptitude">{{ $valeur }}</div>
+                        <div class="mod-aptitude">{{ $modChaine }}</div>
                     </div>
                 @endforeach
             </div>
@@ -547,22 +557,22 @@ function filtrerOptionsEdition(idListe, historiqueId) {
         : reserve.options.filter(opt => opt.historique == historiqueId);
 
     liste.innerHTML = reserve.placeholder + optionsCorrespondantes.map(opt =>
-        '<option value="' + opt.value + '"' + (opt.value === reserve.current ? ' selected' : '') + '>' + opt.html + '</option>'
+        '<option value="' + opt.valeur + '"' + (opt.valeur === reserve.courant ? ' selected' : '') + '>' + opt.html + '</option>'
     ).join('');
 }
 
 function changerHistoriqueEdition(historiqueId) {
-    filtrerOptionsEdition('edit_ideal_select', historiqueId);
-    filtrerOptionsEdition('edit_defaut_select', historiqueId);
-    filtrerOptionsEdition('edit_attachement_select', historiqueId);
-    filtrerOptionsEdition('edit_personnalite_select', historiqueId);
+    filtrerOptionsEdition('edition_ideal_liste', historiqueId);
+    filtrerOptionsEdition('edition_defaut_liste', historiqueId);
+    filtrerOptionsEdition('edition_attachement_liste', historiqueId);
+    filtrerOptionsEdition('edition_personnalite_liste', historiqueId);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    initialiserReserveOptionsHistorique('edit_ideal_select');
-    initialiserReserveOptionsHistorique('edit_defaut_select');
-    initialiserReserveOptionsHistorique('edit_attachement_select');
-    initialiserReserveOptionsHistorique('edit_personnalite_select');
+    initialiserReserveOptionsHistorique('edition_ideal_liste');
+    initialiserReserveOptionsHistorique('edition_defaut_liste');
+    initialiserReserveOptionsHistorique('edition_attachement_liste');
+    initialiserReserveOptionsHistorique('edition_personnalite_liste');
 
     const formulaire = document.getElementById('formulaireEdition');
     formulaire.addEventListener('invalid', function (evenement) {
@@ -581,20 +591,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (choixHist && choixHist.value) {
         changerHistoriqueEdition(choixHist.value);
     } else {
-        filtrerOptionsEdition('edit_ideal_select', '');
-        filtrerOptionsEdition('edit_defaut_select', '');
-        filtrerOptionsEdition('edit_attachement_select', '');
-        filtrerOptionsEdition('edit_personnalite_select', '');
+        filtrerOptionsEdition('edition_ideal_liste', '');
+        filtrerOptionsEdition('edition_defaut_liste', '');
+        filtrerOptionsEdition('edition_attachement_liste', '');
+        filtrerOptionsEdition('edition_personnalite_liste', '');
     }
 });
-
-function majModificateur(champ) {
-    const cle = champ.name;
-    const valeur = parseInt(champ.value) || 10;
-    const mod = Math.floor((valeur - 10) / 2);
-    const modChaine = mod >= 0 ? '+' + mod : mod;
-    document.getElementById('mod-' + cle).textContent = modChaine;
-}
 
 function chargerSousRaces() {
     const raceId = document.getElementById('raceListe').value;

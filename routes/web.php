@@ -60,37 +60,41 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [CreationPersonnageController::class, 'finaliser'])->name('creation.finaliser');
     });
 
-    Route::post('/personnages/{personnage}/experience', [FichePersonnageController::class, 'ajouterExperience'])->name('personnages.experience.ajouter');
+    // Toutes les routes d'un personnage : réservées à son propriétaire
+    // (PersonnagePolicy::gerer), vérifié ici une fois pour toutes.
+    Route::prefix('personnages/{personnage}')->name('personnages.')->middleware('can:gerer,personnage')->group(function () {
+        Route::get('/', [FichePersonnageController::class, 'show'])->name('show');
+        Route::get('/edit', [FichePersonnageController::class, 'edit'])->name('edit');
+        Route::patch('/', [FichePersonnageController::class, 'update'])->name('update');
+        Route::delete('/', [FichePersonnageController::class, 'destroy'])->name('destroy');
+        Route::get('/traits', [FichePersonnageController::class, 'afficherTraits'])->name('traits');
+        Route::patch('/points-de-vie', [FichePersonnageController::class, 'ajusterPointsDeVie'])->name('points-de-vie');
+        Route::patch('/photo', [FichePersonnageController::class, 'modifierPhoto'])->name('photo');
+        Route::post('/experience', [FichePersonnageController::class, 'ajouterExperience'])->name('experience.ajouter');
 
-    Route::get('/personnages/{personnage}/montee-niveau', [MonteeNiveauController::class, 'show'])->name('personnages.montee-niveau');
-    Route::post('/personnages/{personnage}/montee-niveau/lancer-de-vie', [MonteeNiveauController::class, 'lancerDeVie'])->name('personnages.montee-niveau.lancer-de-vie');
-    Route::post('/personnages/{personnage}/montee-niveau', [MonteeNiveauController::class, 'store'])->name('personnages.montee-niveau.store');
+        Route::get('/montee-niveau', [MonteeNiveauController::class, 'show'])->name('montee-niveau');
+        Route::post('/montee-niveau/lancer-de-vie', [MonteeNiveauController::class, 'lancerDeVie'])->name('montee-niveau.lancer-de-vie');
+        Route::post('/montee-niveau', [MonteeNiveauController::class, 'store'])->name('montee-niveau.store');
 
-    Route::get('/personnages/{personnage}', [FichePersonnageController::class, 'show'])->name('personnages.show');
+        // Sorts connus
+        Route::get('/sorts', [PersonnageSortController::class, 'index'])->name('sorts.index');
+        Route::patch('/sorts/{personnageSort}', [PersonnageSortController::class, 'modifierPreparation'])->name('sorts.preparer');
+        Route::post('/sorts', [PersonnageSortController::class, 'ajouterPreparation'])->name('sorts.ajouter');
 
-    // Sorts connus
-    Route::get('/personnages/{personnage}/sorts', [PersonnageSortController::class, 'index'])->name('personnages.sorts.index');
-    Route::patch('/personnages/{personnage}/sorts/{personnageSort}', [PersonnageSortController::class, 'modifierPreparation'])->name('personnages.sorts.preparer');
-    Route::post('/personnages/{personnage}/sorts', [PersonnageSortController::class, 'ajouterPreparation'])->name('personnages.sorts.ajouter');
-
-    Route::prefix('personnages/{personnage}/inventaire')->name('personnages.inventaire.')->group(function () {
-        Route::get('/', [InventaireController::class, 'index'])->name('index');
-        Route::get('/ajouter', [InventaireController::class, 'pageAjout'])->name('ajouter-page');
-        Route::get('/ajouter/personnalise', [InventaireController::class, 'pageAjoutPersonnalise'])->name('ajouter-personnalise-page');
-        Route::post('/', [InventaireController::class, 'ajouter'])->name('ajouter');
-        Route::post('/personnalise', [InventaireController::class, 'ajouterPersonnalise'])->name('ajouter-personnalise');
-        Route::patch('/{personnageObjet}/quantite', [InventaireController::class, 'ajusterQuantite'])->name('quantite');
-        Route::patch('/{personnageObjet}/equiper', [InventaireController::class, 'equiper'])->name('equiper');
-        Route::patch('/{personnageObjet}/desequiper', [InventaireController::class, 'desequiper'])->name('desequiper');
-        Route::post('/{personnageObjet}/utiliser', [InventaireController::class, 'utiliser'])->name('utiliser');
-        Route::delete('/{personnageObjet}', [InventaireController::class, 'retirer'])->name('retirer');
-        Route::patch('/effets/{effetActif}/tours', [InventaireController::class, 'ajusterTours'])->name('effets.tours');
+        Route::prefix('inventaire')->name('inventaire.')->group(function () {
+            Route::get('/', [InventaireController::class, 'index'])->name('index');
+            Route::get('/ajouter', [InventaireController::class, 'pageAjout'])->name('ajouter-page');
+            Route::get('/ajouter/personnalise', [InventaireController::class, 'pageAjoutPersonnalise'])->name('ajouter-personnalise-page');
+            Route::post('/', [InventaireController::class, 'ajouter'])->name('ajouter');
+            Route::post('/personnalise', [InventaireController::class, 'ajouterPersonnalise'])->name('ajouter-personnalise');
+            Route::patch('/{personnageObjet}/quantite', [InventaireController::class, 'ajusterQuantite'])->name('quantite');
+            Route::patch('/{personnageObjet}/equiper', [InventaireController::class, 'equiper'])->name('equiper');
+            Route::patch('/{personnageObjet}/desequiper', [InventaireController::class, 'desequiper'])->name('desequiper');
+            Route::post('/{personnageObjet}/utiliser', [InventaireController::class, 'utiliser'])->name('utiliser');
+            Route::delete('/{personnageObjet}', [InventaireController::class, 'retirer'])->name('retirer');
+            Route::patch('/effets/{effetActif}/tours', [InventaireController::class, 'ajusterTours'])->name('effets.tours');
+        });
     });
-    Route::get('/personnages/{personnage}/edit', [FichePersonnageController::class, 'edit'])->name('personnages.edit');
-    Route::get('/personnages/{personnage}/traits', [FichePersonnageController::class, 'afficherTraits'])->name('personnages.traits');
-    Route::patch('/personnages/{personnage}', [FichePersonnageController::class, 'update'])->name('personnages.update');
-    Route::patch('/personnages/{personnage}/photo', [FichePersonnageController::class, 'modifierPhoto'])->name('personnages.photo');
-    Route::delete('/personnages/{personnage}', [FichePersonnageController::class, 'destroy'])->name('personnages.destroy');
 
     Route::get('/api/sous-classes/{classeId}/{niveauMax?}', [CreationPersonnageController::class, 'listerSousClasses'])->name('api.sous-classes');
     Route::get('/api/sous-races/{raceId}', [CreationPersonnageController::class, 'listerSousRaces'])->name('api.sous-races');

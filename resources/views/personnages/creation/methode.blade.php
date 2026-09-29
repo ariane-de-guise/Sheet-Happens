@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Créer un personnage - Méthode')
+@section('titre', 'Créer un personnage - Méthode')
 
-@section('content')
+@section('contenu')
     <div class="carte" style="min-height: 70vh; display: flex; flex-direction: column; justify-content: center;">
         <div class="texte-centre marge-bas-3">
             <span class="texte-or">Créer un personnage</span>

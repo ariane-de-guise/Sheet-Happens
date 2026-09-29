@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Créer un personnage - Race')
+@section('titre', 'Créer un personnage - Race')
 
-@section('content')
+@section('contenu')
     <div class="carte">
         <div class="texte-centre marge-bas-3">
             <span class="texte-or">Créer un personnage</span>

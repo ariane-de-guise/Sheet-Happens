@@ -91,10 +91,10 @@ function majApercuAlignement() {
     if (!listeAlignement) return;
 
     const alignements = [
-        alignementChoisi('ideal_select'),
-        alignementChoisi('defaut_select'),
-        alignementChoisi('attachement_select'),
-        alignementChoisi('personnalite_select'),
+        alignementChoisi('ideal_liste'),
+        alignementChoisi('defaut_liste'),
+        alignementChoisi('attachement_liste'),
+        alignementChoisi('personnalite_liste'),
     ];
 
     if (!alignements[0]) {
@@ -187,10 +187,10 @@ function majDescriptionHistorique(historiqueId) {
 }
 
 function changerHistorique(historiqueId, outilPreselectionne) {
-    filtrerParHistorique('ideal_select', historiqueId);
-    filtrerParHistorique('defaut_select', historiqueId);
-    filtrerParHistorique('attachement_select', historiqueId);
-    filtrerParHistorique('personnalite_select', historiqueId);
+    filtrerParHistorique('ideal_liste', historiqueId);
+    filtrerParHistorique('defaut_liste', historiqueId);
+    filtrerParHistorique('attachement_liste', historiqueId);
+    filtrerParHistorique('personnalite_liste', historiqueId);
     majDescriptionHistorique(historiqueId);
     majApercuEquipement(historiqueId);
     majOptionsOutils(historiqueId, outilPreselectionne);

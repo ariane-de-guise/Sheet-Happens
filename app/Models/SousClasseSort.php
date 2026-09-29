@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class SousClasseSort extends Model
 {
-    protected $table = 'sousclasse_sorts';
+    protected $table = 'sous_classe_sorts';
 
     protected $fillable = [
-        'id_SousClasse',
-        'id_Sort',
+        'sous_classe_id',
+        'sort_id',
     ];
 }

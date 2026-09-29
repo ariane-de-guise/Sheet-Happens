@@ -13,7 +13,6 @@ class MonteeNiveauController extends Controller
 {
     public function show(Personnage $personnage, MonteeNiveauService $service): View|RedirectResponse
     {
-        $this->verifierProprietaire($personnage);
         if ($personnage->niveau >= 5) {
             return redirect()->route('personnages.show', $personnage)->with('succes', 'Ce personnage a atteint le niveau maximum pris en charge (5).');
         }
@@ -33,7 +32,6 @@ class MonteeNiveauController extends Controller
 
     public function lancerDeVie(Personnage $personnage, MonteeNiveauService $service): JsonResponse
     {
-        $this->verifierProprietaire($personnage);
         $apercu = $service->apercu($personnage);
         $faces = $apercu['de_vie_faces'];
         abort_if($faces < 1, 422, 'Dé de vie invalide.');
@@ -46,7 +44,6 @@ class MonteeNiveauController extends Controller
 
     public function store(Request $requete, Personnage $personnage, MonteeNiveauService $service): RedirectResponse
     {
-        $this->verifierProprietaire($personnage);
         $choix = $requete->all();
         if (($choix['mode_pv'] ?? 'fixe') === 'de') {
             $choix['jet_de_vie'] = session()->get('montee_niveau.jet_de_vie.'.$personnage->id);
@@ -64,10 +61,5 @@ class MonteeNiveauController extends Controller
 
         return redirect()->route('personnages.show', $personnage)
             ->with('succes', "{$personnage->nom} est maintenant niveau {$personnage->niveau} !");
-    }
-
-    private function verifierProprietaire(Personnage $personnage): void
-    {
-        abort_unless(auth()->id() === $personnage->utilisateur_id, 403);
     }
 }

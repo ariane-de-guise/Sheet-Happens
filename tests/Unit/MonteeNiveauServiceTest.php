@@ -65,6 +65,16 @@ class MonteeNiveauServiceTest extends TestCase
         $this->assertContains('Sens du danger', $p->capacites->pluck('nom'));
     }
 
+    public function test_la_montee_ajoute_les_pv_gagnes_aux_pv_actuels(): void
+    {
+        $p = $this->personnage();
+        $p->update(['point_de_vie_actuel' => 12]); // 8 dégâts subis sur 20
+        $this->service->monter($p->fresh(), []);
+
+        $this->assertSame(29, $p->fresh()->point_de_vie);
+        $this->assertSame(21, $p->fresh()->point_de_vie_actuel); // 12 + 9 gagnés
+    }
+
     public function test_sous_classe_est_obligatoire_au_niveau_requis(): void
     {
         $p = $this->personnage('Guerrier', 2);

@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Mon profil')
+@section('titre', 'Mon profil')
 
-@section('content')
+@section('contenu')
     <div class="profil-page">
         <section class="carte profil-carte">
             <div class="profil-entete">

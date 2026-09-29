@@ -167,7 +167,9 @@ class MonteeNiveauService
             $gainPv = max(1, $gainPv);
 
             $personnage->niveau = $niveauArrivee;
+            // Les PV gagnés s'ajoutent au maximum comme aux PV actuels.
             $personnage->point_de_vie += $gainPv;
+            $personnage->point_de_vie_actuel = ($personnage->point_de_vie_actuel ?? $personnage->point_de_vie - $gainPv) + $gainPv;
             $personnage->save();
             $personnage->abilites->save();
             $this->capacites->synchroniser($personnage);
@@ -245,6 +247,7 @@ class MonteeNiveauService
                 // Le don Robuste donne +2 PV pour chaque niveau, incluant le niveau atteint maintenant.
                 $bonus = (int) $don->effets['pv_par_niveau'] * 4;
                 $personnage->point_de_vie += $bonus;
+                $personnage->point_de_vie_actuel = ($personnage->point_de_vie_actuel ?? $personnage->point_de_vie - $bonus) + $bonus;
                 $changements['bonus_pv_don'] = $bonus;
             }
             $personnage->dons()->attach($don->id);

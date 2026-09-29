@@ -1,41 +1,41 @@
 @extends('layouts.app')
 
-@section('title', 'Montée de niveau - ' . $personnage->nom)
+@section('titre', 'Montée de niveau - ' . $personnage->nom)
 
-@section('content')
-    <div style="max-width: 1050px; margin: 0 auto;">
-        <div class="carte" style="border: 1px solid var(--or-bordure); overflow: hidden;">
-            <div style="text-align:center; padding: 1rem 0 1.5rem; border-bottom:1px solid var(--or-ligne-forte);">
-                <div style="color: var(--texte-secondaire); text-transform:uppercase; letter-spacing:.25rem; font-size:.72rem;">Progression du personnage</div>
-                <h1 style="color: var(--or); margin:.35rem 0; font-size:2rem;">Montée de niveau</h1>
-                <div style="color: var(--texte-secondaire);">{{ $personnage->nom }} · {{ $personnage->classe->nom }} · Niveau {{ $apercu['niveau_depart'] }} → {{ $apercu['niveau_arrivee'] }}</div>
+@section('contenu')
+    <div class="montee-page">
+        <div class="carte montee-carte">
+            <div class="montee-entete">
+                <div class="montee-surtitre">Progression du personnage</div>
+                <h1 class="montee-titre">Montée de niveau</h1>
+                <div class="texte-secondaire">{{ $personnage->nom }} · {{ $personnage->classe->nom }} · Niveau {{ $apercu['niveau_depart'] }} → {{ $apercu['niveau_arrivee'] }}</div>
             </div>
 
             @if($errors->any())
-                <div style="margin:1rem 0; padding:1rem; border: 1px solid var(--alerte-erreur-bordure); border-radius:10px; background:var(--alerte-erreur-fond); color:var(--alerte-erreur-texte);">
+                <div class="montee-erreurs">
                     @foreach($errors->all() as $erreur)<div>• {{ $erreur }}</div>@endforeach
                 </div>
             @endif
 
             <form method="POST" action="{{ route('personnages.montee-niveau.store', $personnage) }}" id="formulaireNiveau">
                 @csrf
-                <div style="display:grid; grid-template-columns: 1fr 1.45fr; gap:1.25rem; margin-top:1.5rem;">
+                <div class="montee-grille">
                     <div>
-                        <div style="background:var(--panneau); border: 1px solid var(--or-bordure); border-radius:12px; padding:1.1rem; margin-bottom:1rem;">
-                            <div style="color: var(--or); font-weight:700; margin-bottom:.75rem;">Résumé</div>
-                            <div style="display:grid; gap:.55rem; color: var(--texte-secondaire); font-size:.9rem;">
-                                <div style="display:flex;justify-content:space-between"><span>Niveau</span><strong style="color:var(--texte)">{{ $apercu['niveau_depart'] }} → {{ $apercu['niveau_arrivee'] }}</strong></div>
-                                <div style="display:flex;justify-content:space-between"><span>Bonus de maîtrise</span><strong style="color:var(--texte)">+{{ $apercu['bonus_maitrise'] }}</strong></div>
-                                <div style="display:flex;justify-content:space-between"><span>PV actuels</span><strong style="color:var(--texte)">{{ $personnage->point_de_vie }}</strong></div>
-                                <div style="display:flex;justify-content:space-between"><span>Dé de vie</span><strong style="color:var(--texte)">d{{ $apercu['de_vie_faces'] }}</strong></div>
-                                <div style="display:flex;justify-content:space-between"><span>Valeur fixe</span><strong style="color:var(--texte)">{{ $apercu['pv_base'] }} + mod. CON ({{ $apercu['modificateur_constitution'] >= 0 ? '+' : '' }}{{ $apercu['modificateur_constitution'] }})</strong></div>
+                        <div class="montee-boite-resume">
+                            <div class="montee-boite-titre">Résumé</div>
+                            <div class="montee-resume">
+                                <div class="montee-resume-ligne"><span>Niveau</span><strong class="texte-principal">{{ $apercu['niveau_depart'] }} → {{ $apercu['niveau_arrivee'] }}</strong></div>
+                                <div class="montee-resume-ligne"><span>Bonus de maîtrise</span><strong class="texte-principal">+{{ $apercu['bonus_maitrise'] }}</strong></div>
+                                <div class="montee-resume-ligne"><span>PV maximum</span><strong class="texte-principal">{{ $personnage->point_de_vie }}</strong></div>
+                                <div class="montee-resume-ligne"><span>Dé de vie</span><strong class="texte-principal">d{{ $apercu['de_vie_faces'] }}</strong></div>
+                                <div class="montee-resume-ligne"><span>Valeur fixe</span><strong class="texte-principal">{{ $apercu['pv_base'] }} + mod. CON ({{ $apercu['modificateur_constitution'] >= 0 ? '+' : '' }}{{ $apercu['modificateur_constitution'] }})</strong></div>
                             </div>
                         </div>
 
-                        <div style="background:var(--panneau); border: 1px solid var(--or-bordure); border-radius:12px; padding:1.1rem;">
-                            <div style="color: var(--or); font-weight:700; margin-bottom:.75rem;">Nouveautés du niveau {{ $apercu['niveau_arrivee'] }}</div>
+                        <div class="montee-boite">
+                            <div class="montee-boite-titre">Nouveautés du niveau {{ $apercu['niveau_arrivee'] }}</div>
                             @forelse($apercu['capacites'] as $capacite)
-                                <div style="padding:.65rem 0; border-bottom:1px solid var(--or-ligne-faible); color: var(--texte);">
+                                <div class="montee-nouveaute">
                                     @include('partials.info-bulle', [
                                         'libelle' => '✦ ' . $capacite->nom,
                                         'titre' => $capacite->nom,
@@ -43,33 +43,33 @@
                                     ])
                                 </div>
                             @empty
-                                <div style="color: var(--texte-secondaire);">Aucune nouvelle capacité de classe à ce niveau.</div>
+                                <div class="texte-secondaire">Aucune nouvelle capacité de classe à ce niveau.</div>
                             @endforelse
                         </div>
                     </div>
 
-                    <div style="background:var(--panneau); border: 1px solid var(--or-bordure); border-radius:12px; padding:1.25rem;">
-                        <div style="color: var(--or); font-size:1.1rem; font-weight:700; margin-bottom:1rem;">Vos choix</div>
+                    <div class="montee-boite-choix">
+                        <div class="montee-choix-titre">Vos choix</div>
 
-                        <div style="margin-bottom:1.5rem;">
-                            <div style="color:var(--texte); font-weight:600; margin-bottom:.35rem;">Points de vie</div>
-                            <div style="color: var(--texte-secondaire); font-size:.85rem; margin-bottom:.75rem;">Choisissez la méthode D&amp;D 5e : prendre la valeur fixe ou lancer votre dé de vie. Le modificateur de Constitution est ajouté dans les deux cas.</div>
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
-                                <label style="padding:.85rem; border:1px solid var(--bordure-option); border-radius:10px; cursor:pointer;">
+                        <div class="montee-bloc">
+                            <div class="montee-libelle">Points de vie</div>
+                            <div class="montee-aide">Choisissez la méthode D&amp;D 5e : prendre la valeur fixe ou lancer votre dé de vie. Le modificateur de Constitution est ajouté dans les deux cas.</div>
+                            <div class="montee-grille-pv">
+                                <label class="montee-option-pv">
                                     <input type="radio" name="mode_pv" value="fixe" @checked(old('mode_pv', 'fixe') === 'fixe') required>
-                                    <strong style="color: var(--or); margin-left:.35rem;">Valeur fixe</strong>
-                                    <div style="color: var(--texte-secondaire); font-size:.82rem; margin:.35rem 0 0 1.4rem;">{{ $apercu['pv_base'] }} + mod. CON</div>
+                                    <strong class="montee-option-nom">Valeur fixe</strong>
+                                    <div class="montee-option-detail">{{ $apercu['pv_base'] }} + mod. CON</div>
                                 </label>
-                                <div style="padding:.85rem; border:1px solid var(--bordure-option); border-radius:10px;">
-                                    <label style="cursor:pointer;">
+                                <div class="montee-option-de">
+                                    <label class="curseur-main">
                                         <input type="radio" name="mode_pv" value="de" @checked(old('mode_pv') === 'de') required>
-                                        <strong style="color: var(--or); margin-left:.35rem;">Lancer le dé</strong>
+                                        <strong class="montee-option-nom">Lancer le dé</strong>
                                     </label>
-                                    <div style="color: var(--texte-secondaire); font-size:.82rem; margin:.35rem 0 .65rem 1.4rem;">1d{{ $apercu['de_vie_faces'] }} + mod. CON</div>
-                                    <button type="button" id="boutonLancerDeVie" class="bouton bouton-secondaire" style="width:100%;">Lancer le d{{ $apercu['de_vie_faces'] }}</button>
-                                    <div id="resultatDeVie" style="{{ $jetDeVie !== null ? '' : 'display:none;' }} margin-top:.7rem; text-align:center; padding:.65rem; border-radius:8px; background:var(--or-halo-faible); color:var(--texte);">
-                                        Résultat : <strong id="valeurDeVie" style="color: var(--or); font-size:1.35rem;">{{ $jetDeVie }}</strong>
-                                        <div id="totalDeVie" style="color: var(--texte-secondaire); font-size:.8rem; margin-top:.2rem;">
+                                    <div class="montee-option-detail-de">1d{{ $apercu['de_vie_faces'] }} + mod. CON</div>
+                                    <button type="button" id="boutonLancerDeVie" class="bouton bouton-secondaire bouton-pleine-largeur">Lancer le d{{ $apercu['de_vie_faces'] }}</button>
+                                    <div id="resultatDeVie" class="montee-jet-resultat"@if($jetDeVie === null) style="display:none;"@endif>
+                                        Résultat : <strong class="montee-jet-valeur" id="valeurDeVie">{{ $jetDeVie }}</strong>
+                                        <div class="montee-jet-total" id="totalDeVie">
                                             @if($jetDeVie !== null)
                                                 Gain de ce niveau : {{ max(1, $jetDeVie + $apercu['modificateur_constitution']) }} PV ({{ $jetDeVie }} {{ $apercu['modificateur_constitution'] >= 0 ? '+' : '-' }} {{ abs($apercu['modificateur_constitution']) }} CON)
                                             @endif
@@ -80,14 +80,14 @@
                         </div>
 
                         @if($apercu['choix_sous_classe'])
-                            <div style="margin-bottom:1.5rem;">
-                                <div style="color:var(--texte); font-weight:600; margin-bottom:.7rem;">Choisissez votre sous-classe</div>
-                                <div style="display:grid; gap:.7rem;">
+                            <div class="montee-bloc">
+                                <div class="montee-libelle-choix">Choisissez votre sous-classe</div>
+                                <div class="montee-liste-sous-classes">
                                     @foreach($apercu['sous_classes'] as $sc)
-                                        <label style="display:block; padding:.85rem; border:1px solid var(--bordure-option); border-radius:10px; cursor:pointer;">
+                                        <label class="montee-option-sous-classe">
                                             <input type="radio" name="sous_classe_id" value="{{ $sc->id }}" @checked(old('sous_classe_id') == $sc->id) required>
-                                            <strong style="color: var(--or); margin-left:.35rem;">{{ $sc->nom }}</strong>
-                                            <div style="color: var(--texte-secondaire); font-size:.82rem; margin:.35rem 0 0 1.4rem;">{{ $sc->description }}</div>
+                                            <strong class="montee-option-nom">{{ $sc->nom }}</strong>
+                                            <div class="montee-option-detail">{{ $sc->description }}</div>
                                         </label>
                                     @endforeach
                                 </div>
@@ -96,19 +96,19 @@
 
                         @if($apercu['choix_amelioration'])
                             <div>
-                                <div style="color:var(--texte); font-weight:600; margin-bottom:.7rem;">Amélioration de caractéristiques ou don</div>
-                                <div style="display:flex; gap:.75rem; margin-bottom:1rem;">
-                                    <label style="flex:1; padding:.8rem; border:1px solid var(--bordure-option); border-radius:10px; cursor:pointer;"><input type="radio" name="type_amelioration" value="caracteristiques" @checked(old('type_amelioration', 'caracteristiques') === 'caracteristiques')> <span style="color: var(--or)">Caractéristiques</span></label>
-                                    <label style="flex:1; padding:.8rem; border:1px solid var(--bordure-option); border-radius:10px; cursor:pointer;"><input type="radio" name="type_amelioration" value="don" @checked(old('type_amelioration') === 'don')> <span style="color: var(--or)">Don (Feat)</span></label>
+                                <div class="montee-libelle-choix">Amélioration de caractéristiques ou don</div>
+                                <div class="montee-types-amelioration">
+                                    <label class="montee-option-amelioration"><input type="radio" name="type_amelioration" value="caracteristiques" @checked(old('type_amelioration', 'caracteristiques') === 'caracteristiques')> <span class="montee-option-libelle">Caractéristiques</span></label>
+                                    <label class="montee-option-amelioration"><input type="radio" name="type_amelioration" value="don" @checked(old('type_amelioration') === 'don')> <span class="montee-option-libelle">Don (Feat)</span></label>
                                 </div>
 
-                                <div id="panneauCaracteristiques" style="padding:1rem; background:var(--panneau-vif); border-radius:10px;">
-                                    <div style="color: var(--texte-secondaire); font-size:.85rem; margin-bottom:.8rem;">Répartissez exactement 2 points (+2 ou +1/+1). Une caractéristique ne peut pas dépasser 20.</div>
+                                <div class="montee-panneau" id="panneauCaracteristiques">
+                                    <div class="montee-aide-repartition">Répartissez exactement 2 points (+2 ou +1/+1). Une caractéristique ne peut pas dépasser 20.</div>
                                     @php $stats = ['force'=>'Force','dexterite'=>'Dextérité','constitution'=>'Constitution','intelligence'=>'Intelligence','sagesse'=>'Sagesse','charisme'=>'Charisme']; @endphp
-                                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.65rem;">
+                                    <div class="montee-grille-caracteristiques">
                                         @foreach($stats as $cle=>$libelle)
-                                            <label style="color: var(--texte);font-size:.85rem;">{{ $libelle }} ({{ $personnage->abilites->$cle }})
-                                                <select name="caracteristiques[{{ $cle }}]" style="width:100%;margin-top:.25rem;padding:.45rem;border-radius:7px;background:var(--champ-fond);color:var(--texte);border:1px solid var(--bordure-option);">
+                                            <label class="montee-libelle-caracteristique">{{ $libelle }} ({{ $personnage->abilites->$cle }})
+                                                <select class="montee-liste-petite" name="caracteristiques[{{ $cle }}]">
                                                     @foreach([0,1,2] as $v)<option value="{{ $v }}" @selected((int)old("caracteristiques.$cle",0)===$v)>+{{ $v }}</option>@endforeach
                                                 </select>
                                             </label>
@@ -116,19 +116,19 @@
                                     </div>
                                 </div>
 
-                                <div id="panneauDon" style="display:none; padding:1rem; background:var(--panneau-vif); border-radius:10px;">
-                                    <label style="color: var(--texte);">Don
-                                        <select name="don" id="choixDon" style="width:100%;margin-top:.35rem;padding:.55rem;border-radius:7px;background:var(--champ-fond);color:var(--texte);border:1px solid var(--bordure-option);">
+                                <div class="montee-panneau-masque" id="panneauDon">
+                                    <label class="montee-libelle-don">Don
+                                        <select class="montee-liste" name="don" id="choixDon">
                                             <option value="">— Choisir —</option>
                                             @foreach($apercu['dons'] as $nom=>$don)
                                                 <option value="{{ $nom }}" data-stats='@json($don->choix_stat ?? [])' data-description="{{ $don->description }}" @selected(old('don')===$nom)>{{ $nom }} — {{ $don->resume }}</option>
                                             @endforeach
                                         </select>
                                     </label>
-                                    <div id="descriptionDon" style="display:none;margin-top:.8rem;padding:.7rem .8rem;border:1px solid var(--or-bordure);border-radius:8px;background:var(--panneau);color:var(--texte-secondaire);font-size:.85rem;line-height:1.4;"></div>
-                                    <div id="conteneurCaracteristiqueDon" style="display:none;margin-top:.8rem;">
-                                        <label style="color: var(--texte);">Caractéristique augmentée
-                                            <select name="don_caracteristique" id="choixCaracteristiqueDon" style="width:100%;margin-top:.35rem;padding:.55rem;border-radius:7px;background:var(--champ-fond);color:var(--texte);border:1px solid var(--bordure-option);"></select>
+                                    <div class="montee-description-don" id="descriptionDon"></div>
+                                    <div class="montee-conteneur-masque" id="conteneurCaracteristiqueDon">
+                                        <label class="montee-libelle-don">Caractéristique augmentée
+                                            <select class="montee-liste" name="don_caracteristique" id="choixCaracteristiqueDon"></select>
                                         </label>
                                     </div>
                                 </div>
@@ -138,9 +138,9 @@
                     </div>
                 </div>
 
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem;">
+                <div class="montee-pied">
                     <a href="{{ route('personnages.show', $personnage) }}" class="bouton bouton-secondaire">Annuler</a>
-                    <button type="submit" class="bouton" style="background:var(--or-vif);color:var(--texte-inverse);font-weight:800;padding:.8rem 1.5rem;">Confirmer le niveau {{ $apercu['niveau_arrivee'] }}</button>
+                    <button type="submit" class="bouton bouton-confirmer">Confirmer le niveau {{ $apercu['niveau_arrivee'] }}</button>
                 </div>
             </form>
         </div>

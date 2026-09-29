@@ -271,7 +271,7 @@ class InventaireServiceTest extends TestCase
     public function test_utiliser_une_potion_de_soin_ajoute_les_pv_et_consomme_une_unite(): void
     {
         $personnage = $this->personnage();
-        $personnage->update(['point_de_vie' => 5]);
+        $personnage->update(['point_de_vie' => 20, 'point_de_vie_actuel' => 5]);
         $service = $this->service();
 
         $potion = ObjetFactory::new()->potion(['pv' => 7])->create();
@@ -279,14 +279,39 @@ class InventaireServiceTest extends TestCase
 
         $service->utiliser($personnage, $ligne);
 
-        $this->assertSame(12, $personnage->fresh()->point_de_vie);
+        // Le soin touche les PV actuels ; le maximum ne bouge pas.
+        $this->assertSame(12, $personnage->fresh()->point_de_vie_actuel);
+        $this->assertSame(20, $personnage->fresh()->point_de_vie);
         $this->assertSame(1, $personnage->objets()->first()->pivot->quantite);
+    }
+
+    public function test_une_potion_de_soin_ne_depasse_pas_le_maximum_de_pv(): void
+    {
+        $personnage = $this->personnage();
+        $personnage->update(['point_de_vie' => 20, 'point_de_vie_actuel' => 18]);
+        $service = $this->service();
+
+        $service->utiliser($personnage, $service->ajouter($personnage, ObjetFactory::new()->potion(['pv' => 7])->create()));
+
+        $this->assertSame(20, $personnage->fresh()->point_de_vie_actuel);
+    }
+
+    public function test_un_effet_negatif_ne_descend_pas_sous_zero_pv(): void
+    {
+        $personnage = $this->personnage();
+        $personnage->update(['point_de_vie' => 20, 'point_de_vie_actuel' => 3]);
+        $service = $this->service();
+
+        $service->utiliser($personnage, $service->ajouter($personnage, ObjetFactory::new()->potion(['pv' => -10])->create()));
+
+        $this->assertSame(0, $personnage->fresh()->point_de_vie_actuel);
+        $this->assertSame(20, $personnage->fresh()->point_de_vie);
     }
 
     public function test_utiliser_une_potion_sans_effet_pv_se_contente_de_la_consommer(): void
     {
         $personnage = $this->personnage();
-        $personnage->update(['point_de_vie' => 5]);
+        $personnage->update(['point_de_vie' => 20, 'point_de_vie_actuel' => 5]);
         $service = $this->service();
 
         $potion = ObjetFactory::new()->create(['type' => 'potion', 'est_consommable' => true, 'effet_utilisation' => null]);
@@ -294,7 +319,7 @@ class InventaireServiceTest extends TestCase
 
         $service->utiliser($personnage, $ligne);
 
-        $this->assertSame(5, $personnage->fresh()->point_de_vie);
+        $this->assertSame(5, $personnage->fresh()->point_de_vie_actuel);
         $this->assertSame(0, $personnage->objets()->count());
     }
 

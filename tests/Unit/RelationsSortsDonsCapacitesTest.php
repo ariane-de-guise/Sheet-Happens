@@ -21,20 +21,20 @@ class RelationsSortsDonsCapacitesTest extends TestCase
     private function sort(?Degat $degat = null): Sort
     {
         return Sort::create([
-            'id_Degat' => $degat?->id,
-            'Nom' => 'Rayon de givre',
-            'Description' => 'Un rayon glacé.',
-            'Niveau' => 0,
-            'TempsActivation' => '1 action',
-            'Duree' => 'Instantanée',
-            'Ecole' => 'Évocation',
-            'Distance' => '18 mètres',
+            'degat_id' => $degat?->id,
+            'nom' => 'Rayon de givre',
+            'description' => 'Un rayon glacé.',
+            'niveau' => 0,
+            'temps_activation' => '1 action',
+            'duree' => 'Instantanée',
+            'ecole' => 'Évocation',
+            'distance' => '18 mètres',
         ]);
     }
 
     public function test_un_sort_et_son_type_de_degat_sont_relies_dans_les_deux_sens(): void
     {
-        $degat = Degat::create(['Nom' => 'Froid']);
+        $degat = Degat::create(['nom' => 'Froid']);
         $sort = $this->sort($degat);
 
         $this->assertTrue($sort->degat->is($degat));
@@ -45,7 +45,7 @@ class RelationsSortsDonsCapacitesTest extends TestCase
     {
         $classe = ClasseFactory::new()->create();
         $sort = $this->sort();
-        $lien = ClasseSort::create(['id_Classe' => $classe->id, 'id_Sort' => $sort->id]);
+        $lien = ClasseSort::create(['classe_id' => $classe->id, 'sort_id' => $sort->id]);
 
         $this->assertTrue($lien->classe->is($classe));
         $this->assertTrue($lien->sort->is($sort));
@@ -55,7 +55,7 @@ class RelationsSortsDonsCapacitesTest extends TestCase
     {
         $personnage = PersonnageFactory::new()->create();
         $sort = $this->sort();
-        $lien = PersonnageSort::create(['id_Personnage' => $personnage->id, 'id_Sort' => $sort->id, 'Prepare' => 1]);
+        $lien = PersonnageSort::create(['personnage_id' => $personnage->id, 'sort_id' => $sort->id, 'preparation' => 1]);
 
         $this->assertTrue($lien->personnage->is($personnage));
         $this->assertTrue($lien->sort->is($sort));

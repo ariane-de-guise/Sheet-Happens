@@ -18,8 +18,8 @@ class LimiteMagieSeeder extends Seeder
         |
         | Niveau de classe 1 à 5
         |
-        | TourMagie = nombre de tours de magie
-        | SortConnue = niveau de classe utilisé comme base pour les
+        | tours_de_magie = nombre de tours de magie
+        | sorts_prepares = niveau de classe utilisé comme base pour les
         | sorts préparés.
         |
         | Pour un Clerc :
@@ -31,34 +31,34 @@ class LimiteMagieSeeder extends Seeder
             2,
             [
                 1 => [
-                    'TourMagie' => 3,
-                    'Niveau1' => 2,
-                    'Niveau2' => 0,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 3,
+                    'emplacements_niveau_1' => 2,
+                    'emplacements_niveau_2' => 0,
+                    'emplacements_niveau_3' => 0,
                 ],
                 2 => [
-                    'TourMagie' => 3,
-                    'Niveau1' => 3,
-                    'Niveau2' => 0,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 3,
+                    'emplacements_niveau_1' => 3,
+                    'emplacements_niveau_2' => 0,
+                    'emplacements_niveau_3' => 0,
                 ],
                 3 => [
-                    'TourMagie' => 3,
-                    'Niveau1' => 4,
-                    'Niveau2' => 2,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 3,
+                    'emplacements_niveau_1' => 4,
+                    'emplacements_niveau_2' => 2,
+                    'emplacements_niveau_3' => 0,
                 ],
                 4 => [
-                    'TourMagie' => 4,
-                    'Niveau1' => 4,
-                    'Niveau2' => 3,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 4,
+                    'emplacements_niveau_1' => 4,
+                    'emplacements_niveau_2' => 3,
+                    'emplacements_niveau_3' => 0,
                 ],
                 5 => [
-                    'TourMagie' => 4,
-                    'Niveau1' => 4,
-                    'Niveau2' => 3,
-                    'Niveau3' => 2,
+                    'tours_de_magie' => 4,
+                    'emplacements_niveau_1' => 4,
+                    'emplacements_niveau_2' => 3,
+                    'emplacements_niveau_3' => 2,
                 ],
             ],
             'Sagesse'
@@ -77,7 +77,7 @@ class LimiteMagieSeeder extends Seeder
         | niveau 1 = 6
         | puis +2 par niveau.
         |
-        | Ici SortConnue représente donc la base du nombre de sorts
+        | Ici sorts_prepares représente donc la base du nombre de sorts
         | préparables : niveau de Magicien.
         |
         */
@@ -86,34 +86,34 @@ class LimiteMagieSeeder extends Seeder
             4,
             [
                 1 => [
-                    'TourMagie' => 3,
-                    'Niveau1' => 2,
-                    'Niveau2' => 0,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 3,
+                    'emplacements_niveau_1' => 2,
+                    'emplacements_niveau_2' => 0,
+                    'emplacements_niveau_3' => 0,
                 ],
                 2 => [
-                    'TourMagie' => 3,
-                    'Niveau1' => 3,
-                    'Niveau2' => 0,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 3,
+                    'emplacements_niveau_1' => 3,
+                    'emplacements_niveau_2' => 0,
+                    'emplacements_niveau_3' => 0,
                 ],
                 3 => [
-                    'TourMagie' => 3,
-                    'Niveau1' => 4,
-                    'Niveau2' => 2,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 3,
+                    'emplacements_niveau_1' => 4,
+                    'emplacements_niveau_2' => 2,
+                    'emplacements_niveau_3' => 0,
                 ],
                 4 => [
-                    'TourMagie' => 4,
-                    'Niveau1' => 4,
-                    'Niveau2' => 3,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 4,
+                    'emplacements_niveau_1' => 4,
+                    'emplacements_niveau_2' => 3,
+                    'emplacements_niveau_3' => 0,
                 ],
                 5 => [
-                    'TourMagie' => 4,
-                    'Niveau1' => 4,
-                    'Niveau2' => 3,
-                    'Niveau3' => 2,
+                    'tours_de_magie' => 4,
+                    'emplacements_niveau_1' => 4,
+                    'emplacements_niveau_2' => 3,
+                    'emplacements_niveau_3' => 2,
                 ],
             ],
             'Intelligence'
@@ -138,25 +138,25 @@ class LimiteMagieSeeder extends Seeder
             12,
             [
                 3 => [
-                    'TourMagie' => 2,
-                    'SortConnue' => 3,
-                    'Niveau1' => 2,
-                    'Niveau2' => 0,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 2,
+                    'sorts_prepares' => 3,
+                    'emplacements_niveau_1' => 2,
+                    'emplacements_niveau_2' => 0,
+                    'emplacements_niveau_3' => 0,
                 ],
                 4 => [
-                    'TourMagie' => 2,
-                    'SortConnue' => 4,
-                    'Niveau1' => 3,
-                    'Niveau2' => 0,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 2,
+                    'sorts_prepares' => 4,
+                    'emplacements_niveau_1' => 3,
+                    'emplacements_niveau_2' => 0,
+                    'emplacements_niveau_3' => 0,
                 ],
                 5 => [
-                    'TourMagie' => 2,
-                    'SortConnue' => 4,
-                    'Niveau1' => 3,
-                    'Niveau2' => 0,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 2,
+                    'sorts_prepares' => 4,
+                    'emplacements_niveau_1' => 3,
+                    'emplacements_niveau_2' => 0,
+                    'emplacements_niveau_3' => 0,
                 ],
             ],
             'Intelligence'
@@ -178,25 +178,25 @@ class LimiteMagieSeeder extends Seeder
             23,
             [
                 3 => [
-                    'TourMagie' => 2,
-                    'SortConnue' => 3,
-                    'Niveau1' => 2,
-                    'Niveau2' => 0,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 2,
+                    'sorts_prepares' => 3,
+                    'emplacements_niveau_1' => 2,
+                    'emplacements_niveau_2' => 0,
+                    'emplacements_niveau_3' => 0,
                 ],
                 4 => [
-                    'TourMagie' => 2,
-                    'SortConnue' => 4,
-                    'Niveau1' => 3,
-                    'Niveau2' => 0,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 2,
+                    'sorts_prepares' => 4,
+                    'emplacements_niveau_1' => 3,
+                    'emplacements_niveau_2' => 0,
+                    'emplacements_niveau_3' => 0,
                 ],
                 5 => [
-                    'TourMagie' => 2,
-                    'SortConnue' => 4,
-                    'Niveau1' => 3,
-                    'Niveau2' => 0,
-                    'Niveau3' => 0,
+                    'tours_de_magie' => 2,
+                    'sorts_prepares' => 4,
+                    'emplacements_niveau_1' => 3,
+                    'emplacements_niveau_2' => 0,
+                    'emplacements_niveau_3' => 0,
                 ],
             ],
             'Intelligence'
@@ -214,20 +214,20 @@ class LimiteMagieSeeder extends Seeder
         foreach ($progression as $niveau => $valeurs) {
 
             $limiteMagie = LimiteMagie::create([
-                'TourMagie' => $valeurs['TourMagie'],
-                'SortConnue' => $valeurs['SortConnue'] ?? null,
-                'Niveau1' => $valeurs['Niveau1'],
-                'Niveau2' => $valeurs['Niveau2'],
-                'Niveau3' => $valeurs['Niveau3'],
+                'tours_de_magie' => $valeurs['tours_de_magie'],
+                'sorts_prepares' => $valeurs['sorts_prepares'] ?? null,
+                'emplacements_niveau_1' => $valeurs['emplacements_niveau_1'],
+                'emplacements_niveau_2' => $valeurs['emplacements_niveau_2'],
+                'emplacements_niveau_3' => $valeurs['emplacements_niveau_3'],
             ]);
 
-            $abilite = $abiliteMagie ?? ($valeurs['AbiliteMagie'] ?? 'Intelligence');
+            $abilite = $abiliteMagie ?? ($valeurs['caracteristique_magie'] ?? 'Intelligence');
 
             LimiteMagieClasse::create([
-                'id_Classe' => $idClasse,
-                'id_LimiteMagie' => $limiteMagie->id,
-                'AbiliteMagie' => $abilite,
-                'Niveau' => $niveau,
+                'classe_id' => $idClasse,
+                'limite_magie_id' => $limiteMagie->id,
+                'caracteristique_magie' => $abilite,
+                'niveau' => $niveau,
             ]);
         }
     }
@@ -243,20 +243,20 @@ class LimiteMagieSeeder extends Seeder
         foreach ($progression as $niveau => $valeurs) {
 
             $limiteMagie = LimiteMagie::create([
-                'TourMagie' => $valeurs['TourMagie'],
-                'SortConnue' => $valeurs['SortConnue'] ?? null,
-                'Niveau1' => $valeurs['Niveau1'],
-                'Niveau2' => $valeurs['Niveau2'],
-                'Niveau3' => $valeurs['Niveau3'],
+                'tours_de_magie' => $valeurs['tours_de_magie'],
+                'sorts_prepares' => $valeurs['sorts_prepares'] ?? null,
+                'emplacements_niveau_1' => $valeurs['emplacements_niveau_1'],
+                'emplacements_niveau_2' => $valeurs['emplacements_niveau_2'],
+                'emplacements_niveau_3' => $valeurs['emplacements_niveau_3'],
             ]);
 
-            $abilite = $abiliteMagie ?? ($valeurs['AbiliteMagie'] ?? 'Intelligence');
+            $abilite = $abiliteMagie ?? ($valeurs['caracteristique_magie'] ?? 'Intelligence');
 
             LimiteMagieSousClasse::create([
-                'id_SousClasse' => $idSousClasse,
-                'id_LimiteMagie' => $limiteMagie->id,
-                'AbiliteMagie' => $abilite,
-                'Niveau' => $niveau,
+                'sous_classe_id' => $idSousClasse,
+                'limite_magie_id' => $limiteMagie->id,
+                'caracteristique_magie' => $abilite,
+                'niveau' => $niveau,
             ]);
         }
     }

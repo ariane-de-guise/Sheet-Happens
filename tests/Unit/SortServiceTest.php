@@ -32,8 +32,8 @@ class SortServiceTest extends TestCase
     {
         $classe = ClasseFactory::new()->create(['nom' => 'Guerrier']);
         $sousClasse = SousClasseFactory::new()->pourClasse($classe)->create();
-        $limite = LimiteMagie::create(['TourMagie' => 2, 'Niveau1' => 0]);
-        LimiteMagieSousClasse::create(['id_SousClasse' => $sousClasse->id, 'id_LimiteMagie' => $limite->id, 'Niveau' => 3, 'AbiliteMagie' => 'Intelligence']);
+        $limite = LimiteMagie::create(['tours_de_magie' => 2, 'emplacements_niveau_1' => 0]);
+        LimiteMagieSousClasse::create(['sous_classe_id' => $sousClasse->id, 'limite_magie_id' => $limite->id, 'niveau' => 3, 'caracteristique_magie' => 'Intelligence']);
         $service = app(SortService::class);
 
         $avant = PersonnageFactory::new()->create(['classe_id' => $classe->id, 'sous_classe_id' => $sousClasse->id, 'niveau' => 2]);

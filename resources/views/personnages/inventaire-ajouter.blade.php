@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Ajouter un objet - ' . $personnage->nom)
+@section('titre', 'Ajouter un objet - ' . $personnage->nom)
 
 @push('styles')
     <style>
@@ -119,7 +119,7 @@
     </style>
 @endpush
 
-@section('content')
+@section('contenu')
     <div class="fiche-conteneur" style="max-width: 1100px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
             <div class="texte-or" style="font-size: 1.3rem; font-weight: 700;">Ajouter un objet à l'inventaire de {{ $personnage->nom }}</div>

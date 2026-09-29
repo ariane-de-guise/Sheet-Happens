@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Mes personnages')
+@section('titre', 'Mes personnages')
 
-@section('content')
+@section('contenu')
     <div class="carte">
         <h1 class="titre-principal texte-centre marge-bas-4">Mes personnages</h1>
 

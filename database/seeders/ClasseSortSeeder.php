@@ -189,10 +189,10 @@ class ClasseSortSeeder extends Seeder
         ];
 
         $sorts = Sort::query()
-            ->whereIn('NomAnglais', array_values(array_unique(
+            ->whereIn('nom_anglais', array_values(array_unique(
                 array_merge(...array_values($sortsParClasse))
             )))
-            ->pluck('id', 'NomAnglais');
+            ->pluck('id', 'nom_anglais');
 
         foreach ($sortsParClasse as $idClasse => $nomsAnglais) {
             foreach ($nomsAnglais as $nomAnglais) {
@@ -204,8 +204,8 @@ class ClasseSortSeeder extends Seeder
 
                 ClasseSort::updateOrCreate(
                     [
-                        'id_Classe' => $idClasse,
-                        'id_Sort' => $sorts[$nomAnglais],
+                        'classe_id' => $idClasse,
+                        'sort_id' => $sorts[$nomAnglais],
                     ],
                     []
                 );

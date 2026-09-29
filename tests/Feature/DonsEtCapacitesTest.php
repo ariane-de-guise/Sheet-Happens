@@ -9,6 +9,7 @@ use App\Services\CapaciteService;
 use Database\Factories\ClasseFactory;
 use Database\Factories\PersonnageFactory;
 use Database\Factories\SousClasseFactory;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -110,5 +111,24 @@ class DonsEtCapacitesTest extends TestCase
         $this->assertDatabaseMissing('personnage_capacite', ['personnage_id' => $personnage->id]);
         $this->assertDatabaseMissing('personnage_don', ['personnage_id' => $personnage->id]);
         $this->assertDatabaseHas('dons', ['id' => $don->id]);
+    }
+
+    public function test_une_capacite_ne_peut_pas_etre_dupliquee_pour_une_meme_classe(): void
+    {
+        $classe = ClasseFactory::new()->create();
+        Capacite::create(['classe_id' => $classe->id, 'nom' => 'Rage', 'niveau' => 1]);
+
+        $this->expectException(UniqueConstraintViolationException::class);
+        Capacite::create(['classe_id' => $classe->id, 'nom' => 'Rage', 'niveau' => 2]);
+    }
+
+    public function test_une_sous_classe_peut_reprendre_le_nom_d_une_capacite_de_sa_classe(): void
+    {
+        $classe = ClasseFactory::new()->create();
+        $sousClasse = SousClasseFactory::new()->pourClasse($classe)->create();
+        Capacite::create(['classe_id' => $classe->id, 'nom' => 'Incantation', 'niveau' => 1]);
+        Capacite::create(['classe_id' => $classe->id, 'sous_classe_id' => $sousClasse->id, 'nom' => 'Incantation', 'niveau' => 3]);
+
+        $this->assertSame(2, Capacite::where('nom', 'Incantation')->count());
     }
 }

@@ -48,38 +48,38 @@ class SortService
         $ligne = null;
         $source = null;
 
-        if (LimiteMagieClasse::query()->where('id_Classe', $personnage->classe_id)->exists()) {
+        if (LimiteMagieClasse::query()->where('classe_id', $personnage->classe_id)->exists()) {
             $ligne = LimiteMagieClasse::query()
-                ->where('id_Classe', $personnage->classe_id)
-                ->where('Niveau', '<=', $niveau)
-                ->orderByDesc('Niveau')
+                ->where('classe_id', $personnage->classe_id)
+                ->where('niveau', '<=', $niveau)
+                ->orderByDesc('niveau')
                 ->first();
             $source = 'classe';
         } elseif ($personnage->sous_classe_id) {
             $ligne = LimiteMagieSousClasse::query()
-                ->where('id_SousClasse', $personnage->sous_classe_id)
-                ->where('Niveau', '<=', $niveau)
-                ->orderByDesc('Niveau')
+                ->where('sous_classe_id', $personnage->sous_classe_id)
+                ->where('niveau', '<=', $niveau)
+                ->orderByDesc('niveau')
                 ->first();
             $source = 'sous_classe';
         }
 
-        $limite = $ligne ? LimiteMagie::find($ligne->id_LimiteMagie) : null;
+        $limite = $ligne ? LimiteMagie::find($ligne->limite_magie_id) : null;
 
         if (! $limite) {
             return ['limiteTour' => null, 'limiteSort' => null, 'emplacements' => null, 'abiliteMagie' => null, 'abiliteSource' => null];
         }
 
         return [
-            'limiteTour' => (int) $limite->TourMagie,
-            'limiteSort' => $limite->SortConnue !== null ? (int) $limite->SortConnue : null,
+            'limiteTour' => (int) $limite->tours_de_magie,
+            'limiteSort' => $limite->sorts_prepares !== null ? (int) $limite->sorts_prepares : null,
             'emplacements' => [
-                'Niveau1' => $limite->Niveau1,
-                'Niveau2' => $limite->Niveau2,
-                'Niveau3' => $limite->Niveau3,
+                'emplacements_niveau_1' => $limite->emplacements_niveau_1,
+                'emplacements_niveau_2' => $limite->emplacements_niveau_2,
+                'emplacements_niveau_3' => $limite->emplacements_niveau_3,
             ],
-            // AbiliteMagie est stockée sur la table de liaison, pas sur limite_magies.
-            'abiliteMagie' => $ligne->AbiliteMagie,
+            // caracteristique_magie est stockée sur la table de liaison, pas sur limite_magies.
+            'abiliteMagie' => $ligne->caracteristique_magie,
             'abiliteSource' => $source,
         ];
     }
@@ -149,13 +149,13 @@ class SortService
         }
 
         $prepares = DB::table('personnage_sorts')
-            ->join('sorts', 'personnage_sorts.id_Sort', '=', 'sorts.id')
-            ->where('personnage_sorts.id_Personnage', $personnage->id)
-            ->where('personnage_sorts.Prepare', 1)
+            ->join('sorts', 'personnage_sorts.sort_id', '=', 'sorts.id')
+            ->where('personnage_sorts.personnage_id', $personnage->id)
+            ->where('personnage_sorts.preparation', 1)
             ->when(
                 $niveauSort === 0,
-                fn ($requeteSql) => $requeteSql->where('sorts.Niveau', 0),
-                fn ($requeteSql) => $requeteSql->whereBetween('sorts.Niveau', [1, 3]),
+                fn ($requeteSql) => $requeteSql->where('sorts.niveau', 0),
+                fn ($requeteSql) => $requeteSql->whereBetween('sorts.niveau', [1, 3]),
             )
             ->lockForUpdate()
             ->count();
@@ -182,11 +182,11 @@ class SortService
         }
 
         $sousClasseIds = $personnage->sous_classe_id
-            ? SousClasseSort::query()->where('id_SousClasse', $personnage->sous_classe_id)->pluck('id_Sort')->unique()->values()->all()
+            ? SousClasseSort::query()->where('sous_classe_id', $personnage->sous_classe_id)->pluck('sort_id')->unique()->values()->all()
             : [];
 
         return [
-            'classe' => ClasseSort::query()->whereIn('id_Classe', $classeIds)->pluck('id_Sort')->unique()->values()->all(),
+            'classe' => ClasseSort::query()->whereIn('classe_id', $classeIds)->pluck('sort_id')->unique()->values()->all(),
             'sous_classe' => $sousClasseIds,
         ];
     }

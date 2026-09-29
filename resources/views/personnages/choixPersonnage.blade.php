@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Sheet Happens')
+@section('titre', 'Sheet Happens')
 
-@section('content')
+@section('contenu')
 <div class="carte texte-centre" style="min-height: 80vh; display: flex; flex-direction: column; justify-content: center;">
     <h1 class="titre-principal">Sheet Happens</h1>
     <p class="sous-titre">créez et gérez vos personnages de D&amp;D</p>

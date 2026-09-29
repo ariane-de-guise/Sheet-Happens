@@ -49,27 +49,27 @@ class PersonnageSortControllerTest extends TestCase
     private function sort(string $nom, int $niveau = 1): Sort
     {
         return Sort::create([
-            'Nom' => $nom,
-            'Description' => "Description de $nom",
-            'Niveau' => $niveau,
-            'TempsActivation' => '1 action',
-            'Duree' => 'Instantanée',
-            'Ecole' => 'Évocation',
-            'Distance' => '18 mètres',
+            'nom' => $nom,
+            'description' => "Description de $nom",
+            'niveau' => $niveau,
+            'temps_activation' => '1 action',
+            'duree' => 'Instantanée',
+            'ecole' => 'Évocation',
+            'distance' => '18 mètres',
         ]);
     }
 
     private function limiteClasse(Classe $classe, array $valeurs, int $niveau = 1, string $abilite = 'Sagesse'): LimiteMagie
     {
-        $limite = LimiteMagie::create(array_merge(['TourMagie' => 0, 'SortConnue' => null, 'Niveau1' => 0, 'Niveau2' => 0, 'Niveau3' => 0], $valeurs));
-        LimiteMagieClasse::create(['id_Classe' => $classe->id, 'id_LimiteMagie' => $limite->id, 'Niveau' => $niveau, 'AbiliteMagie' => $abilite]);
+        $limite = LimiteMagie::create(array_merge(['tours_de_magie' => 0, 'sorts_prepares' => null, 'emplacements_niveau_1' => 0, 'emplacements_niveau_2' => 0, 'emplacements_niveau_3' => 0], $valeurs));
+        LimiteMagieClasse::create(['classe_id' => $classe->id, 'limite_magie_id' => $limite->id, 'niveau' => $niveau, 'caracteristique_magie' => $abilite]);
 
         return $limite;
     }
 
     private function lier(Personnage $personnage, Sort $sort, int $prepare): PersonnageSort
     {
-        return PersonnageSort::create(['id_Personnage' => $personnage->id, 'id_Sort' => $sort->id, 'Prepare' => $prepare]);
+        return PersonnageSort::create(['personnage_id' => $personnage->id, 'sort_id' => $sort->id, 'preparation' => $prepare]);
     }
 
     private function patcherPreparation(Personnage $personnage, PersonnageSort $personnageSort, int $prepare)
@@ -107,7 +107,7 @@ class PersonnageSortControllerTest extends TestCase
             ->patchJson(route('personnages.sorts.preparer', [$personnage, $lien]), ['prepare' => 1])
             ->assertForbidden();
 
-        $this->assertSame(0, (int) $lien->fresh()->Prepare);
+        $this->assertSame(0, (int) $lien->fresh()->preparation);
     }
 
     public function test_un_autre_utilisateur_ne_peut_pas_ajouter_un_sort(): void
@@ -118,7 +118,7 @@ class PersonnageSortControllerTest extends TestCase
             ->postJson(route('personnages.sorts.ajouter', $personnage), ['sort_id' => $this->sort('Soins')->id, 'prepare' => 0])
             ->assertForbidden();
 
-        $this->assertDatabaseMissing('personnage_sorts', ['id_Personnage' => $personnage->id]);
+        $this->assertDatabaseMissing('personnage_sorts', ['personnage_id' => $personnage->id]);
     }
 
     public function test_un_visiteur_non_connecte_est_redirige_vers_la_connexion(): void
@@ -137,16 +137,16 @@ class PersonnageSortControllerTest extends TestCase
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $sousClasse = SousClasseFactory::new()->pourClasse($classe)->create();
         $personnage = $this->personnage($classe, ['sous_classe_id' => $sousClasse->id], ['sagesse' => 16]);
-        $this->limiteClasse($classe, ['TourMagie' => 3, 'SortConnue' => 4, 'Niveau1' => 2]);
+        $this->limiteClasse($classe, ['tours_de_magie' => 3, 'sorts_prepares' => 4, 'emplacements_niveau_1' => 2]);
 
         $lumiere = $this->sort('Lumière', 0);
         $benediction = $this->sort('Bénédiction');
         $soins = $this->sort('Soins');
         $domaine = $this->sort('Sort de domaine');
         foreach ([$lumiere, $benediction, $soins] as $sort) {
-            ClasseSort::create(['id_Classe' => $classe->id, 'id_Sort' => $sort->id]);
+            ClasseSort::create(['classe_id' => $classe->id, 'sort_id' => $sort->id]);
         }
-        SousClasseSort::create(['id_SousClasse' => $sousClasse->id, 'id_Sort' => $domaine->id]);
+        SousClasseSort::create(['sous_classe_id' => $sousClasse->id, 'sort_id' => $domaine->id]);
         $this->lier($personnage, $benediction, 1);
 
         $reponse = $this->actingAs($this->utilisateur)->get(route('personnages.sorts.index', $personnage));
@@ -159,17 +159,17 @@ class PersonnageSortControllerTest extends TestCase
             ->assertSee('Limite tour de magie : 3')
             ->assertSee('Limite sort : 4');
 
-        $disponibles = $reponse->viewData('disponibles')->keyBy(fn ($s) => $s->sort->Nom);
+        $disponibles = $reponse->viewData('disponibles')->keyBy(fn ($s) => $s->sort->nom);
         $this->assertSame('personnage', $disponibles['Bénédiction']->origine);
         $this->assertSame(1, $disponibles['Bénédiction']->prepare);
         $this->assertSame('classe', $disponibles['Soins']->origine);
         $this->assertSame(0, $disponibles['Soins']->prepare);
         $this->assertSame('sous_classe', $disponibles['Sort de domaine']->origine);
         $this->assertSame(2, $disponibles['Sort de domaine']->prepare);
-        $this->assertSame(['Lumière'], $reponse->viewData('niveau0')->map(fn ($s) => $s->sort->Nom)->all());
+        $this->assertSame(['Lumière'], $reponse->viewData('niveau0')->map(fn ($s) => $s->sort->nom)->all());
         $this->assertSame('classe', $reponse->viewData('abiliteSource'));
         $this->assertSame('Sagesse', $reponse->viewData('abiliteMagie'));
-        $this->assertSame(['Niveau1' => 2, 'Niveau2' => 0, 'Niveau3' => 0], $reponse->viewData('emplacements'));
+        $this->assertSame(['emplacements_niveau_1' => 2, 'emplacements_niveau_2' => 0, 'emplacements_niveau_3' => 0], $reponse->viewData('emplacements'));
     }
 
     public function test_une_sous_classe_arcanique_utilise_la_liste_du_magicien_et_ses_propres_limites(): void
@@ -182,9 +182,9 @@ class PersonnageSortControllerTest extends TestCase
         $personnage = $this->personnage($roublard, ['sous_classe_id' => $filou->id, 'niveau' => 3]);
 
         $projectile = $this->sort('Projectile magique');
-        ClasseSort::create(['id_Classe' => $magicien->id, 'id_Sort' => $projectile->id]);
-        $limite = LimiteMagie::create(['TourMagie' => 3, 'SortConnue' => 3, 'Niveau1' => 2]);
-        LimiteMagieSousClasse::create(['id_SousClasse' => $filou->id, 'id_LimiteMagie' => $limite->id, 'Niveau' => 3, 'AbiliteMagie' => 'Intelligence']);
+        ClasseSort::create(['classe_id' => $magicien->id, 'sort_id' => $projectile->id]);
+        $limite = LimiteMagie::create(['tours_de_magie' => 3, 'sorts_prepares' => 3, 'emplacements_niveau_1' => 2]);
+        LimiteMagieSousClasse::create(['sous_classe_id' => $filou->id, 'limite_magie_id' => $limite->id, 'niveau' => 3, 'caracteristique_magie' => 'Intelligence']);
 
         $reponse = $this->actingAs($this->utilisateur)->get(route('personnages.sorts.index', $personnage));
 
@@ -212,7 +212,7 @@ class PersonnageSortControllerTest extends TestCase
     {
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $personnage = $this->personnage($classe);
-        ClasseSort::create(['id_Classe' => $classe->id, 'id_Sort' => $this->sort('Soins')->id]);
+        ClasseSort::create(['classe_id' => $classe->id, 'sort_id' => $this->sort('Soins')->id]);
 
         // Données incohérentes, impossibles avec les clés étrangères : on
         // reporte leur vérification au commit, qui n'a jamais lieu puisque
@@ -221,12 +221,12 @@ class PersonnageSortControllerTest extends TestCase
             $this->markTestSkipped('Simulation propre à SQLite.');
         }
         DB::statement('PRAGMA defer_foreign_keys = ON');
-        ClasseSort::create(['id_Classe' => $classe->id, 'id_Sort' => 9999]);
+        ClasseSort::create(['classe_id' => $classe->id, 'sort_id' => 9999]);
 
         $reponse = $this->actingAs($this->utilisateur)->get(route('personnages.sorts.index', $personnage));
 
         $reponse->assertOk();
-        $this->assertSame(['Soins'], $reponse->viewData('disponibles')->map(fn ($s) => $s->sort->Nom)->all());
+        $this->assertSame(['Soins'], $reponse->viewData('disponibles')->map(fn ($s) => $s->sort->nom)->all());
     }
 
     // ---------------------------------------------------------------
@@ -250,7 +250,7 @@ class PersonnageSortControllerTest extends TestCase
         $lien = $this->lier($personnage, $this->sort('Sort de domaine'), 2);
 
         $this->patcherPreparation($personnage, $lien, 0)->assertForbidden();
-        $this->assertSame(2, (int) $lien->fresh()->Prepare);
+        $this->assertSame(2, (int) $lien->fresh()->preparation);
     }
 
     public function test_un_magicien_ne_peut_preparer_qu_un_sort_inscrit_au_grimoire(): void
@@ -266,7 +266,7 @@ class PersonnageSortControllerTest extends TestCase
     {
         $classe = ClasseFactory::new()->create(['nom' => 'Magicien']);
         $personnage = $this->personnage($classe);
-        $this->limiteClasse($classe, ['TourMagie' => 3, 'SortConnue' => 4], 1, 'Intelligence');
+        $this->limiteClasse($classe, ['tours_de_magie' => 3, 'sorts_prepares' => 4], 1, 'Intelligence');
         $lien = $this->lier($personnage, $this->sort('Bouclier'), 0);
 
         $this->patcherPreparation($personnage, $lien, 2)->assertOk()->assertJson(['prepare' => 2]);
@@ -277,7 +277,7 @@ class PersonnageSortControllerTest extends TestCase
     {
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $personnage = $this->personnage($classe);
-        $this->limiteClasse($classe, ['TourMagie' => 1, 'SortConnue' => 5]);
+        $this->limiteClasse($classe, ['tours_de_magie' => 1, 'sorts_prepares' => 5]);
         $this->lier($personnage, $this->sort('Lumière', 0), 1);
         $lien = $this->lier($personnage, $this->sort('Flamme sacrée', 0), 0);
 
@@ -290,7 +290,7 @@ class PersonnageSortControllerTest extends TestCase
     {
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $personnage = $this->personnage($classe);
-        $this->limiteClasse($classe, ['TourMagie' => 3, 'SortConnue' => 1]);
+        $this->limiteClasse($classe, ['tours_de_magie' => 3, 'sorts_prepares' => 1]);
         $this->lier($personnage, $this->sort('Bénédiction'), 1);
         $lien = $this->lier($personnage, $this->sort('Soins'), 0);
 
@@ -303,7 +303,7 @@ class PersonnageSortControllerTest extends TestCase
     {
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $personnage = $this->personnage($classe);
-        $this->limiteClasse($classe, ['TourMagie' => 3, 'SortConnue' => 2]);
+        $this->limiteClasse($classe, ['tours_de_magie' => 3, 'sorts_prepares' => 2]);
         $tourDeMagie = $this->lier($personnage, $this->sort('Lumière', 0), 0);
         $lien = $this->lier($personnage, $this->sort('Soins'), 0);
 
@@ -325,10 +325,10 @@ class PersonnageSortControllerTest extends TestCase
 
     public function test_sans_limite_de_sorts_l_abilite_de_la_ligne_de_limite_est_prioritaire(): void
     {
-        // Limite sans SortConnue mais avec AbiliteMagie Charisme 14 → +2 : limite 3.
+        // Limite sans sorts_prepares mais avec caracteristique_magie Charisme 14 → +2 : limite 3.
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $personnage = $this->personnage($classe, [], ['sagesse' => 8, 'charisme' => 14]);
-        $this->limiteClasse($classe, ['TourMagie' => 3, 'SortConnue' => null], 1, 'Charisme');
+        $this->limiteClasse($classe, ['tours_de_magie' => 3, 'sorts_prepares' => null], 1, 'Charisme');
         $this->lier($personnage, $this->sort('Bénédiction'), 1);
         $this->lier($personnage, $this->sort('Soins'), 1);
         $lien = $this->lier($personnage, $this->sort('Injonction'), 0);
@@ -380,21 +380,21 @@ class PersonnageSortControllerTest extends TestCase
     {
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $personnage = $this->personnage($classe);
-        $this->limiteClasse($classe, ['TourMagie' => 3, 'SortConnue' => 2]);
+        $this->limiteClasse($classe, ['tours_de_magie' => 3, 'sorts_prepares' => 2]);
         $sort = $this->sort('Soins');
 
         $this->envoyerPreparation($personnage, ['sort_id' => $sort->id, 'prepare' => 1])
             ->assertOk()
             ->assertJson(['succes' => true, 'prepare' => 1]);
 
-        $this->assertDatabaseHas('personnage_sorts', ['id_Personnage' => $personnage->id, 'id_Sort' => $sort->id, 'Prepare' => 1]);
+        $this->assertDatabaseHas('personnage_sorts', ['personnage_id' => $personnage->id, 'sort_id' => $sort->id, 'preparation' => 1]);
     }
 
     public function test_ajouter_un_sort_mineur_prepare_reussit_sous_la_limite(): void
     {
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $personnage = $this->personnage($classe);
-        $this->limiteClasse($classe, ['TourMagie' => 2, 'SortConnue' => 2]);
+        $this->limiteClasse($classe, ['tours_de_magie' => 2, 'sorts_prepares' => 2]);
 
         $this->envoyerPreparation($personnage, ['sort_id' => $this->sort('Lumière', 0)->id, 'prepare' => 1])->assertOk();
     }
@@ -403,7 +403,7 @@ class PersonnageSortControllerTest extends TestCase
     {
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $personnage = $this->personnage($classe);
-        $this->limiteClasse($classe, ['TourMagie' => 1, 'SortConnue' => 2]);
+        $this->limiteClasse($classe, ['tours_de_magie' => 1, 'sorts_prepares' => 2]);
         $this->lier($personnage, $this->sort('Lumière', 0), 1);
 
         $this->envoyerPreparation($personnage, ['sort_id' => $this->sort('Flamme sacrée', 0)->id, 'prepare' => 1])
@@ -414,20 +414,20 @@ class PersonnageSortControllerTest extends TestCase
     {
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $personnage = $this->personnage($classe);
-        $this->limiteClasse($classe, ['TourMagie' => 2, 'SortConnue' => 1]);
+        $this->limiteClasse($classe, ['tours_de_magie' => 2, 'sorts_prepares' => 1]);
         $this->lier($personnage, $this->sort('Bénédiction'), 1);
         $sort = $this->sort('Soins');
 
         $this->envoyerPreparation($personnage, ['sort_id' => $sort->id, 'prepare' => 1])->assertStatus(400);
-        $this->assertDatabaseMissing('personnage_sorts', ['id_Sort' => $sort->id]);
+        $this->assertDatabaseMissing('personnage_sorts', ['sort_id' => $sort->id]);
     }
 
     public function test_ajouter_un_sort_utilise_la_limite_calculee_avec_l_abilite_de_la_limite(): void
     {
-        // SortConnue absent, AbiliteMagie Charisme 12 → +1 : limite 2.
+        // sorts_prepares absent, caracteristique_magie Charisme 12 → +1 : limite 2.
         $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
         $personnage = $this->personnage($classe, [], ['charisme' => 12]);
-        $this->limiteClasse($classe, ['TourMagie' => 2, 'SortConnue' => null], 1, 'Charisme');
+        $this->limiteClasse($classe, ['tours_de_magie' => 2, 'sorts_prepares' => null], 1, 'Charisme');
         $this->lier($personnage, $this->sort('Bénédiction'), 1);
 
         $this->envoyerPreparation($personnage, ['sort_id' => $this->sort('Soins')->id, 'prepare' => 1])->assertOk();

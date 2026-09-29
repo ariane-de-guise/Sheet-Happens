@@ -120,12 +120,15 @@ Puis relance :
 ./vendor/bin/sail up -d
 ```
 
-### 5. Générer la clé et remplir la base de données
+### 5. Générer la clé, lier le stockage et remplir la base de données
 
 ```bash
 ./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan storage:link
 ./vendor/bin/sail artisan migrate --seed
 ```
+
+`storage:link` crée le lien `public/storage` qui permet d'afficher les photos de personnage (non versionné : à refaire sur chaque nouvelle installation).
 
 Les seeders remplissent les données de référence (races, classes, sous-classes, historiques, traits, capacités de classe, dons, objets, sorts, limites de magie) et créent un compte de test :
 

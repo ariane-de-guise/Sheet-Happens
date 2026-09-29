@@ -8,14 +8,13 @@ use App\Models\Sort;
 use App\Services\SortService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PersonnageSortController extends Controller
 {
     /**
-     * Valeurs de `personnage_sorts.Prepare` : 0 = non préparé, 1 = préparé,
+     * Valeurs de `personnage_sorts.preparation` : 0 = non préparé, 1 = préparé,
      * 2 = accordé par la sous-classe (ou, pour le Magicien, inscrit au grimoire).
      */
     private const NON_PREPARE = 0;
@@ -28,12 +27,10 @@ class PersonnageSortController extends Controller
 
     public function index(Personnage $personnage): View
     {
-        $this->verifierProprietaire($personnage);
-
         $appris = PersonnageSort::query()
-            ->where('id_Personnage', $personnage->id)
+            ->where('personnage_id', $personnage->id)
             ->get()
-            ->keyBy('id_Sort');
+            ->keyBy('sort_id');
 
         $accessibles = $this->sorts->sortsAccessibles($personnage);
         $ids = array_values(array_unique(array_merge($accessibles['classe'], $accessibles['sous_classe'])));
@@ -54,8 +51,8 @@ class PersonnageSortController extends Controller
                 'origine' => $lien ? 'personnage' : ($deSousClasse ? 'sous_classe' : 'classe'),
                 // Les sorts de sous-classe sont toujours préparés (2) tant que
                 // le personnage ne les a pas encore enregistrés.
-                'prepare' => $lien ? (int) $lien->Prepare : ($deSousClasse ? self::SPECIAL : self::NON_PREPARE),
-                'niveau' => $sort->Niveau,
+                'prepare' => $lien ? (int) $lien->preparation : ($deSousClasse ? self::SPECIAL : self::NON_PREPARE),
+                'niveau' => $sort->niveau,
                 'personnage_sort_id' => $lien?->id,
             ]);
         }
@@ -82,9 +79,7 @@ class PersonnageSortController extends Controller
 
     public function modifierPreparation(Request $requete, Personnage $personnage, PersonnageSort $personnageSort): JsonResponse
     {
-        $this->verifierProprietaire($personnage);
-
-        if ((int) $personnageSort->id_Personnage !== (int) $personnage->id) {
+        if ((int) $personnageSort->personnage_id !== (int) $personnage->id) {
             return response()->json(['message' => 'Mauvaise ressource'], 403);
         }
 
@@ -92,12 +87,12 @@ class PersonnageSortController extends Controller
         $valeur = $this->normaliserPreparation($requete->input('prepare', self::NON_PREPARE), $estMagicien);
 
         // Hors Magicien, 2 = sort accordé par la sous-classe : non modifiable.
-        if (! $estMagicien && (int) $personnageSort->Prepare === self::SPECIAL) {
+        if (! $estMagicien && (int) $personnageSort->preparation === self::SPECIAL) {
             return response()->json(['message' => 'Ce sort est préparé par la classe et ne peut pas être modifié.'], 403);
         }
 
-        $niveauSort = (int) $personnageSort->sort->Niveau;
-        if ($estMagicien && $valeur === self::PREPARE && $niveauSort > 0 && (int) $personnageSort->Prepare === self::NON_PREPARE) {
+        $niveauSort = (int) $personnageSort->sort->niveau;
+        if ($estMagicien && $valeur === self::PREPARE && $niveauSort > 0 && (int) $personnageSort->preparation === self::NON_PREPARE) {
             return response()->json(['message' => 'Ce sort doit être inscrit dans le grimoire pour être préparé.'], 400);
         }
 
@@ -109,17 +104,15 @@ class PersonnageSortController extends Controller
                 }
             }
 
-            $personnageSort->Prepare = $valeur;
+            $personnageSort->preparation = $valeur;
             $personnageSort->save();
 
-            return response()->json(['succes' => true, 'prepare' => $personnageSort->Prepare]);
+            return response()->json(['succes' => true, 'prepare' => $personnageSort->preparation]);
         });
     }
 
     public function ajouterPreparation(Request $requete, Personnage $personnage): JsonResponse
     {
-        $this->verifierProprietaire($personnage);
-
         $sortId = (int) $requete->input('sort_id');
         if (! $sortId) {
             return response()->json(['message' => 'Identifiant de sort invalide.'], 400);
@@ -129,16 +122,16 @@ class PersonnageSortController extends Controller
         $valeur = $this->normaliserPreparation($requete->input('prepare', self::NON_PREPARE), $estMagicien);
 
         $lien = PersonnageSort::query()
-            ->where('id_Personnage', $personnage->id)
-            ->where('id_Sort', $sortId)
+            ->where('personnage_id', $personnage->id)
+            ->where('sort_id', $sortId)
             ->first();
-        $niveauSort = (int) (Sort::find($sortId)?->Niveau ?? 0);
+        $niveauSort = (int) (Sort::find($sortId)?->niveau ?? 0);
 
-        if ($estMagicien && $valeur === self::PREPARE && $niveauSort > 0 && (! $lien || (int) $lien->Prepare === self::NON_PREPARE)) {
+        if ($estMagicien && $valeur === self::PREPARE && $niveauSort > 0 && (! $lien || (int) $lien->preparation === self::NON_PREPARE)) {
             return response()->json(['message' => 'Ce sort doit être inscrit dans le grimoire pour être préparé.'], 400);
         }
 
-        if ($lien && ! $estMagicien && (int) $lien->Prepare === self::SPECIAL) {
+        if ($lien && ! $estMagicien && (int) $lien->preparation === self::SPECIAL) {
             return response()->json(['message' => 'Ce sort est préparé par la classe et ne peut pas être modifié.'], 403);
         }
 
@@ -150,17 +143,12 @@ class PersonnageSortController extends Controller
                 }
             }
 
-            $lien ??= new PersonnageSort(['id_Personnage' => $personnage->id, 'id_Sort' => $sortId]);
-            $lien->Prepare = $valeur;
+            $lien ??= new PersonnageSort(['personnage_id' => $personnage->id, 'sort_id' => $sortId]);
+            $lien->preparation = $valeur;
             $lien->save();
 
-            return response()->json(['succes' => true, 'personnage_sort_id' => $lien->id, 'prepare' => $lien->Prepare]);
+            return response()->json(['succes' => true, 'personnage_sort_id' => $lien->id, 'prepare' => $lien->preparation]);
         });
-    }
-
-    private function verifierProprietaire(Personnage $personnage): void
-    {
-        abort_unless($personnage->utilisateur_id === Auth::id(), 403);
     }
 
     private function estMagicien(Personnage $personnage): bool

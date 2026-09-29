@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Objet custom - ' . $personnage->nom)
+@section('titre', 'Objet custom - ' . $personnage->nom)
 
 @push('styles')
     <style>
@@ -113,7 +113,7 @@
     </style>
 @endpush
 
-@section('content')
+@section('contenu')
     <div class="fiche-conteneur" style="max-width: 900px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
             <div class="texte-or" style="font-size: 1.3rem; font-weight: 700;">Créer un objet custom</div>

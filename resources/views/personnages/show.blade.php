@@ -1,175 +1,26 @@
 @extends('layouts.app')
-@section('title', $personnage->nom . ' - Sheet Happens')
-@push('styles')
-    <style>
-        .fiche-conteneur {
-            max-width: 1100px;
-        }
-
-        .fiche-grille {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        @media (max-width: 768px) {
-            .fiche-grille {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .fiche-boite {
-            background: var(--panneau);
-            border: 1px solid var(--or-bordure);
-            border-radius: 12px;
-            padding: 1rem;
-        }
-
-        .fiche-boite-titre {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--or);
-            margin-bottom: 0.5rem;
-        }
-
-        .fiche-ligne {
-            display: flex;
-            justify-content: space-between;
-            gap: 0.75rem;
-            font-size: 0.8rem;
-            color: var(--texte-secondaire);
-            padding: 0.2rem 0;
-        }
-
-        .fiche-ligne > span:first-child {
-            flex-shrink: 0;
-        }
-
-        /* Lignes à colonne unique (capacités, dons...) : pas de valeur à
-           droite à préserver, donc le texte doit pouvoir rétrécir et
-           passer à la ligne plutôt que déborder de la carte. */
-        .fiche-ligne > span:first-child:only-child {
-            flex-shrink: 1;
-            min-width: 0;
-            overflow-wrap: break-word;
-        }
-
-        .fiche-ligne .maitrise-point {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 0.4rem;
-            background: var(--point-inactif);
-            vertical-align: middle;
-        }
-
-        .fiche-ligne .maitrise-point.actif {
-            background: var(--or-vif);
-        }
-
-        .fiche-ligne .valeur {
-            color: var(--or-doux);
-            font-weight: 600;
-            flex: 1;
-            min-width: 0;
-            text-align: right;
-        }
-
-        .avatar-etiquette {
-            cursor: pointer;
-            display: block;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            overflow: hidden;
-            background: var(--panneau-carte);
-            border: 2px solid var(--or-bordure);
-            position: relative;
-        }
-
-        .avatar-etiquette img {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        /* Le logo par défaut contient déjà son propre médaillon circulaire :
-           le recadrer en "cover" le décentrait (marges transparentes
-           asymétriques dans le fichier source), il est donc affiché en
-           entier ("contain") plutôt que rogné. Une vraie photo de
-           personnage, elle, n'a pas ce médaillon et gagne à remplir tout
-           le cercle. */
-        .avatar-etiquette img.avatar-photo {
-            object-fit: cover;
-        }
-
-        .avatar-etiquette img.avatar-logo-defaut {
-            object-fit: contain;
-        }
-
-        .avatar-voile {
-            position: absolute;
-            inset: 0;
-            background: var(--avatar-overlay-fond);
-            color: var(--or);
-            font-size: 0.7rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .avatar-etiquette:hover .avatar-voile {
-            opacity: 1;
-        }
-
-        .badge-ca {
-            position: absolute;
-            top: -5px;
-            left: -5px;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: var(--texte-inverse);
-            border: 2px solid var(--or);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            color: var(--or);
-            font-size: 0.65rem;
-            font-weight: 700;
-            line-height: 1.1;
-        }
-    </style>
-@endpush
-@section('content')
-    <div class="fiche-conteneur" style="display: grid; grid-template-columns: 250px 1fr; gap: 1.5rem;">
+@section('titre', $personnage->nom . ' - Sheet Happens')
+@section('contenu')
+    <div class="fiche-conteneur fiche-disposition">
         <!-- Left Sidebar -->
-        <div class="carte" style="height: fit-content;">
-            <div class="texte-or marge-bas-3" style="font-size: 1.1rem;">
+        <div class="carte carte-ajustee">
+            <div class="texte-or marge-bas-3 fiche-marque">
                 Sheet Happens
             </div>
-            <div style="border-top: 1px solid var(--or-bordure); padding-top: 1rem;">
-                <a href="{{ route('personnages.index') }}" class="texte-attenue"
-                   style="text-decoration: none; font-size: 0.85rem;">
+            <div class="fiche-navigation">
+                <a href="{{ route('personnages.index') }}" class="texte-attenue fiche-lien-retour">
                     ← Retour à la sélection de personnages
                 </a>
             </div>
         </div>
 
         <div>
-            <div class="carte" style="height: fit-content;">
+            <div class="carte carte-ajustee">
 
-                <div style="display: flex; gap: 2rem; align-items: flex-start; margin-bottom: 2rem;">
+                <div class="fiche-entete-principal">
                     <!-- Avatar, CA et Niveau -->
-                    <div style="position: relative;">
-                        <form action="{{ route('personnages.photo', $personnage) }}" method="POST" enctype="multipart/form-data" style="margin: 0;">
+                    <div class="fiche-avatar">
+                        <form class="formulaire-sans-marge" action="{{ route('personnages.photo', $personnage) }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             @method('PATCH')
                             <label for="champ-photo-personnage" class="avatar-etiquette" title="Changer la photo">
@@ -178,90 +29,50 @@
                                      class="{{ $personnage->photo ? 'avatar-photo' : 'avatar-logo-defaut' }}">
                                 <span class="avatar-voile">Changer<br>la photo</span>
                             </label>
-                            <input type="file" id="champ-photo-personnage" name="photo" accept="image/*" style="display: none;" onchange="this.form.submit()">
+                            <input class="champ-masque" type="file" id="champ-photo-personnage" name="photo" accept="image/*" onchange="this.form.submit()">
                         </form>
 
                         <div class="badge-ca">CA<br>{{ $classeArmure }}</div>
 
-                        <div
-                            style="
-                           position: absolute;
-                           bottom: -5px;
-                           right: -5px;
-                           width: 45px;
-                           height: 45px;
-                           border-radius: 50%;
-                           background: var(--or-vif);
-                           display: flex;
-                           align-items: center;
-                           justify-content: center;
-                           text-align: center;
-                           color: var(--texte-inverse);
-                           font-size: 0.7rem;
-                           font-weight: 600;
-                       ">
+                        <div class="fiche-badge-niveau">
                             Niveau<br>{{ $personnage->niveau }}
                         </div>
                     </div>
 
-                    <div style="flex: 1; background: var(--panneau); border: 1px solid var(--or-bordure); border-radius: 12px; padding: 1.25rem;">
-                        <div
-                            style="
-                           display: flex;
-                           justify-content: space-between;
-                           align-items: flex-start;
-                           gap: 1rem;
-                       ">
+                    <div class="fiche-identite">
+                        <div class="fiche-identite-ligne">
                             <div>
-                                <div
-                                    style="
-                                   font-size: 1.3rem;
-                                   font-weight: 700;
-                                   color: var(--or);
-                                   margin-bottom: 0.5rem;
-                               ">
+                                <div class="fiche-nom">
                                     {{ $personnage->nom }}
                                 </div>
-                                <div style="font-size: 0.9rem; color: var(--texte-secondaire); margin-bottom: 0.25rem;">
+                                <div class="fiche-sous-titre">
                                     {{ $personnage->classe->nom }} - {{ $personnage->race->nom }}
                                     @if ($personnage->sousRace)
                                         {{ $personnage->sousRace->nom }}
                                     @endif
                                 </div>
                                 @if ($personnage->alignement)
-                                    <div style="font-size: 0.9rem; color: var(--texte-secondaire); margin-bottom: 0.75rem;">
+                                    <div class="fiche-alignement">
                                         {{ $personnage->alignement }}
                                     </div>
                                 @endif
                             </div>
                             <!-- Actions -->
-                            <div
-                                style="
-                               display: flex;
-                               flex-direction: column;
-                               align-items: flex-end;
-                               gap: 0.5rem;
-                           ">
+                            <div class="fiche-actions">
                                 <!-- Niveau maximum atteint -->
                                 @if ($personnage->niveau >= 5)
-                                    <span class="bouton bouton-petit"
-                                          style="
-                                           background: var(--niveau-max-fond);
-                                           color: var(--niveau-max-texte);
-                                           cursor: default;
-                                       ">
+                                    <span class="bouton bouton-petit badge-niveau-max">
                                         Niveau maximum
                                     </span>
                                 @endif
                                 <!-- Modifier -->
-                                <button type="button" class="bouton bouton-secondaire bouton-petit" style="text-align: center;"
+                                <button type="button" class="bouton bouton-secondaire bouton-petit bouton-centre"
                                         onclick="window.location.href='{{ route('personnages.edit', $personnage) }}'">
                                     Modifier
                                 </button>
                                 <!-- Supprimer -->
-                                <form id="formulaire-supprimer-personnage"
-                                      action="{{ route('personnages.destroy', $personnage) }}" method="POST"
-                                      style="margin: 0;">
+                                <form class="formulaire-sans-marge" id="formulaire-supprimer-personnage"
+                                      action="{{ route('personnages.destroy', $personnage) }}" method="POST">
                                     @csrf
                                     @method('DELETE')
                                     <button type="button" class="bouton bouton-danger bouton-petit"
@@ -276,14 +87,7 @@
                         </div>
 
                         <!-- Expérience -->
-                        <div
-                            style="
-                           font-size: 0.75rem;
-                           color: var(--texte-secondaire);
-                           display: flex;
-                           justify-content: space-between;
-                           margin-top: 0.5rem;
-                       ">
+                        <div class="fiche-xp-entete">
                             <span>Expériences</span>
                             <span>
                                 @if ($seuilExperience !== null)
@@ -293,58 +97,26 @@
                                 @endif
                             </span>
                         </div>
-                        <div
-                            style="
-                           height: 6px;
-                           background: var(--panneau);
-                           border-radius: 3px;
-                           margin-top: 0.25rem;
-                           overflow: hidden;
-                       ">
-                            <div
-                                style="
-                               width: {{ $seuilExperience ? min(100, (int) floor($personnage->experience / $seuilExperience * 100)) : 100 }}%;
-                               height: 100%;
-                               background: var(--or-vif);
-                               border-radius: 3px;
-                           ">
+                        <div class="fiche-xp-barre">
+                            <div class="fiche-xp-remplissage" style="width: {{ $seuilExperience ? min(100, (int) floor($personnage->experience / $seuilExperience * 100)) : 100 }}%;">
                             </div>
                         </div>
                         @if ($peutMonterDeNiveau)
-                            <a href="{{ route('personnages.montee-niveau', $personnage) }}"
-                               style="display: block; margin-top: 0.4rem; font-size: 0.8rem; font-weight: 700; color: var(--or); text-decoration: none;">
+                            <a class="fiche-xp-lien-montee" href="{{ route('personnages.montee-niveau', $personnage) }}">
                                 ✦ Assez d'expérience pour passer au niveau {{ $personnage->niveau + 1 }} — monter de niveau
                             </a>
                         @endif
                         @if ($seuilExperience !== null)
-                            <form action="{{ route('personnages.experience.ajouter', $personnage) }}" method="POST"
-                                  style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+                            <form class="fiche-xp-formulaire" action="{{ route('personnages.experience.ajouter', $personnage) }}" method="POST">
                                 @csrf
-                                <input type="number" name="experience" min="1" max="1000000" required
-                                       placeholder="Points d'XP"
-                                       style="
-                                       flex: 1;
-                                       min-width: 0;
-                                       background: var(--panneau-carte);
-                                       border: 1px solid var(--or-bordure);
-                                       border-radius: 6px;
-                                       color: var(--or-doux);
-                                       padding: 0.3rem 0.5rem;
-                                       font-size: 0.8rem;
-                                   ">
-                                <button type="submit" class="bouton bouton-petit"
-                                        style="
-                                       background: var(--or-vif);
-                                       color: var(--texte-inverse);
-                                       font-weight: 800;
-                                       text-align: center;
-                                       white-space: nowrap;
-                                   ">
+                                <input class="fiche-xp-champ" type="number" name="experience" min="1" max="1000000" required
+                                       placeholder="Points d'XP">
+                                <button type="submit" class="bouton bouton-petit bouton-mise-en-avant">
                                     ✦ Ajouter de l'expérience
                                 </button>
                             </form>
                             @error('experience')
-                            <div style="color: var(--texte-negatif); font-size: 0.75rem; margin-top: 0.25rem;">
+                            <div class="message-erreur-champ">
                                 {{ $message }}
                             </div>
                             @enderror
@@ -404,7 +176,17 @@
                     <!-- PV, vitesse et bonus -->
                     <div class="fiche-boite">
                         <div class="fiche-boite-titre">PV, vitesse &amp; bonus</div>
-                        <div class="fiche-ligne"><span>Points de vie</span><span class="valeur">{{ $personnage->point_de_vie }}</span></div>
+                        <div class="fiche-ligne"><span>Points de vie</span><span class="valeur">{{ $personnage->point_de_vie_actuel ?? $personnage->point_de_vie }} / {{ $personnage->point_de_vie }}</span></div>
+                        <form action="{{ route('personnages.points-de-vie', $personnage) }}" method="POST" class="pv-formulaire">
+                            @csrf
+                            @method('PATCH')
+                            <input type="number" name="montant" min="1" max="1000" required placeholder="PV" aria-label="Nombre de points de vie" class="formulaire-saisie-petit">
+                            <button type="submit" name="type" value="degats" class="bouton bouton-petit bouton-danger">Dégâts</button>
+                            <button type="submit" name="type" value="soins" class="bouton bouton-petit bouton-secondaire">Soins</button>
+                        </form>
+                        @error('montant')
+                            <div class="message-erreur-champ">{{ $message }}</div>
+                        @enderror
                         <div class="fiche-ligne"><span>Classe d'Armure</span><span class="valeur">{{ $classeArmure }}</span></div>
                         <div class="fiche-ligne"><span>Vitesse</span><span class="valeur">{{ $personnage->race->vitesse ? $personnage->race->vitesse . ' pi' : '—' }}</span></div>
                         <div class="fiche-ligne"><span>Bonus de maîtrise</span><span class="valeur">+{{ $bonusMaitrise }}</span></div>
@@ -417,13 +199,13 @@
                     <div class="fiche-boite-titre">
                         Compétences
                     </div>
-                    <div style="columns: 2; column-gap: 1.5rem;">
+                    <div class="fiche-competences-colonnes">
                         @foreach ($competences as $competence)
                             @php
                                 $bonusChaine =
                                     $competence['bonus'] >= 0 ? '+' . $competence['bonus'] : $competence['bonus'];
                             @endphp
-                            <div class="fiche-ligne" style="break-inside: avoid;">
+                            <div class="fiche-ligne fiche-ligne-insecable">
                                 <span>
                                     <span class="maitrise-point {{ $competence['maitrise'] ? 'actif' : '' }}"></span>
                                     {{ $competence['nom'] }}
@@ -438,19 +220,8 @@
                         @endforeach
                     </div>
 
-                    <div
-                        style="
-                       border-top: 1px solid var(--or-ligne-forte);
-                       margin-top: 0.75rem;
-                       padding-top: 0.75rem;
-                   ">
-                        <div
-                            style="
-                           font-size: 0.8rem;
-                           font-weight: 600;
-                           color: var(--or);
-                           margin-bottom: 0.35rem;
-                       ">
+                    <div class="fiche-langues">
+                        <div class="fiche-langues-titre">
                             Langues
                         </div>
                         <div class="fiche-ligne">
@@ -463,30 +234,18 @@
                 </div>
                 {{-- Traits --}}
                 <div class="fiche-boite marge-bas-3">
-                    <div
-                        style="
-                       display: flex;
-                       justify-content: space-between;
-                       align-items: center;
-                       margin-bottom: 0.5rem;
-                   ">
-                        <span class="fiche-boite-titre" style="margin-bottom: 0;">
+                    <div class="fiche-boite-entete">
+                        <span class="fiche-boite-titre sans-marge-bas">
                             Traits
                         </span>
-                        <div style="display: flex; gap: 0.5rem;">
+                        <div class="fiche-boite-actions">
                             <a href="{{ route('personnages.traits', $personnage) }}" class="bouton bouton-secondaire bouton-petit">Tous voir</a>
                         </div>
                     </div>
                 </div>
                 {{-- Capacités de classe et dons ; la description s'affiche au survol --}}
                 @if ($personnage->capacites->isNotEmpty() || $personnage->dons->isNotEmpty())
-                    <div
-                        style="
-                       display: grid;
-                       grid-template-columns: repeat(2, 1fr);
-                       gap: 1rem;
-                       margin-bottom: 1.5rem;
-                   ">
+                    <div class="fiche-grille-capacites">
                         <!-- Capacités -->
                         <div class="fiche-boite">
                             <div class="fiche-boite-titre">
@@ -502,7 +261,7 @@
                                     ])
                                 </div>
                             @empty
-                                <div class="texte-attenue" style="font-size: 0.8rem;">
+                                <div class="texte-attenue texte-petit">
                                     Aucune
                                 </div>
                             @endforelse
@@ -522,7 +281,7 @@
                                     ])
                                 </div>
                             @empty
-                                <div class="texte-attenue" style="font-size: 0.8rem;">
+                                <div class="texte-attenue texte-petit">
                                     Aucun
                                 </div>
                             @endforelse
@@ -531,8 +290,8 @@
                 @endif
                 {{-- Actions : sorts ou attaques selon la classe --}}
                 <div class="fiche-boite marge-bas-3">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span class="fiche-boite-titre" style="margin-bottom: 0;">
+                    <div class="fiche-boite-entete">
+                        <span class="fiche-boite-titre sans-marge-bas">
                             Actions
                         </span>
                         @if ($aDesSorts)
@@ -540,7 +299,7 @@
                         @endif
                     </div>
                     @if ($personnage->sousClasse)
-                        <div class="texte-attenue marge-bas-2" style="font-size: 0.8rem;">
+                        <div class="texte-attenue marge-bas-2 texte-petit">
                             Sous-classe : {{ $personnage->sousClasse->nom }}
                         </div>
                     @endif
@@ -548,7 +307,7 @@
                         @php
                             $incantation = $actions['incantation'];
                         @endphp
-                        <div class="texte-attenue marge-bas-2" style="font-size: 0.8rem;">
+                        <div class="texte-attenue marge-bas-2 texte-petit">
                             {{ $personnage->classe->nom }}
                             incante avec
                             {{ $incantation['caracteristique'] }}.
@@ -586,56 +345,43 @@
                                 </span>
                             </div>
                         @empty
-                            <div class="texte-attenue" style="font-size: 0.85rem;">
+                            <div class="texte-attenue texte-moyen">
                                 Aucune arme reconnue dans l'équipement porté.
                             </div>
                         @endforelse
                     @endif
                 </div>
                 {{-- Historique & Contexte --}}
-                <div
-                    style="
-                   background: var(--panneau);
-                   border: 1px solid var(--or-bordure);
-                   border-radius: 12px;
-                   padding: 1rem;
-                   margin-bottom: 1rem;
-               ">
-                    <div
-                        style="
-                       font-size: 0.85rem;
-                       font-weight: 600;
-                       color: var(--or);
-                       margin-bottom: 0.5rem;
-                   ">
+                <div class="fiche-boite-historique">
+                    <div class="fiche-boite-historique-titre">
                         Historique &amp; Contexte
                     </div>
                     @if ($personnage->historique)
-                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
+                        <div class="fiche-detail">
                             <strong>Historique:</strong>
                             {{ $personnage->historique->nom }}
                         </div>
                     @endif
                     @if ($personnage->ideal)
-                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
+                        <div class="fiche-detail">
                             <strong>Idéal:</strong>
                             {{ $personnage->ideal->valeur }}
                         </div>
                     @endif
                     @if ($personnage->defaut)
-                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
+                        <div class="fiche-detail">
                             <strong>Défaut:</strong>
                             {{ $personnage->defaut->valeur }}
                         </div>
                     @endif
                     @if ($personnage->attachement)
-                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
+                        <div class="fiche-detail">
                             <strong>Attachement:</strong>
                             {{ $personnage->attachement->valeur }}
                         </div>
                     @endif
                     @if ($personnage->personnalite)
-                        <div style="font-size: 0.8rem; color: var(--texte-secondaire);">
+                        <div class="fiche-detail">
                             <strong>Personnalité:</strong>
                             {{ $personnage->personnalite->valeur }}
                         </div>
@@ -643,16 +389,16 @@
                 </div>
                 {{-- Inventaire --}}
                 <div class="fiche-boite">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span class="fiche-boite-titre" style="margin-bottom: 0;">Inventaire</span>
+                    <div class="fiche-boite-entete">
+                        <span class="fiche-boite-titre sans-marge-bas">Inventaire</span>
                         <a href="{{ route('personnages.inventaire.index', $personnage) }}" class="bouton bouton-secondaire bouton-petit">Tous voir</a>
                     </div>
                     @if($personnage->objets->count() > 0)
-                        <div class="texte-attenue" style="font-size: 0.85rem;">
+                        <div class="texte-attenue texte-moyen">
                             {{ $personnage->objets->map(fn($objet) => $objet->nom . ($objet->pivot->quantite > 1 ? ' x' . $objet->pivot->quantite : '') . ($objet->pivot->quantite_equipee > 0 ? ' (équipé' . ($objet->pivot->quantite_equipee > 1 ? ' x' . $objet->pivot->quantite_equipee : '') . ')' : ''))->implode(', ') }}
                         </div>
                     @else
-                        <div class="texte-attenue" style="font-size: 0.85rem;">Aucun équipement enregistré.</div>
+                        <div class="texte-attenue texte-moyen">Aucun équipement enregistré.</div>
                     @endif
                 </div>
             </div>
