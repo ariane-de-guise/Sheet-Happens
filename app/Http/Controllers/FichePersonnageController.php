@@ -125,6 +125,13 @@ class FichePersonnageController extends Controller
     public function update(ModifierPersonnageRequest $requete, Personnage $personnage): RedirectResponse
     {
         $donneesValidees = $requete->validated();
+        if (array_keys($donneesValidees) === ['point_de_vie']) {
+            $personnage->update(['point_de_vie' => $donneesValidees['point_de_vie']]);
+
+            return redirect()->route('personnages.show', $personnage)
+                ->with('success', 'Points de vie mis à jour avec succès !');
+        }
+
         $classeChangee = (int) $donneesValidees['classe_id'] !== (int) $personnage->classe_id;
         $pvMaximum = (int) $donneesValidees['point_de_vie'];
 

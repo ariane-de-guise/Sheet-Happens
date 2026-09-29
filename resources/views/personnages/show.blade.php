@@ -402,7 +402,7 @@
                     @endif
                 </div>
 
-                <a href="{{ route('personnage.telecharger', $personnage) }}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top: 1rem">
+                <a href="{{ route('personnage.telecharger', $personnage) }}" target="_blank" rel="noopener" class="bouton bouton-principal" style="margin-top: 1rem">
                     Télécharger
                 </a>
 

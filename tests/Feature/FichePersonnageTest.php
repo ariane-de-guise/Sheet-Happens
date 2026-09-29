@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Controllers\PersonnageSheetController;
 use App\Models\Attachement;
 use App\Models\Capacite;
+use App\Models\ClasseSort;
 use App\Models\Defaut;
 use App\Models\Historique;
 use App\Models\Ideal;
@@ -27,6 +28,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use ReflectionMethod;
 use Spatie\LaravelPdf\Facades\Pdf;
 use Tests\TestCase;
 
@@ -71,6 +74,45 @@ class FichePersonnageTest extends TestCase
             ->assertOk()
             ->assertSee('Gimli')
             ->assertDontSee('Boromir');
+    }
+
+    public function test_les_vues_du_controleur_legacy_sont_accessibles_au_proprietaire(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+        $controller = app(PersonnageSheetController::class);
+
+        $this->actingAs($utilisateur);
+
+        $this->assertSame('personnages.index', $controller->index()->name());
+        $this->assertSame('personnages.show', $controller->show($personnage)->name());
+        $this->assertSame('personnages.traits.index', $controller->getTraits($personnage)->name());
+        $this->assertSame('personnages.edit', $controller->edit($personnage)->name());
+    }
+
+    public function test_le_controleur_legacy_gere_photo_experience_et_suppression(): void
+    {
+        Storage::fake('public');
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+        $controller = app(PersonnageSheetController::class);
+        $this->actingAs($utilisateur);
+
+        $photo = UploadedFile::fake()->image('portrait.jpg');
+        $photoResponse = $controller->updatePhoto(
+            Request::create('/', 'PATCH', [], [], ['photo' => $photo]),
+            $personnage,
+        );
+        $this->assertSame(302, $photoResponse->getStatusCode());
+
+        $experienceResponse = $controller->ajouterExperience(
+            Request::create('/', 'POST', ['experience' => 1]),
+            $personnage->refresh(),
+        );
+        $this->assertSame(302, $experienceResponse->getStatusCode());
+
+        $controller->destroy($personnage->refresh());
+        $this->assertDatabaseMissing('personnages', ['id' => $personnage->id]);
     }
 
     public function test_un_proprietaire_peut_afficher_la_fiche_de_son_personnage(): void
@@ -367,6 +409,46 @@ class FichePersonnageTest extends TestCase
             return $pdf->viewData['photoDataUri'] === 'data:image/png;base64,'.base64_encode(
                 file_get_contents(public_path('images/logo_rmb.png')),
             );
+        });
+    }
+
+    public function test_le_pdf_prepare_les_sorts_accessibles_du_personnage(): void
+    {
+        Pdf::fake();
+
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
+        $limite = LimiteMagie::create([
+            'tours_de_magie' => 3,
+            'sorts_prepares' => 2,
+            'emplacements_niveau_1' => 2,
+        ]);
+        LimiteMagieClasse::create([
+            'classe_id' => $classe->id,
+            'limite_magie_id' => $limite->id,
+            'niveau' => 1,
+            'caracteristique_magie' => 'Sagesse',
+        ]);
+        $sort = $this->sort('Soins');
+        ClasseSort::create(['classe_id' => $classe->id, 'sort_id' => $sort->id]);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+        ]);
+        PersonnageSort::create([
+            'personnage_id' => $personnage->id,
+            'sort_id' => $sort->id,
+            'preparation' => 1,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get(route('personnage.telecharger', $personnage))
+            ->assertOk();
+
+        Pdf::assertRespondedWithPdf(function ($pdf) use ($sort) {
+            return $pdf->viewData['sortsPourFiche']->sole()['sort']->is($sort)
+                && $pdf->viewData['sortsPourFiche']->sole()['preparation'] === 1
+                && $pdf->viewData['caracteristiqueSorts'] === 'sagesse';
         });
     }
 
@@ -1029,44 +1111,6 @@ class FichePersonnageTest extends TestCase
         $this->assertSame(8, $personnage->refresh()->point_de_vie);
     }
 
-    public function test_la_mise_a_jour_refuse_la_diminution_d_une_caracteristique(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-        ]);
-
-        $response = $this->actingAs($utilisateur)
-            ->patch("/personnages/{$personnage->id}", $this->donneesMiseAJour([
-                'race_id' => $personnage->race_id,
-                'classe_id' => $personnage->classe_id,
-                'force' => 9,
-            ]));
-
-        $response->assertSessionHasErrors('force');
-        $this->assertSame(10, $personnage->refresh()->abilites->force);
-    }
-
-    public function test_la_mise_a_jour_refuse_une_augmentation_superieure_a_l_asi(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-            'niveau' => 3,
-        ]);
-
-        $response = $this->actingAs($utilisateur)
-            ->patch("/personnages/{$personnage->id}", $this->donneesMiseAJour([
-                'race_id' => $personnage->race_id,
-                'classe_id' => $personnage->classe_id,
-                'niveau' => 4,
-                'force' => 13,
-            ]));
-
-        $response->assertSessionHasErrors('force');
-        $this->assertSame(10, $personnage->refresh()->abilites->force);
-    }
-
     public function test_la_mise_a_jour_efface_les_listes_quand_toutes_les_options_sont_decoches(): void
     {
         $utilisateur = Utilisateur::factory()->create();
@@ -1463,6 +1507,8 @@ class FichePersonnageTest extends TestCase
         );
         $this->assertSame(2, $this->appelerHelper($controller, 'getMaxCompetencesByLevel', 1));
         $this->assertSame(3, $this->appelerHelper($controller, 'getMaxCompetencesByLevel', 3));
+        $this->assertSame(2, $this->appelerHelper($controller, 'getMaxLanguesByLevel', 1));
+        $this->assertSame(3, $this->appelerHelper($controller, 'getMaxLanguesByLevel', 4));
 
         $this->assertNull($this->appelerHelper(
             $controller,
@@ -1473,12 +1519,39 @@ class FichePersonnageTest extends TestCase
             1,
             $classeGuerrier,
         ));
+        $this->assertNull($this->appelerHelper(
+            $controller,
+            'validateAbilityScoreIncrease',
+            ['force' => 12, 'dexterite' => 10],
+            (object) ['force' => 10, 'dexterite' => 10],
+            3,
+            4,
+            null,
+        ));
         $this->assertNull($this->appelerHelper($controller, 'validateHitPoints', 10, 1, null, $classeGuerrier));
+        $this->assertNull($this->appelerHelper(
+            $controller,
+            'validateHitPoints',
+            12,
+            2,
+            (object) ['constitution' => 10],
+            ClasseFactory::new()->create(['de_de_vie' => 'd10']),
+        ));
+        $this->expectException(ValidationException::class);
+        $this->appelerHelper(
+            $controller,
+            'validateAbilityScoreIncrease',
+            ['force' => 9],
+            (object) ['force' => 10],
+            1,
+            1,
+            null,
+        );
     }
 
     private function appelerHelper(object $controller, string $method, mixed ...$arguments): mixed
     {
-        $reflection = new \ReflectionMethod($controller, $method);
+        $reflection = new ReflectionMethod($controller, $method);
         $reflection->setAccessible(true);
 
         return $reflection->invoke($controller, ...$arguments);

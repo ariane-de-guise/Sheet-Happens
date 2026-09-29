@@ -24,6 +24,11 @@ class ModifierPersonnageRequest extends FormRequest
 
     public function rules(): array
     {
+        $champsEnvoyes = array_keys($this->except(['_token', '_method']));
+        if (count($champsEnvoyes) === 1 && $champsEnvoyes[0] === 'point_de_vie') {
+            return ['point_de_vie' => 'required|integer|min:1'];
+        }
+
         $memeHistorique = fn (string $table) => Rule::exists($table, 'id')
             ->where(fn ($requeteSql) => $requeteSql->where('historique_id', $this->input('historique_id')));
 
@@ -80,6 +85,21 @@ class ModifierPersonnageRequest extends FormRequest
             }
 
             $personnage = $this->personnage();
+            $champsEnvoyes = array_keys($this->except(['_token', '_method']));
+            if (count($champsEnvoyes) === 1 && $champsEnvoyes[0] === 'point_de_vie') {
+                [$minimum, $maximum] = $this->bornesPointsDeVie(
+                    (int) $personnage->niveau,
+                    (int) $personnage->abilites->constitution,
+                    $personnage->classe,
+                );
+                $pv = (int) $this->input('point_de_vie');
+                if ($pv < $minimum || $pv > $maximum) {
+                    $validateur->errors()->add('point_de_vie', "Les PV doivent être compris entre $minimum et $maximum pour ce niveau, cette classe et cette Constitution.");
+                }
+
+                return;
+            }
+
             $niveau = (int) $personnage->niveau;
             $race = Race::with('sousRaces')->find($this->input('race_id'));
             $classe = $this->nouvelleClasse();

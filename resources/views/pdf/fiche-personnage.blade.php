@@ -98,7 +98,7 @@
                     <div class="sheet-row">
                             <span>
                                 <span class="maitrise-dot {{ $jet['maitrise'] ? 'actif' : '' }}"></span>
-                                {{ $jet['label'] }}
+                                {{ $jet['libelle'] }}
                             </span>
                         <span class="valeur">{{ $bonusStr }}</span>
                     </div>
@@ -107,7 +107,8 @@
 
             <div class="sheet-box" style="margin-bottom: 0;">
                 <div class="sheet-box-title">PV, vitesse &amp; bonus</div>
-                <div class="sheet-row"><span>Points de vie</span><span class="valeur">{{ $personnage->point_de_vie }}</span></div>
+                <div class="sheet-row"><span>Points de vie</span><span class="valeur">{{ $personnage->point_de_vie_actuel ?? $personnage->point_de_vie }} / {{ $personnage->point_de_vie }}</span></div>
+                <div class="sheet-row"><span>Classe d'Armure</span><span class="valeur">{{ $classeArmure }}</span></div>
                 <div class="sheet-row"><span>Vitesse</span><span class="valeur">{{ $personnage->race->vitesse ? $personnage->race->vitesse . ' pi' : '—' }}</span></div>
                 <div class="sheet-row"><span>Bonus de maîtrise</span><span class="valeur">+{{ $bonusMaitrise }}</span></div>
                 <div class="sheet-row"><span>Perception passive</span><span class="valeur">{{ $perceptionPassive }}</span></div>
@@ -143,45 +144,60 @@
             </div>
         </div>
 
-            <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
-                <div class="text-gold mb-2" style="font-size: 1.15rem; font-weight: 600;">Traits de race</div>
-                @if($raceTraits->isEmpty())
-                    <div class="text-muted" style="font-size: 0.9rem;">Aucun trait n'est associé à cette race.</div>
-                @else
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        @foreach($raceTraits as $trait)
-                            <div>
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.25rem;">
-                                    <span class="text-gold" style="font-weight: 600;">{{ $trait->nom }}</span>
-                                    <span class="text-muted" style="font-size: 0.8rem; white-space: nowrap;">Niveau {{ $trait->niveau }}</span>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.9rem;">{{ $trait->description ?: 'Aucune description disponible.' }}</div>
+                @php
+                    $sectionsTraits = [
+                        ['titre' => 'Traits de race', 'elements' => $raceTraits],
+                        ['titre' => 'Traits de sous-race', 'elements' => $sousRaceTraits],
+                    ];
+                @endphp
+                @foreach($sectionsTraits as $section)
+                    <div class="sheet-box" style="margin-bottom: 0.75rem;">
+                        <div class="sheet-box-title">{{ $section['titre'] }}</div>
+                        @if($section['elements']->isEmpty())
+                            <div class="text-muted" style="font-size: 0.9rem;">
+                                {{ $section['titre'] === 'Traits de sous-race' && !$personnage->sousRace ? "Ce personnage n'a pas de sous-race." : 'Aucun trait associé.' }}
                             </div>
-                        @endforeach
+                        @else
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                @foreach($section['elements'] as $trait)
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.25rem;">
+                                            <span class="text-gold" style="font-weight: 600;">{{ $trait->nom }}</span>
+                                            <span class="text-muted" style="font-size: 0.8rem; white-space: nowrap;">Niveau {{ $trait->niveau }}</span>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.9rem;">{{ $trait->description ?: 'Aucune description disponible.' }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
-                @endif
-            </div>
+                @endforeach
 
-            <div style="margin-bottom: 1rem; background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem;">
-                <div class="text-gold mb-2" style="font-size: 1.15rem; font-weight: 600;">Traits de sous-race</div>
-                @if(!$personnage->sousRace)
-                    <div class="text-muted" style="font-size: 0.9rem;">Ce personnage n'a pas de sous-race.</div>
-                @elseif($sousRaceTraits->isEmpty())
-                    <div class="text-muted" style="font-size: 0.9rem;">Aucun trait n'est associé à cette sous-race.</div>
-                @else
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        @foreach($sousRaceTraits as $trait)
-                            <div>
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.25rem;">
-                                    <span class="text-gold" style="font-weight: 600;">{{ $trait->nom }}</span>
-                                    <span class="text-muted" style="font-size: 0.8rem; white-space: nowrap;">Niveau {{ $trait->niveau }}</span>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.9rem;">{{ $trait->description ?: 'Aucune description disponible.' }}</div>
+                @foreach([
+                    ['titre' => 'Capacités de classe', 'elements' => $capacites],
+                    ['titre' => 'Dons', 'elements' => $dons],
+                ] as $section)
+                    <div class="sheet-box" style="margin-bottom: 0.75rem;">
+                        <div class="sheet-box-title">{{ $section['titre'] }}</div>
+                        @if($section['elements']->isEmpty())
+                            <div class="text-muted" style="font-size: 0.9rem;">{{ $section['titre'] === 'Dons' ? 'Aucun don acquis.' : 'Aucune capacité de classe acquise.' }}</div>
+                        @else
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                @foreach($section['elements'] as $element)
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.25rem;">
+                                            <span class="text-gold" style="font-weight: 600;">{{ $element->nom }}</span>
+                                            @if($section['titre'] === 'Capacités de classe')
+                                                <span class="text-muted" style="font-size: 0.8rem; white-space: nowrap;">{{ $element->sousClasse?->nom ?? $personnage->classe->nom }} · Niveau {{ $element->niveau }}</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.9rem;">{{ $element->description ?: ($section['titre'] === 'Dons' ? ($element->resume ?: 'Aucune description disponible.') : 'Aucune description disponible.') }}</div>
+                                    </div>
+                                @endforeach
                             </div>
-                        @endforeach
+                        @endif
                     </div>
-                @endif
-            </div>
+                @endforeach
 
         {{-- Actions --}}
         <div class="sheet-box">
@@ -209,6 +225,46 @@
             @endif
         </div>
 
+        {{-- Sorts --}}
+        @if($caracteristiqueSorts)
+            @if($sortsPourFiche->isEmpty())
+                <div class="sheet-box">
+                    <div class="sheet-box-title">Sorts connus</div>
+                    <div class="text-muted spell-empty">Aucun sort accessible pour ce personnage.</div>
+                </div>
+            @else
+                @foreach($sortsPourFiche->groupBy(fn (array $element) => (int) $element['sort']->niveau) as $niveau => $sortsDuNiveau)
+                    <div class="sheet-box spell-level-section">
+                        <div class="sheet-box-title">{{ $niveau === 0 ? 'Sorts — Tours de magie' : 'Sorts — Niveau '.$niveau }}</div>
+                        <div class="spell-list">
+                            @foreach($sortsDuNiveau as $element)
+                                @php $sort = $element['sort']; @endphp
+                                <div class="spell-card">
+                                    <div class="spell-card-header">
+                                        <strong>{{ $sort->nom }}</strong>
+                                        <span class="spell-status {{ $element['preparation'] > 0 ? 'is-prepared' : '' }}">
+                                            {{ $element['preparation'] > 0 ? ($element['preparation'] === 2 ? 'Accordé' : 'Préparé') : 'Non préparé' }}
+                                        </span>
+                                    </div>
+                                    <div class="spell-meta">
+                                        {{ $sort->ecole }} · {{ $sort->temps_activation }} · {{ $sort->distance }} · {{ $sort->duree }}
+                                        @if($sort->composants) · {{ $sort->composants }} @endif
+                                        @if($sort->attaque_sauvegarde) · {{ $sort->attaque_sauvegarde }} @endif
+                                    </div>
+                                    <div class="text-muted spell-description">{{ $sort->description ?: 'Aucune description disponible.' }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+        @else
+            <div class="sheet-box">
+                <div class="sheet-box-title">Sorts</div>
+                <div class="text-muted spell-empty">Ce personnage ne dispose pas de sorts.</div>
+            </div>
+        @endif
+
         {{-- Historique & Contexte --}}
         <div class="sheet-box">
             <div class="sheet-box-title">Historique &amp; Contexte</div>
@@ -230,29 +286,24 @@
         </div>
 
 
-        <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
-            <div class="text-gold mb-2" style="font-weight: 600;">Objets</div>
-            @if(count($equipementClasse['objets']) > 0)
+        <div class="sheet-box" style="padding: 1.25rem;">
+            <div class="text-gold mb-2" style="font-weight: 600;">Inventaire</div>
+            @if($inventaire->isNotEmpty())
                 <ul style="list-style: disc; padding-left: 1.25rem; color: #b8a9c9; font-size: 0.9rem;">
-                    @foreach($equipementClasse['objets'] as $item)
-                        <li>{{ $item }}</li>
+                    @foreach($inventaire as $objet)
+                        <li>
+                            {{ $objet->nom }}
+                            @if($objet->pivot->quantite > 1)
+                                x{{ $objet->pivot->quantite }}
+                            @endif
+                            @if($objet->pivot->quantite_equipee > 0)
+                                (équipé{{ $objet->pivot->quantite_equipee > 1 ? ' x' . $objet->pivot->quantite_equipee : '' }})
+                            @endif
+                        </li>
                     @endforeach
                 </ul>
             @else
-                <div class="text-muted" style="font-size: 0.9rem;">Aucun objet enregistré.</div>
-            @endif
-        </div>
-
-        <div style="background: rgba(25, 10, 50, 0.9); border: 1px solid #c49a3c; border-radius: 12px; padding: 1.25rem;">
-            <div class="text-gold mb-2" style="font-weight: 600;">Armure (équipement)</div>
-            @if(count($equipementClasse['armure']) > 0)
-                <ul style="list-style: disc; padding-left: 1.25rem; color: #b8a9c9; font-size: 0.9rem;">
-                    @foreach($equipementClasse['armure'] as $item)
-                        <li>{{ $item }}</li>
-                    @endforeach
-                </ul>
-            @else
-                <div class="text-muted" style="font-size: 0.9rem;">Aucune armure enregistrée.</div>
+                <div class="text-muted" style="font-size: 0.9rem;">Aucun équipement enregistré.</div>
             @endif
         </div>
 

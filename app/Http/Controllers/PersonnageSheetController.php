@@ -8,11 +8,13 @@ use App\Models\Historique;
 use App\Models\ListeCompetence;
 use App\Models\Personnage;
 use App\Models\Race;
+use App\Models\Sort;
 use App\Models\SousClasse;
 use App\Models\SousRace;
 use App\Models\Utilisateur;
 use App\Services\FicheDePersonnageService;
 use App\Services\MonteeNiveauService;
+use App\Services\SortService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +31,7 @@ class PersonnageSheetController extends Controller
     public function __construct(
         private readonly FicheDePersonnageService $fiche,
         private readonly MonteeNiveauService $monteeNiveau,
+        private readonly SortService $sorts,
     ) {}
 
     public function index(): View
@@ -134,7 +137,7 @@ class PersonnageSheetController extends Controller
         $this->authorizeOwner($personnage);
 
         $submittedFields = array_keys($request->except(['_token', '_method']));
-        if ($submittedFields === ['niveau']) {
+        if (count($submittedFields) === 1 && in_array('niveau', $submittedFields, true)) {
             $validated = $request->validate([
                 'niveau' => 'required|integer|min:1|max:20',
             ]);
@@ -145,7 +148,7 @@ class PersonnageSheetController extends Controller
                 ->with('success', 'Niveau mis à jour avec succès !');
         }
 
-        if ($submittedFields === ['point_de_vie']) {
+        if (count($submittedFields) === 1 && in_array('point_de_vie', $submittedFields, true)) {
             $validated = $request->validate([
                 'point_de_vie' => 'required|integer|min:1',
             ]);
@@ -454,11 +457,39 @@ class PersonnageSheetController extends Controller
             'race', 'sousRace', 'classe', 'sousClasse',
             'abilites', 'listeCompetence',
             'historique', 'ideal', 'defaut', 'attachement', 'personnalite',
-            'objets',
+            'objets', 'race.traits', 'sousRace.traits',
+            'capacites.sousClasse', 'dons', 'sorts.sort',
         ]);
 
         $raceTraits = $personnage->race->traits;
         $sousRaceTraits = $personnage->sousRace?->traits ?? collect();
+        $limitesSorts = $this->sorts->limites($personnage);
+        $caracteristiqueSorts = $this->sorts->caracteristiqueIncantation($personnage, $limitesSorts);
+        $sortsAccessibles = $this->sorts->sortsAccessibles($personnage);
+        $sortsAccessiblesIds = array_values(array_unique(array_merge(
+            $sortsAccessibles['classe'],
+            $sortsAccessibles['sous_classe'],
+        )));
+        $sortsPersonnage = $personnage->sorts->keyBy('sort_id');
+        $sortsPourFiche = Sort::query()
+            ->whereIn('id', $sortsAccessiblesIds)
+            ->get()
+            ->sortBy([
+                ['niveau', 'asc'],
+                ['nom', 'asc'],
+            ])
+            ->map(function (Sort $sort) use ($sortsPersonnage, $sortsAccessibles): array {
+                $lien = $sortsPersonnage->get($sort->id);
+
+                return [
+                    'sort' => $sort,
+                    'preparation' => (int) ($lien?->preparation ?? (
+                        in_array($sort->id, $sortsAccessibles['sous_classe'], true) ? 2 : 0
+                    )),
+                ];
+            })
+            ->filter(fn (array $element): bool => $element['preparation'] > 0)
+            ->values();
 
         return Pdf::view('pdf.fiche-personnage', [
             'personnage' => $personnage,
@@ -471,7 +502,13 @@ class PersonnageSheetController extends Controller
             'actions' => $this->fiche->actions($personnage),
             'raceTraits' => $raceTraits,
             'sousRaceTraits' => $sousRaceTraits,
+            'capacites' => $personnage->capacites,
+            'dons' => $personnage->dons,
+            'classeArmure' => $this->fiche->classeArmure($personnage),
+            'inventaire' => $personnage->objets,
             'equipementClasse' => $this->fiche->equipementClasse($personnage),
+            'sortsPourFiche' => $sortsPourFiche,
+            'caracteristiqueSorts' => $caracteristiqueSorts,
         ])
             ->format('a4')
             ->withBrowsershot(function (Browsershot $browsershot) {

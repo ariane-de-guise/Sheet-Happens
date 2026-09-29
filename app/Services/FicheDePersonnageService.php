@@ -276,6 +276,7 @@ class FicheDePersonnageService
             'attaques' => $this->attaques($personnage),
         ];
     }
+
     /**
      * Répartit l'inventaire entre l'équipement de combat et les objets
      * divers affichés sur la fiche.
