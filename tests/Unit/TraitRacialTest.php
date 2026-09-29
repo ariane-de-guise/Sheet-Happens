@@ -49,5 +49,15 @@ class TraitRacialTest extends TestCase
             'race_id' => $race->id,
             'trait_id' => $trait->id,
         ]);
+        $this->assertDatabaseMissing('race_trait', [
+            'race_id' => $race->id,
+            'trait_id' => $trait->id,
+            'created_at' => null,
+        ]);
+        $this->assertDatabaseMissing('race_trait', [
+            'race_id' => $race->id,
+            'trait_id' => $trait->id,
+            'updated_at' => null,
+        ]);
     }
 }

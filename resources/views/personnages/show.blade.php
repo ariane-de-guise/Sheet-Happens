@@ -401,6 +401,11 @@
                         <div class="texte-attenue texte-moyen">Aucun équipement enregistré.</div>
                     @endif
                 </div>
+
+                <a href="{{ route('personnage.telecharger', $personnage) }}" target="_blank" rel="noopener" class="bouton bouton-principal" style="margin-top: 1rem">
+                    Télécharger
+                </a>
+
             </div>
         </div>
     </div>

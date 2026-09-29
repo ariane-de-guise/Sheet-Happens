@@ -52,12 +52,21 @@ L'image `php84-composer` sert uniquement à installer les dépendances ; l'appli
 cp .env.example .env
 ```
 
+### 4. Installer les dépendances JavaScript
 La clé d'application sera générée à l'étape 5, une fois les conteneurs démarrés.
 
-### 4. Démarrer les conteneurs Sail
-
 ```bash
-./vendor/bin/sail up -d
+npm install
+```
+
+La première fois que le conteneur démarre, Sail installe automatiquement le
+`chrome-headless-shell` correspondant à la version de Puppeteer utilisée par
+l'application. Le navigateur est conservé dans le volume Docker
+`puppeteer-cache`.
+
+### 5. Démarrer les conteneurs Sail
+```bash
+./vendor/bin/sail up -d --build
 ```
 
 Trois services sont lancés :

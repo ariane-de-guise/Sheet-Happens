@@ -276,4 +276,56 @@ class FicheDePersonnageService
             'attaques' => $this->attaques($personnage),
         ];
     }
+
+    /**
+     * Répartit l'inventaire entre l'équipement de combat et les objets
+     * divers affichés sur la fiche.
+     *
+     * @return array{armure: array<int, string>, objets: array<int, string>}
+     */
+    public function equipementClasse(Personnage $personnage): array
+    {
+        $armure = [];
+        $objets = [];
+
+        foreach ($personnage->objets as $objet) {
+            $nom = $objet->nom;
+            $quantite = max(1, (int) ($objet->pivot->quantite ?? 1));
+            $destination = in_array($objet->type, ['arme', 'armure', 'bouclier'], true)
+                ? 'armure'
+                : 'objets';
+
+            for ($i = 0; $i < $quantite; $i++) {
+                ${$destination}[] = $nom;
+            }
+        }
+
+        return ['armure' => $armure, 'objets' => $objets];
+    }
+
+    /**
+     * Section "Traits" : bonus et capacités du personnage, dérivés des
+     * descriptions déjà enregistrées sur sa race, sous-race, classe et
+     * sous-classe.
+     *
+     * @return array<int, array{label: string, texte: string}>
+     */
+    public function traits(Personnage $personnage): array
+    {
+        $sources = [
+            'Race' => $personnage->race?->description,
+            $personnage->sousRace?->nom => $personnage->sousRace?->description,
+            'Classe' => $personnage->classe?->description,
+            $personnage->sousClasse?->nom => $personnage->sousClasse?->description,
+        ];
+
+        $resultat = [];
+        foreach ($sources as $label => $texte) {
+            if (! empty($label) && ! empty($texte)) {
+                $resultat[] = ['label' => $label, 'texte' => $texte];
+            }
+        }
+
+        return $resultat;
+    }
 }

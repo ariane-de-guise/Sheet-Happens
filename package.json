@@ -5,8 +5,12 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "postinstall": "puppeteer browsers install chrome-headless-shell",
         "test:js": "node --test tests/js/**/*.test.js",
         "test:js:coverage": "node --experimental-test-coverage --test tests/js/**/*.test.js"
+    },
+    "dependencies": {
+        "puppeteer": "^25.11.0"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

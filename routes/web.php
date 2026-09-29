@@ -4,6 +4,7 @@ use App\Http\Controllers\CreationPersonnageController;
 use App\Http\Controllers\FichePersonnageController;
 use App\Http\Controllers\InventaireController;
 use App\Http\Controllers\MonteeNiveauController;
+use App\Http\Controllers\PersonnageSheetController;
 use App\Http\Controllers\PersonnageSortController;
 use App\Http\Controllers\UtilisateurController;
 use Illuminate\Support\Facades\Route;
@@ -99,4 +100,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/sous-classes/{classeId}/{niveauMax?}', [CreationPersonnageController::class, 'listerSousClasses'])->name('api.sous-classes');
     Route::get('/api/sous-races/{raceId}', [CreationPersonnageController::class, 'listerSousRaces'])->name('api.sous-races');
     Route::get('/api/historiques/{historiqueId}', [CreationPersonnageController::class, 'detailsHistorique'])->name('api.historique-details');
+    Route::get('/pdf/{personnage}', [PersonnageSheetController::class, 'telecharger'])->name('personnage.telecharger');
 });
