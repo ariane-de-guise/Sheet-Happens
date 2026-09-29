@@ -23,7 +23,7 @@ class PersonnageDestroyTest extends TestCase
             ->delete("/personnages/{$personnage->id}");
 
         $reponse->assertRedirect(route('personnages.index'));
-        $reponse->assertSessionHas('success');
+        $reponse->assertSessionHas('succes');
 
         $this->assertDatabaseMissing('personnages', ['id' => $personnage->id]);
     }

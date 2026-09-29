@@ -8,9 +8,13 @@ use App\Models\Historique;
 use App\Models\ListeCompetence;
 use App\Models\Personnage;
 use App\Models\Race;
+use App\Models\Sort;
+use App\Models\SousClasse;
+use App\Models\SousRace;
 use App\Models\Utilisateur;
 use App\Services\FicheDePersonnageService;
 use App\Services\MonteeNiveauService;
+use App\Services\SortService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,12 +23,15 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Spatie\Browsershot\Browsershot;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class PersonnageSheetController extends Controller
 {
     public function __construct(
         private readonly FicheDePersonnageService $fiche,
         private readonly MonteeNiveauService $monteeNiveau,
+        private readonly SortService $sorts,
     ) {}
 
     public function index(): View
@@ -130,7 +137,7 @@ class PersonnageSheetController extends Controller
         $this->authorizeOwner($personnage);
 
         $submittedFields = array_keys($request->except(['_token', '_method']));
-        if ($submittedFields === ['niveau']) {
+        if (count($submittedFields) === 1 && in_array('niveau', $submittedFields, true)) {
             $validated = $request->validate([
                 'niveau' => 'required|integer|min:1|max:20',
             ]);
@@ -141,7 +148,7 @@ class PersonnageSheetController extends Controller
                 ->with('success', 'Niveau mis à jour avec succès !');
         }
 
-        if ($submittedFields === ['point_de_vie']) {
+        if (count($submittedFields) === 1 && in_array('point_de_vie', $submittedFields, true)) {
             $validated = $request->validate([
                 'point_de_vie' => 'required|integer|min:1',
             ]);
@@ -191,45 +198,12 @@ class PersonnageSheetController extends Controller
             'competences.*' => 'string|max:50',
             'langues' => ['nullable', 'array'],
             'langues.*' => 'string|max:50',
-            'historique_id' => ['required', 'integer', 'exists:historiques,id'],
-            'ideal_id' => [
-                'required',
-                'integer',
-                Rule::exists('ideaux', 'id')->where(function ($query) use ($request) {
-                    return $query->where('historique_id', $request->input('historique_id'));
-                }),
-            ],
-            'defaut_id' => [
-                'required',
-                'integer',
-                Rule::exists('defauts', 'id')->where(function ($query) use ($request) {
-                    return $query->where('historique_id', $request->input('historique_id'));
-                }),
-            ],
-            'attachement_id' => [
-                'required',
-                'integer',
-                Rule::exists('attachements', 'id')->where(function ($query) use ($request) {
-                    return $query->where('historique_id', $request->input('historique_id'));
-                }),
-            ],
-            'personnalite_id' => [
-                'required',
-                'integer',
-                Rule::exists('personnalites', 'id')->where(function ($query) use ($request) {
-                    return $query->where('historique_id', $request->input('historique_id'));
-                }),
-            ],
+            'historique_id' => 'nullable|integer|exists:historiques,id',
+            'ideal_id' => 'nullable|integer|exists:ideaux,id',
+            'defaut_id' => 'nullable|integer|exists:defauts,id',
+            'attachement_id' => 'nullable|integer|exists:attachements,id',
+            'personnalite_id' => 'nullable|integer|exists:personnalites,id',
         ], [
-            'historique_id.required' => 'Vous devez choisir un historique.',
-            'ideal_id.required' => 'Vous devez choisir un idéal.',
-            'ideal_id.exists' => 'L’idéal choisi ne correspond pas à l’historique sélectionné.',
-            'defaut_id.required' => 'Vous devez choisir un défaut.',
-            'defaut_id.exists' => 'Le défaut choisi ne correspond pas à l’historique sélectionné.',
-            'attachement_id.required' => 'Vous devez choisir un attachement.',
-            'attachement_id.exists' => 'L’attachement choisi ne correspond pas à l’historique sélectionné.',
-            'personnalite_id.required' => 'Vous devez choisir un trait de personnalité.',
-            'personnalite_id.exists' => 'Le trait de personnalité choisi ne correspond pas à l’historique sélectionné.',
         ]);
 
         $race = Race::with('sousRaces')->find($validated['race_id']);
@@ -297,10 +271,19 @@ class PersonnageSheetController extends Controller
         }
 
         $sousRaceId = $validated['sous_race_id'] ?? null;
+        if ($sousRaceId) {
+            $sr = SousRace::find($sousRaceId);
+            if (! $sr || (int) $sr->race_id !== (int) $validated['race_id']) {
+                $sousRaceId = null;
+            }
+        }
 
         $sousClasseId = $validated['sous_classe_id'] ?? null;
         if ($sousClasseId) {
-            if ($nouvelleClasse->niveau_sous_classe > (int) $validated['niveau']) {
+            $sc = SousClasse::find($sousClasseId);
+            if (! $sc || ! $nouvelleClasse || (int) $sc->classe_id !== (int) $validated['classe_id']) {
+                $sousClasseId = null;
+            } elseif ($nouvelleClasse->niveau_sous_classe > (int) $validated['niveau']) {
                 throw ValidationException::withMessages([
                     'sous_classe_id' => "Cette sous-classe n'est disponible qu'à partir du niveau {$nouvelleClasse->niveau_sous_classe}.",
                 ]);
@@ -334,11 +317,11 @@ class PersonnageSheetController extends Controller
             'sous_race_id' => $sousRaceId,
             'classe_id' => $validated['classe_id'],
             'sous_classe_id' => $sousClasseId,
-            'historique_id' => $validated['historique_id'],
-            'ideal_id' => $validated['ideal_id'],
-            'defaut_id' => $validated['defaut_id'],
-            'attachement_id' => $validated['attachement_id'],
-            'personnalite_id' => $validated['personnalite_id'],
+            'historique_id' => $validated['historique_id'] ?? null,
+            'ideal_id' => $validated['ideal_id'] ?? null,
+            'defaut_id' => $validated['defaut_id'] ?? null,
+            'attachement_id' => $validated['attachement_id'] ?? null,
+            'personnalite_id' => $validated['personnalite_id'] ?? null,
             'niveau' => $validated['niveau'],
             'alignement' => $validated['alignement'] ?? null,
             'description' => $validated['description'] ?? null,
@@ -456,18 +439,115 @@ class PersonnageSheetController extends Controller
         abort_unless($personnage->utilisateur_id === Auth::id(), 403);
     }
 
+    protected function getMaxCompetencesByLevel(int $niveau): int
+    {
+        return 2 + (int) floor(($niveau - 1) / 2);
+    }
+
     protected function getMaxLanguesByLevel(int $niveau): int
     {
         return 2 + (int) floor(($niveau - 1) / 3);
     }
 
+    public function telecharger(Personnage $personnage)
+    {
+        $this->authorizeOwner($personnage);
+
+        $personnage->load([
+            'race', 'sousRace', 'classe', 'sousClasse',
+            'abilites', 'listeCompetence',
+            'historique', 'ideal', 'defaut', 'attachement', 'personnalite',
+            'objets', 'race.traits', 'sousRace.traits',
+            'capacites.sousClasse', 'dons', 'sorts.sort',
+        ]);
+
+        $raceTraits = $personnage->race->traits;
+        $sousRaceTraits = $personnage->sousRace?->traits ?? collect();
+        $limitesSorts = $this->sorts->limites($personnage);
+        $caracteristiqueSorts = $this->sorts->caracteristiqueIncantation($personnage, $limitesSorts);
+        $sortsAccessibles = $this->sorts->sortsAccessibles($personnage);
+        $sortsAccessiblesIds = array_values(array_unique(array_merge(
+            $sortsAccessibles['classe'],
+            $sortsAccessibles['sous_classe'],
+        )));
+        $sortsPersonnage = $personnage->sorts->keyBy('sort_id');
+        $sortsPourFiche = Sort::query()
+            ->whereIn('id', $sortsAccessiblesIds)
+            ->get()
+            ->sortBy([
+                ['niveau', 'asc'],
+                ['nom', 'asc'],
+            ])
+            ->map(function (Sort $sort) use ($sortsPersonnage, $sortsAccessibles): array {
+                $lien = $sortsPersonnage->get($sort->id);
+
+                return [
+                    'sort' => $sort,
+                    'preparation' => (int) ($lien?->preparation ?? (
+                        in_array($sort->id, $sortsAccessibles['sous_classe'], true) ? 2 : 0
+                    )),
+                ];
+            })
+            ->filter(fn (array $element): bool => $element['preparation'] > 0)
+            ->values();
+
+        return Pdf::view('pdf.fiche-personnage', [
+            'personnage' => $personnage,
+            'photoDataUri' => $this->photoDataUri($personnage->photo),
+            'seuilExperience' => $this->monteeNiveau->xpProchainNiveau($personnage),
+            'bonusMaitrise' => $this->fiche->bonusMaitrise($personnage->niveau),
+            'jetsDeSauvegarde' => $this->fiche->jetsDeSauvegarde($personnage),
+            'competences' => $this->fiche->competences($personnage),
+            'perceptionPassive' => $this->fiche->perceptionPassive($personnage),
+            'actions' => $this->fiche->actions($personnage),
+            'raceTraits' => $raceTraits,
+            'sousRaceTraits' => $sousRaceTraits,
+            'capacites' => $personnage->capacites,
+            'dons' => $personnage->dons,
+            'classeArmure' => $this->fiche->classeArmure($personnage),
+            'inventaire' => $personnage->objets,
+            'equipementClasse' => $this->fiche->equipementClasse($personnage),
+            'sortsPourFiche' => $sortsPourFiche,
+            'caracteristiqueSorts' => $caracteristiqueSorts,
+        ])
+            ->format('a4')
+            ->withBrowsershot(function (Browsershot $browsershot) {
+                $browsershot->noSandbox();
+            })
+            ->download(str($personnage->nom)->slug().'-fiche.pdf');
+    }
+
+    protected function photoDataUri(?string $chemin): ?string
+    {
+        $disque = Storage::disk('public');
+
+        if ($chemin && $disque->exists($chemin)) {
+            $contenu = $disque->get($chemin);
+            $type = $disque->mimeType($chemin) ?: 'image/jpeg';
+
+            return "data:{$type};base64,".base64_encode($contenu);
+        }
+
+        $cheminLogo = public_path('images/logo_rmb.png');
+
+        if (! is_file($cheminLogo) || ! is_readable($cheminLogo)) {
+            return null;
+        }
+
+        return 'data:image/png;base64,'.base64_encode((string) file_get_contents($cheminLogo));
+    }
+
     protected function validateAbilityScoreIncrease(
         array $newScores,
-        object $oldScores,
+        ?object $oldScores,
         int $oldLevel,
         int $newLevel,
         ?Classe $classe,
     ): void {
+        if (! $oldScores) {
+            return;
+        }
+
         $increases = [];
         foreach (array_keys($newScores) as $ability) {
             $difference = $newScores[$ability] - (int) $oldScores->{$ability};
@@ -511,8 +591,12 @@ class PersonnageSheetController extends Controller
         return $levels;
     }
 
-    protected function validateHitPoints(int $hitPoints, int $level, object $abilities, ?Classe $classe): void
+    protected function validateHitPoints(int $hitPoints, int $level, ?object $abilities, ?Classe $classe): void
     {
+        if (! $abilities) {
+            return;
+        }
+
         $hitDie = (int) preg_replace('/[^0-9]/', '', (string) ($classe?->de_de_vie ?? '10'));
         $constitutionModifier = (int) floor(((int) $abilities->constitution - 10) / 2);
         $firstLevelHitPoints = max(1, $hitDie + $constitutionModifier);

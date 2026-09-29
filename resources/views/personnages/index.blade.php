@@ -1,30 +1,30 @@
 @extends('layouts.app')
 
-@section('title', 'Mes personnages')
+@section('titre', 'Mes personnages')
 
-@section('content')
-    <div class="card">
-        <h1 class="title-main text-center mb-4">Mes personnages</h1>
+@section('contenu')
+    <div class="carte">
+        <h1 class="titre-principal texte-centre marge-bas-4">Mes personnages</h1>
 
-        @if(session('error'))
-            <div class="alert alert-error">{{ session('error') }}</div>
+        @if(session('erreur'))
+            <div class="alerte alerte-erreur">{{ session('erreur') }}</div>
         @endif
 
         @if($personnages->isEmpty())
-            <p class="text-muted text-center mb-4">Vous n'avez pas encore de personnage.</p>
+            <p class="texte-attenue texte-centre marge-bas-4">Vous n'avez pas encore de personnage.</p>
         @else
-            <div class="grid-cards mb-4">
+            <div class="grille-cartes marge-bas-4">
                 @foreach($personnages as $p)
-                    <div class="card-choice" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="carte-choix" style="display: flex; flex-direction: column; gap: 0.75rem;">
                         <a href="{{ route('personnages.show', $p) }}" style="text-decoration: none; color: inherit;">
-                            <div class="card-title">{{ $p->nom }}</div>
-                            <div class="card-desc">{{ $p->race->nom }} {{ $p->classe->nom }}</div>
+                            <div class="carte-titre">{{ $p->nom }}</div>
+                            <div class="carte-desc">{{ $p->race->nom }} {{ $p->classe->nom }}</div>
                         </a>
-                        <form id="form-supprimer-{{ $p->id }}" action="{{ route('personnages.destroy', $p) }}" method="POST" style="margin: 0;">
+                        <form id="formulaire-supprimer-{{ $p->id }}" action="{{ route('personnages.destroy', $p) }}" method="POST" style="margin: 0;">
                             @csrf
                             @method('DELETE')
-                            <button type="button" class="btn btn-danger btn-small" style="width: 100%;"
-                                    onclick="ouvrirModalSuppression('form-supprimer-{{ $p->id }}', '{{ addslashes($p->nom) }}')">
+                            <button type="button" class="bouton bouton-danger bouton-petit" style="width: 100%;"
+                                    onclick="ouvrirModalSuppression('formulaire-supprimer-{{ $p->id }}', '{{ addslashes($p->nom) }}')">
                                 Supprimer
                             </button>
                         </form>
@@ -33,14 +33,14 @@
             </div>
         @endif
 
-        <div class="text-center">
-            <p class="text-muted mb-2">{{ $personnages->count() }} / {{ \App\Models\Personnage::MAX_PAR_UTILISATEUR }} personnages</p>
+        <div class="texte-centre">
+            <p class="texte-attenue marge-bas-2">{{ $personnages->count() }} / {{ \App\Models\Personnage::MAX_PAR_UTILISATEUR }} personnages</p>
             @if($personnages->count() >= \App\Models\Personnage::MAX_PAR_UTILISATEUR)
-                <button type="button" class="btn btn-primary mb-2" disabled title="Supprimez un personnage pour en créer un nouveau">
+                <button type="button" class="bouton bouton-principal marge-bas-2" disabled title="Supprimez un personnage pour en créer un nouveau">
                     Limite de personnages atteinte
                 </button>
             @else
-                <a href="{{ route('creation.race') }}" class="btn btn-primary mb-2">Créez un personnage</a>
+                <a href="{{ route('creation.race') }}" class="bouton bouton-principal marge-bas-2">Créez un personnage</a>
             @endif
         </div>
     </div>

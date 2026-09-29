@@ -69,9 +69,9 @@ class PersonnageExperienceTest extends TestCase
 
     public function test_autre_utilisateur_ne_peut_pas_ajouter_de_l_experience(): void
     {
-        $owner = Utilisateur::factory()->create();
+        $proprietaire = Utilisateur::factory()->create();
         $autre = Utilisateur::factory()->create();
-        $p = $this->personnage($owner, $this->classe());
+        $p = $this->personnage($proprietaire, $this->classe());
 
         $this->actingAs($autre)->post(route('personnages.experience.ajouter', $p), ['experience' => 100])
             ->assertForbidden();
@@ -99,6 +99,27 @@ class PersonnageExperienceTest extends TestCase
         $this->actingAs($u)->get(route('personnages.show', $p))
             ->assertOk()
             ->assertSee('400/900');
+    }
+
+    public function test_la_fiche_propose_la_montee_si_l_experience_depasse_le_seuil(): void
+    {
+        $u = Utilisateur::factory()->create();
+        $p = $this->personnage($u, $this->classe(), 2, 1000);
+
+        $this->actingAs($u)->get(route('personnages.show', $p))
+            ->assertOk()
+            ->assertSee('1000/900')
+            ->assertSee('pour passer au niveau 3');
+    }
+
+    public function test_la_fiche_ne_propose_pas_la_montee_sous_le_seuil(): void
+    {
+        $u = Utilisateur::factory()->create();
+        $p = $this->personnage($u, $this->classe(), 2, 400);
+
+        $this->actingAs($u)->get(route('personnages.show', $p))
+            ->assertOk()
+            ->assertDontSee('pour passer au niveau');
     }
 
     public function test_la_fiche_indique_le_niveau_maximum_sans_seuil(): void

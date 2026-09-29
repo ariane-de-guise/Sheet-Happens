@@ -1,120 +1,120 @@
 // Étape "Classe" de la création de personnage.
-// Les données (window.ClasseCreationData) sont injectées par
+// Les données (window.DonneesCreationClasse) sont injectées par
 // classe.blade.php ; toutes les classes sont déjà chargées côté serveur
 // avec leurs sous-classes, donc aucun appel réseau supplémentaire n'est
 // nécessaire pour afficher les sous-classes ou leurs descriptions.
 // Un personnage est toujours créé au niveau 1 : seules les sous-classes
 // disponibles dès ce niveau sont proposées ici.
 const NIVEAU_CREATION = 1;
-const classesData = (window.ClasseCreationData && window.ClasseCreationData.classes) || {};
-window.currentSousClasses = (window.ClasseCreationData && window.ClasseCreationData.initialSousClasses) || [];
+const donneesClasses = (window.DonneesCreationClasse && window.DonneesCreationClasse.classes) || {};
+window.sousClassesCourantes = (window.DonneesCreationClasse && window.DonneesCreationClasse.sousClassesInitiales) || [];
 
-function selectClasse(id, element) {
-    document.querySelectorAll('#classesGrid .card-choice').forEach(el => {
-        el.classList.remove('selected');
+function choisirClasse(id, element) {
+    document.querySelectorAll('#classesGrille .carte-choix').forEach(el => {
+        el.classList.remove('selectionne');
     });
-    element.classList.add('selected');
+    element.classList.add('selectionne');
     element.querySelector('input[type="radio"]').checked = true;
 
-    document.getElementById('classeErrors').style.display = 'none';
+    document.getElementById('classeErreurs').style.display = 'none';
 
-    const classe = classesData[id];
-    showClasseDescription(classe);
-    renderSousClasses(classe);
-    updateSuivantState();
+    const classe = donneesClasses[id];
+    afficherDescriptionClasse(classe);
+    afficherSousClasses(classe);
+    majEtatSuivant();
 }
 
-function showClasseDescription(classe) {
-    const box = document.getElementById('classeDescription');
+function afficherDescriptionClasse(classe) {
+    const boite = document.getElementById('classeDescription');
     if (!classe || !classe.description) {
-        box.style.display = 'none';
+        boite.style.display = 'none';
         return;
     }
-    document.getElementById('classeDescriptionTitle').textContent = classe.nom;
-    document.getElementById('classeDescriptionContent').textContent = classe.description;
-    box.style.display = '';
+    document.getElementById('classeDescriptionTitre').textContent = classe.nom;
+    document.getElementById('classeDescriptionContenu').textContent = classe.description;
+    boite.style.display = '';
 }
 
-function selectSousClasse(id, element) {
-    document.querySelectorAll('#sousClassesGrid .card-choice').forEach(el => {
-        el.classList.remove('selected');
+function choisirSousClasse(id, element) {
+    document.querySelectorAll('#sousClassesGrille .carte-choix').forEach(el => {
+        el.classList.remove('selectionne');
     });
-    element.classList.add('selected');
+    element.classList.add('selectionne');
     element.querySelector('input[type="radio"]').checked = true;
 
-    const errBox = document.getElementById('sousClasseErrors');
-    if (errBox) errBox.style.display = 'none';
+    const boiteErreur = document.getElementById('sousClasseErreurs');
+    if (boiteErreur) boiteErreur.style.display = 'none';
 
-    const sousClasse = (window.currentSousClasses || []).find(sc => sc.id === id);
-    showSousClasseDescription(sousClasse);
-    updateSuivantState();
+    const sousClasse = (window.sousClassesCourantes || []).find(sc => sc.id === id);
+    afficherDescriptionSousClasse(sousClasse);
+    majEtatSuivant();
 }
 
-function showSousClasseDescription(sousClasse) {
-    const box = document.getElementById('sousClasseDescription');
-    if (!box) return;
+function afficherDescriptionSousClasse(sousClasse) {
+    const boite = document.getElementById('sousClasseDescription');
+    if (!boite) return;
     if (!sousClasse || !sousClasse.description) {
-        box.style.display = 'none';
+        boite.style.display = 'none';
         return;
     }
-    document.getElementById('sousClasseDescriptionTitle').textContent = sousClasse.nom;
-    document.getElementById('sousClasseDescriptionContent').textContent = sousClasse.description;
-    box.style.display = '';
+    document.getElementById('sousClasseDescriptionTitre').textContent = sousClasse.nom;
+    document.getElementById('sousClasseDescriptionContenu').textContent = sousClasse.description;
+    boite.style.display = '';
 }
 
-function renderSousClasses(classe) {
-    const container = document.getElementById('sousClasseContainer');
+function afficherSousClasses(classe) {
+    const conteneur = document.getElementById('sousClasseConteneur');
     const sousClasses = (classe && classe.niveau_sous_classe <= NIVEAU_CREATION && classe.sous_classes) || [];
-    window.currentSousClasses = sousClasses;
+    window.sousClassesCourantes = sousClasses;
 
     if (sousClasses.length === 0) {
-        container.innerHTML = '';
+        conteneur.innerHTML = '';
         return;
     }
 
-    let html = '<h3 class="title-section mb-2">Sous-classe</h3>';
-    html += '<div class="alert alert-error" id="sousClasseErrors" style="display:none;">';
+    let html = '<h3 class="titre-section marge-bas-2">Sous-classe</h3>';
+    html += '<div class="alerte alerte-erreur" id="sousClasseErreurs" style="display:none;">';
     html += 'Vous devez choisir une sous-classe avant de continuer.</div>';
-    html += '<div class="grid-cards mb-4" id="sousClassesGrid">';
+    html += '<div class="grille-cartes marge-bas-4" id="sousClassesGrille">';
 
     sousClasses.forEach(sc => {
-        html += '<div class="card-choice" onclick="selectSousClasse(' + sc.id + ', this)">';
+        html += '<div class="carte-choix" onclick="choisirSousClasse(' + sc.id + ', this)">';
         html += '<input type="radio" name="sous_classe_id" value="' + sc.id + '" required style="display: none;">';
-        html += '<div class="card-title">' + sc.nom + '</div>';
-        html += '<div class="card-desc">Niveau ' + classe.niveau_sous_classe + '</div>';
+        html += '<div class="carte-titre">' + sc.nom + '</div>';
+        html += '<div class="carte-desc">Niveau ' + classe.niveau_sous_classe + '</div>';
         html += '</div>';
     });
 
     html += '</div>';
-    html += '<div class="help-box mb-4" id="sousClasseDescription" style="display:none;">';
-    html += '<div class="title" id="sousClasseDescriptionTitle"></div>';
-    html += '<div class="content" id="sousClasseDescriptionContent"></div>';
+    html += '<div class="boite-aide marge-bas-4" id="sousClasseDescription" style="display:none;">';
+    html += '<div class="titre" id="sousClasseDescriptionTitre"></div>';
+    html += '<div class="contenu" id="sousClasseDescriptionContenu"></div>';
     html += '</div>';
 
-    container.innerHTML = html;
+    conteneur.innerHTML = html;
 }
 
-function updateSuivantState() {
-    const hasClasse = !!document.querySelector('#classesGrid input[type="radio"]:checked');
-    const sousGrid = document.getElementById('sousClassesGrid');
-    const hasSousClasse = !sousGrid || !!document.querySelector('#sousClassesGrid input[type="radio"]:checked');
-    document.getElementById('btnSuivant').disabled = !(hasClasse && hasSousClasse);
+function majEtatSuivant() {
+    const aClasse = !!document.querySelector('#classesGrille input[type="radio"]:checked');
+    const grilleSous = document.getElementById('sousClassesGrille');
+    const aSousClasse = !grilleSous || !!document.querySelector('#sousClassesGrille input[type="radio"]:checked');
+    document.getElementById('boutonSuivant').disabled = !(aClasse && aSousClasse);
 }
 
-document.getElementById('classeForm').addEventListener('submit', function (event) {
-    const hasSelection = document.querySelector('#classesGrid input[type="radio"]:checked');
-    if (!hasSelection) {
-        event.preventDefault();
-        document.getElementById('classeErrors').style.display = 'block';
+document.getElementById('classeFormulaire').addEventListener('submit', function (evenement) {
+    const aUneSelection = document.querySelector('#classesGrille input[type="radio"]:checked');
+    if (!aUneSelection) {
+        evenement.preventDefault();
+        document.getElementById('classeErreurs').style.display = 'block';
         return;
     }
 
-    const sousGrid = document.getElementById('sousClassesGrid');
-    if (sousGrid && !document.querySelector('#sousClassesGrid input[type="radio"]:checked')) {
-        event.preventDefault();
-        const errBox = document.getElementById('sousClasseErrors');
-        if (errBox) errBox.style.display = 'block';
+    const grilleSous = document.getElementById('sousClassesGrille');
+    if (grilleSous && !document.querySelector('#sousClassesGrille input[type="radio"]:checked')) {
+        evenement.preventDefault();
+        const boiteErreur = document.getElementById('sousClasseErreurs');
+        if (boiteErreur) boiteErreur.style.display = 'block';
     }
 });
 
-updateSuivantState();
+majEtatSuivant();

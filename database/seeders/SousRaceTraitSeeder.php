@@ -3,14 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\SousRace;
-use App\Models\TraitModel;
+use App\Models\TraitRacial;
 use Illuminate\Database\Seeder;
 
 class SousRaceTraitSeeder extends Seeder
 {
     public function run(): void
     {
-        $mappings = [
+        $correspondances = [
             // --- Drakéides (Ascendances) ---
             'Drakéide Argent' => [
                 'Arme de souffle (Froid)',
@@ -107,20 +107,20 @@ class SousRaceTraitSeeder extends Seeder
             ],
         ];
 
-        foreach ($mappings as $sousRaceName => $traitNames) {
-            $sousRace = SousRace::where('nom', $sousRaceName)->first();
+        foreach ($correspondances as $nomSousRace => $nomsTraits) {
+            $sousRace = SousRace::where('nom', $nomSousRace)->first();
 
             if (! $sousRace) {
-                throw new \RuntimeException("La sous-race « {$sousRaceName} » est absente de la base de données.");
+                throw new \RuntimeException("La sous-race « {$nomSousRace} » est absente de la base de données.");
             }
 
-            $traits = TraitModel::whereIn('nom', $traitNames)->get(['id', 'nom']);
-            $missingTraitNames = array_diff($traitNames, $traits->pluck('nom')->all());
+            $traits = TraitRacial::whereIn('nom', $nomsTraits)->get(['id', 'nom']);
+            $nomsTraitsManquants = array_diff($nomsTraits, $traits->pluck('nom')->all());
 
-            if ($missingTraitNames !== []) {
+            if ($nomsTraitsManquants !== []) {
                 throw new \RuntimeException(
-                    "Les traits suivants sont absents du seeder des traits pour la sous-race {$sousRaceName} : "
-                    .implode(', ', $missingTraitNames)
+                    "Les traits suivants sont absents du seeder des traits pour la sous-race {$nomSousRace} : "
+                    .implode(', ', $nomsTraitsManquants)
                 );
             }
 

@@ -4,22 +4,25 @@ namespace Tests\Feature;
 
 use App\Models\Personnage;
 use App\Models\Utilisateur;
+use App\Services\PersonnageCreationService;
 use Database\Factories\ClasseFactory;
 use Database\Factories\PersonnageFactory;
 use Database\Factories\RaceFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class PersonnageLimiteCreationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function payloadValide(): array
+    private function donneesValides(Utilisateur $utilisateur): array
     {
         $race = RaceFactory::new()->create();
         $classe = ClasseFactory::new()->create(['niveau_sous_classe' => 1]);
 
         return [
+            'utilisateur_id' => $utilisateur->id,
             'nom' => 'Nouveau personnage',
             'race_id' => $race->id,
             'classe_id' => $classe->id,
@@ -33,6 +36,11 @@ class PersonnageLimiteCreationTest extends TestCase
                 'charisme' => 10,
             ],
         ];
+    }
+
+    private function creer(Utilisateur $utilisateur): Personnage
+    {
+        return app(PersonnageCreationService::class)->create($this->donneesValides($utilisateur));
     }
 
     private function creerPersonnagesPour(Utilisateur $utilisateur, int $nombre): void
@@ -62,7 +70,7 @@ class PersonnageLimiteCreationTest extends TestCase
         $reponse = $this->actingAs($utilisateur)->get('/personnages/creer');
 
         $reponse->assertRedirect(route('personnages.index'));
-        $reponse->assertSessionHas('error');
+        $reponse->assertSessionHas('erreur');
     }
 
     public function test_toutes_les_etapes_de_lassistant_sont_bloquees_quand_la_limite_est_atteinte(): void
@@ -91,17 +99,15 @@ class PersonnageLimiteCreationTest extends TestCase
             ->assertOk();
     }
 
-    // --- Point de création effectif (service, via l'API) ---
+    // --- Point de création effectif (service) ---
 
     public function test_le_cinquieme_personnage_peut_etre_cree(): void
     {
         $utilisateur = Utilisateur::factory()->create();
         $this->creerPersonnagesPour($utilisateur, Personnage::MAX_PAR_UTILISATEUR - 1);
 
-        $reponse = $this->actingAs($utilisateur)
-            ->postJson('/api/personnages', $this->payloadValide());
+        $this->creer($utilisateur);
 
-        $reponse->assertStatus(201);
         $this->assertSame(
             Personnage::MAX_PAR_UTILISATEUR,
             Personnage::where('utilisateur_id', $utilisateur->id)->count()
@@ -113,10 +119,12 @@ class PersonnageLimiteCreationTest extends TestCase
         $utilisateur = Utilisateur::factory()->create();
         $this->creerPersonnagesPour($utilisateur, Personnage::MAX_PAR_UTILISATEUR);
 
-        $reponse = $this->actingAs($utilisateur)
-            ->postJson('/api/personnages', $this->payloadValide());
-
-        $reponse->assertStatus(422)->assertJsonValidationErrors(['utilisateur_id']);
+        try {
+            $this->creer($utilisateur);
+            $this->fail('Le sixième personnage devait être refusé.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('utilisateur_id', $e->errors());
+        }
         $this->assertSame(
             Personnage::MAX_PAR_UTILISATEUR,
             Personnage::where('utilisateur_id', $utilisateur->id)->count()
@@ -135,10 +143,7 @@ class PersonnageLimiteCreationTest extends TestCase
             ->get('/personnages/creer')
             ->assertOk();
 
-        $reponse = $this->actingAs($utilisateur)
-            ->postJson('/api/personnages', $this->payloadValide());
-
-        $reponse->assertStatus(201);
+        $this->assertInstanceOf(Personnage::class, $this->creer($utilisateur));
     }
 
     // --- Affichage sur la liste ---

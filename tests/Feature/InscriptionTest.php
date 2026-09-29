@@ -100,8 +100,8 @@ class InscriptionTest extends TestCase
             'courriel' => 'ressource@exemple.com',
         ]);
 
-        $resource = new UtilisateurResource($utilisateur);
-        $donnees = $resource->toArray(request());
+        $ressource = new UtilisateurResource($utilisateur);
+        $donnees = $ressource->toArray(request());
 
         $this->assertEquals($utilisateur->id, $donnees['id']);
         $this->assertEquals('ressource@exemple.com', $donnees['courriel']);
@@ -134,5 +134,41 @@ class InscriptionTest extends TestCase
 
         // 2. Ou vérifie directement que getAuthPassword() retourne bien l'attribut 'mot_de_passe'
         $this->assertSame($utilisateur->mot_de_passe, $utilisateur->getAuthPassword());
+    }
+
+    /**
+     * Teste que les messages de validation sont affichés en français.
+     */
+    public function test_les_messages_de_validation_sont_en_francais(): void
+    {
+        $reponse = $this->post('/inscription', [
+            'courriel' => 'pas-un-courriel',
+            'mot_de_passe' => 'court',
+            'confirmation_mot_de_passe' => 'court',
+        ]);
+
+        $reponse->assertSessionHasErrors([
+            'courriel' => 'Le champ courriel doit être une adresse courriel valide.',
+            'mot_de_passe' => 'Le champ mot de passe doit contenir au moins 8 caractères.',
+        ]);
+    }
+
+    /**
+     * Teste que les inscriptions en rafale depuis une même IP sont freinées.
+     */
+    public function test_les_inscriptions_en_rafale_sont_limitees(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/inscription', ['courriel' => "joueur$i@exemple.com", 'mot_de_passe' => 'court']);
+        }
+
+        $reponse = $this->post('/inscription', [
+            'courriel' => 'joueur6@exemple.com',
+            'mot_de_passe' => 'Secret1234!',
+            'confirmation_mot_de_passe' => 'Secret1234!',
+        ]);
+
+        $reponse->assertSessionHasErrors(['courriel' => 'Trop de tentatives d’inscription. Réessayez dans une minute.']);
+        $this->assertDatabaseMissing('utilisateurs', ['courriel' => 'joueur6@exemple.com']);
     }
 }

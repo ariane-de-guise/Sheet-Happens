@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\TraitModel;
+use App\Models\TraitRacial;
 use Illuminate\Database\Seeder;
 
 class TraitSeeder extends Seeder
@@ -375,7 +375,7 @@ class TraitSeeder extends Seeder
         ];
 
         foreach ($traits as $trait) {
-            TraitModel::updateOrCreate(
+            TraitRacial::updateOrCreate(
                 [
                     'nom' => $trait['nom'],
                     'niveau' => $trait['niveau'],

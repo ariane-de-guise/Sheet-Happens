@@ -90,4 +90,52 @@ class ConnexionTest extends TestCase
         $reponse->assertSessionHasErrors(['courriel', 'mot_de_passe']);
         $this->assertGuest();
     }
+
+    /**
+     * Teste qu'après trop d'échecs, même le bon mot de passe est refusé
+     * temporairement, avec un message en français.
+     */
+    public function test_la_connexion_est_bloquee_apres_trop_d_echecs(): void
+    {
+        $this->freezeTime();
+        Utilisateur::factory()->create([
+            'courriel' => 'samuel@exemple.com',
+            'mot_de_passe' => 'Secret1234!',
+        ]);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/connexion', ['courriel' => 'samuel@exemple.com', 'mot_de_passe' => 'mauvais']);
+        }
+
+        $reponse = $this->post('/connexion', ['courriel' => 'samuel@exemple.com', 'mot_de_passe' => 'Secret1234!']);
+
+        $reponse->assertSessionHasErrors([
+            'connexion' => 'Trop de tentatives de connexion. Réessayez dans 60 secondes.',
+        ]);
+        $this->assertGuest();
+    }
+
+    /**
+     * Teste qu'une connexion réussie remet le compteur d'échecs à zéro.
+     */
+    public function test_une_connexion_reussie_remet_le_compteur_a_zero(): void
+    {
+        Utilisateur::factory()->create([
+            'courriel' => 'samuel@exemple.com',
+            'mot_de_passe' => 'Secret1234!',
+        ]);
+
+        for ($i = 0; $i < 4; $i++) {
+            $this->post('/connexion', ['courriel' => 'samuel@exemple.com', 'mot_de_passe' => 'mauvais']);
+        }
+        $this->post('/connexion', ['courriel' => 'samuel@exemple.com', 'mot_de_passe' => 'Secret1234!']);
+        $this->post('/deconnexion');
+
+        for ($i = 0; $i < 4; $i++) {
+            $this->post('/connexion', ['courriel' => 'samuel@exemple.com', 'mot_de_passe' => 'mauvais']);
+        }
+        $this->post('/connexion', ['courriel' => 'samuel@exemple.com', 'mot_de_passe' => 'Secret1234!']);
+
+        $this->assertAuthenticated();
+    }
 }

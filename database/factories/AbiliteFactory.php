@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class AbiliteFactory extends Factory
 {
-    protected $model = Abilite::class;
+    protected $modele = Abilite::class;
 
     public function definition(): array
     {

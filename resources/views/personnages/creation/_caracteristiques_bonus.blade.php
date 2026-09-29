@@ -5,7 +5,7 @@
      Demi-elfe, ...) demandent au joueur de choisir la caractéristique
      concernée via un select, plutôt que d'être appliqués automatiquement. --}}
 @php
-    $auChoixSourceLabels = ['race' => 'race', 'sous_race' => 'sous-race', 'classe' => 'classe'];
+    $libellesSourcesAuChoix = ['race' => 'race', 'sous_race' => 'sous-race', 'classe' => 'classe'];
 @endphp
 @if(!empty($bonusFixeMentions) || !empty($auChoixDisponibles))
     <div class="stats-bonus-mention">
@@ -14,15 +14,15 @@
         @endif
         @foreach($auChoixDisponibles as $source => $config)
             @for($i = 0; $i < $config['nombre']; $i++)
-                <div class="bonus-choix-row">
+                <div class="bonus-choix-ligne">
                     <label for="bonus_choix_{{ $source }}_{{ $i }}">
-                        Bonus au choix ({{ $auChoixSourceLabels[$source] ?? $source }}, +{{ $config['bonus'] }}) :
+                        Bonus au choix ({{ $libellesSourcesAuChoix[$source] ?? $source }}, +{{ $config['bonus'] }}) :
                     </label>
                     <select name="bonus_choix_{{ $source }}[]" id="bonus_choix_{{ $source }}_{{ $i }}"
-                            class="bonus-choix-select" data-bonus="{{ $config['bonus'] }}" required>
+                            class="bonus-choix-liste" data-bonus="{{ $config['bonus'] }}" required>
                         <option value="">-- Choisir --</option>
-                        @foreach($labels as $key => $label)
-                            <option value="{{ $key }}" {{ (($bonusChoix[$source][$i] ?? null) === $key) ? 'selected' : '' }}>{{ $label }}</option>
+                        @foreach($libelles as $cle => $libelle)
+                            <option value="{{ $cle }}" {{ (($bonusChoix[$source][$i] ?? null) === $cle) ? 'selected' : '' }}>{{ $libelle }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -37,22 +37,22 @@
         // chaque caractéristique quand le joueur choisit (ou change) où placer
         // un bonus "au choix", sans attendre la soumission du formulaire.
         (function () {
-            function adjustBonusBadge(key, delta) {
-                if (!key || !delta) return;
-                var badge = document.querySelector('.stat-bonus-total[data-key="' + key + '"]');
+            function ajusterBadgeBonus(cle, delta) {
+                if (!cle || !delta) return;
+                var badge = document.querySelector('.stat-bonus-total[data-key="' + cle + '"]');
                 if (!badge) return;
-                var value = (parseInt(badge.dataset.value, 10) || 0) + delta;
-                badge.dataset.value = value;
-                badge.textContent = value > 0 ? ('+' + value) : String(value);
+                var valeur = (parseInt(badge.dataset.value, 10) || 0) + delta;
+                badge.dataset.value = valeur;
+                badge.textContent = valeur > 0 ? ('+' + valeur) : String(valeur);
             }
 
-            document.querySelectorAll('.bonus-choix-select').forEach(function (select) {
-                select.dataset.current = select.value;
-                select.addEventListener('change', function () {
-                    var bonus = parseInt(select.dataset.bonus, 10) || 0;
-                    adjustBonusBadge(select.dataset.current, -bonus);
-                    adjustBonusBadge(select.value, bonus);
-                    select.dataset.current = select.value;
+            document.querySelectorAll('.bonus-choix-liste').forEach(function (liste) {
+                liste.dataset.current = liste.value;
+                liste.addEventListener('change', function () {
+                    var bonus = parseInt(liste.dataset.bonus, 10) || 0;
+                    ajusterBadgeBonus(liste.dataset.current, -bonus);
+                    ajusterBadgeBonus(liste.value, bonus);
+                    liste.dataset.current = liste.value;
                 });
             });
         })();

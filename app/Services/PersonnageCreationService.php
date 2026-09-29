@@ -17,52 +17,59 @@ use Illuminate\Validation\ValidationException;
 
 readonly class PersonnageCreationService
 {
-    public function __construct(private DatabaseManager $database) {}
+    public function __construct(
+        private DatabaseManager $baseDeDonnees,
+        private CapaciteService $capacites,
+    ) {}
 
-    public function create(array $data): Personnage
+    public function create(array $donnees): Personnage
     {
-        return $this->database->transaction(function () use ($data): Personnage {
-            $this->validateHierarchy($data);
-            $this->validateLimiteNonAtteinte($data);
+        return $this->baseDeDonnees->transaction(function () use ($donnees): Personnage {
+            $this->validerHierarchie($donnees);
+            $this->validerLimiteNonAtteinte($donnees);
 
-            $abilites = Abilite::create($data['abilites']);
+            $abilites = Abilite::create($donnees['abilites']);
             $listeCompetence = ListeCompetence::create([
-                'competences' => $data['competences'] ?? [],
+                'competences' => $donnees['competences'] ?? [],
             ]);
 
             $personnage = Personnage::create([
-                'utilisateur_id' => $data['utilisateur_id'],
-                'race_id' => $data['race_id'],
-                'sous_race_id' => $data['sous_race_id'] ?? null,
-                'classe_id' => $data['classe_id'],
-                'sous_classe_id' => $data['sous_classe_id'] ?? null,
-                'historique_id' => $data['historique_id'] ?? null,
-                'ideal_id' => $data['ideal_id'] ?? null,
-                'defaut_id' => $data['defaut_id'] ?? null,
-                'attachement_id' => $data['attachement_id'] ?? null,
-                'personnalite_id' => $data['personnalite_id'] ?? null,
+                'utilisateur_id' => $donnees['utilisateur_id'],
+                'race_id' => $donnees['race_id'],
+                'sous_race_id' => $donnees['sous_race_id'] ?? null,
+                'classe_id' => $donnees['classe_id'],
+                'sous_classe_id' => $donnees['sous_classe_id'] ?? null,
+                'historique_id' => $donnees['historique_id'] ?? null,
+                'ideal_id' => $donnees['ideal_id'] ?? null,
+                'defaut_id' => $donnees['defaut_id'] ?? null,
+                'attachement_id' => $donnees['attachement_id'] ?? null,
+                'personnalite_id' => $donnees['personnalite_id'] ?? null,
                 'abilites_id' => $abilites->id,
                 'liste_competence_id' => $listeCompetence->id,
-                'nom' => $data['nom'],
-                'niveau' => $data['niveau'] ?? 1,
-                'alignement' => $data['alignement'] ?? null,
-                'description' => $data['description'] ?? null,
-                'point_de_vie' => $data['point_de_vie'],
-                'langues' => $data['langues'] ?? [],
+                'nom' => $donnees['nom'],
+                'niveau' => $donnees['niveau'] ?? 1,
+                'alignement' => $donnees['alignement'] ?? null,
+                'description' => $donnees['description'] ?? null,
+                'point_de_vie' => $donnees['point_de_vie'],
+                'langues' => $donnees['langues'] ?? [],
             ]);
             // 'langues' n'est pas une relation Eloquent mais une simple
             // colonne du modèle Personnage : elle est déjà présente sur
             // l'instance retournée par create().
 
-            $this->ajouterEquipementDeDepart($personnage, $data['equipement'] ?? []);
+            // Capacités de niveau 1 de la classe (et de la sous-classe si
+            // elle se choisit dès le niveau 1, ex. domaine du clerc).
+            $this->capacites->synchroniser($personnage);
+
+            $this->ajouterEquipementDeDepart($personnage, $donnees['equipement'] ?? []);
 
             // L'outil choisi (ou imposé sans choix par l'historique) n'est
             // plus stocké comme un simple texte affiché sous "Compétences" :
             // il rejoint l'inventaire réel comme les autres objets de
             // départ, type "outil" par défaut s'il ne correspond à aucune
             // entrée existante du catalogue.
-            if (! empty($data['outil'])) {
-                $this->ajouterEquipementDeDepart($personnage, [$data['outil']], 'outil');
+            if (! empty($donnees['outil'])) {
+                $this->ajouterEquipementDeDepart($personnage, [$donnees['outil']], 'outil');
             }
 
             return $personnage->load(['race', 'sousRace', 'classe', 'sousClasse', 'historique', 'ideal', 'defaut', 'attachement', 'personnalite', 'abilites', 'listeCompetence']);
@@ -112,27 +119,27 @@ readonly class PersonnageCreationService
         }
     }
 
-    private function validateHierarchy(array $data): void
+    private function validerHierarchie(array $donnees): void
     {
-        if (! empty($data['sous_race_id']) && SousRace::whereKey($data['sous_race_id'])->where('race_id', $data['race_id'])->doesntExist()) {
+        if (! empty($donnees['sous_race_id']) && SousRace::whereKey($donnees['sous_race_id'])->where('race_id', $donnees['race_id'])->doesntExist()) {
             throw ValidationException::withMessages([
                 'sous_race_id' => 'La sous-race ne correspond pas à la race sélectionnée.',
             ]);
         }
 
-        $classe = Classe::find($data['classe_id']);
-        if (Race::whereKey($data['race_id'])->doesntExist() || ! $classe) {
+        $classe = Classe::find($donnees['classe_id']);
+        if (Race::whereKey($donnees['race_id'])->doesntExist() || ! $classe) {
             throw ValidationException::withMessages([
                 'race_id' => 'La race ou la classe sélectionnée est invalide.',
             ]);
         }
 
-        if (! empty($data['sous_classe_id'])) {
-            $sousClasse = SousClasse::whereKey($data['sous_classe_id'])
-                ->where('classe_id', $data['classe_id'])
+        if (! empty($donnees['sous_classe_id'])) {
+            $sousClasse = SousClasse::whereKey($donnees['sous_classe_id'])
+                ->where('classe_id', $donnees['classe_id'])
                 ->first();
 
-            if (! $sousClasse || $classe->niveau_sous_classe > ($data['niveau'] ?? 1)) {
+            if (! $sousClasse || $classe->niveau_sous_classe > ($donnees['niveau'] ?? 1)) {
                 throw ValidationException::withMessages([
                     'sous_classe_id' => 'La sous-classe ne correspond pas à la classe ou au niveau sélectionné.',
                 ]);
@@ -143,7 +150,7 @@ readonly class PersonnageCreationService
     /**
      * Empêche un utilisateur de dépasser son quota de personnages, quel
      * que soit le point d'entrée utilisé pour créer un personnage
-     * (assistant de création ou API).
+     * (assistant de création).
      *
      * La ligne utilisateur est verrouillée (SELECT ... FOR UPDATE) pour
      * la durée de la transaction : si deux créations concurrentes du même
@@ -152,11 +159,11 @@ readonly class PersonnageCreationService
      * validée avant de recompter, au lieu de lire un compte périmé et de
      * laisser passer les deux.
      */
-    private function validateLimiteNonAtteinte(array $data): void
+    private function validerLimiteNonAtteinte(array $donnees): void
     {
-        Utilisateur::whereKey($data['utilisateur_id'])->lockForUpdate()->first();
+        Utilisateur::whereKey($donnees['utilisateur_id'])->lockForUpdate()->first();
 
-        $nombrePersonnages = Personnage::where('utilisateur_id', $data['utilisateur_id'])->count();
+        $nombrePersonnages = Personnage::where('utilisateur_id', $donnees['utilisateur_id'])->count();
 
         if ($nombrePersonnages >= Personnage::MAX_PAR_UTILISATEUR) {
             throw ValidationException::withMessages([

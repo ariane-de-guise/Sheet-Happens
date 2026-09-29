@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Modifier ' . $personnage->nom)
+@section('titre', 'Modifier ' . $personnage->nom)
 
 @push('styles')
 <style>
-.sheet-container {
+.fiche-conteneur {
     max-width: 1100px;
 }
 
-.sheet-header {
+.fiche-entete {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -17,272 +17,270 @@
     flex-wrap: wrap;
 }
 
-.sheet-header-left {
+.fiche-entete-gauche {
     flex: 1;
     min-width: 250px;
 }
 
-.sheet-header-right {
+.fiche-entete-droite {
     display: flex;
     gap: 1rem;
     align-items: flex-start;
     flex-wrap: wrap;
 }
 
-.stat-block {
-    background: rgba(25, 10, 50, 0.9);
-    border: 2px solid #c49a3c;
+.stat-bloc {
+    background: var(--panneau);
+    border: 2px solid var(--or-bordure);
     border-radius: 12px;
     padding: 0.75rem;
     text-align: center;
     min-width: 80px;
 }
 
-.stat-block-label {
+.stat-bloc-etiquette {
     font-size: 0.7rem;
-    color: #b8a9c9;
+    color: var(--texte-secondaire);
     text-transform: uppercase;
     margin-bottom: 0.25rem;
 }
 
-.stat-block-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #e6b84d;
-}
-
-.stat-block input {
+.stat-bloc input {
     width: 50px;
     text-align: center;
-    background: rgba(60, 15, 90, 0.8);
-    border: 1px solid #c49a3c;
+    background: var(--panneau-vif);
+    border: 1px solid var(--or-bordure);
     border-radius: 6px;
-    color: #e6b84d;
+    color: var(--or);
     font-size: 1.3rem;
     font-weight: 700;
     padding: 0.2rem;
 }
 
-.sheet-section {
-    background: rgba(25, 10, 50, 0.9);
-    border: 1px solid #c49a3c;
+.fiche-section {
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
     border-radius: 12px;
     padding: 1.25rem;
     margin-bottom: 1rem;
 }
 
-.sheet-section-title {
+.fiche-section-titre {
     font-size: 1rem;
     font-weight: 600;
-    color: #e6b84d;
+    color: var(--or);
     margin-bottom: 0.75rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(196, 154, 60, 0.3);
+    border-bottom: 1px solid var(--or-ligne-moyenne);
 }
 
-.sheet-grid-2 {
+.fiche-grille-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
 }
 
-.sheet-grid-3 {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1rem;
-}
-
-.sheet-grid-4 {
+.fiche-grille-4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
 }
 
-.sheet-grid-6 {
+.fiche-grille-6 {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: 0.75rem;
 }
 
-.ability-box {
-    background: rgba(15, 5, 30, 0.9);
-    border: 2px solid #c49a3c;
+.boite-aptitude {
+    background: var(--panneau-carte);
+    border: 2px solid var(--or-bordure);
     border-radius: 10px;
     padding: 0.75rem 0.5rem;
     text-align: center;
 }
 
-.ability-name {
+.nom-aptitude {
     font-size: 0.75rem;
-    color: #b8a9c9;
+    color: var(--texte-secondaire);
     text-transform: uppercase;
     margin-bottom: 0.4rem;
 }
 
-.ability-input {
+.champ-aptitude {
     width: 50px;
     text-align: center;
-    background: rgba(60, 15, 90, 0.8);
-    border: 1px solid #c49a3c;
+    background: var(--panneau-vif);
+    border: 1px solid var(--or-bordure);
     border-radius: 6px;
-    color: #e6b84d;
+    color: var(--or);
     font-size: 1.4rem;
     font-weight: 700;
     padding: 0.3rem;
     margin-bottom: 0.3rem;
 }
 
-.ability-mod {
+.stat-bloc-valeur-fixe {
+    font-weight: 700;
+    color: var(--or);
+    text-align: center;
+}
+
+.note-montee-niveau {
+    font-size: 0.75rem;
+    color: var(--texte-secondaire);
+    margin: 0 0 0.75rem;
+}
+
+.mod-aptitude {
     font-size: 0.9rem;
-    color: #e6b84d;
+    color: var(--or);
     font-weight: 600;
 }
 
-.form-input-small {
+.formulaire-saisie-petit {
     width: 100%;
     padding: 0.4rem 0.6rem;
-    background: rgba(25, 10, 50, 0.9);
-    border: 1px solid #c49a3c;
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
     border-radius: 6px;
-    color: #e8d5b5;
+    color: var(--or-doux);
     font-size: 0.85rem;
     outline: none;
 }
 
-.form-input-small:focus {
-    border-color: #e6b84d;
+.formulaire-saisie-petit:focus {
+    border-color: var(--or);
 }
 
-.form-select-small {
+.formulaire-liste-petit {
     width: 100%;
     padding: 0.4rem 0.6rem;
-    background: rgba(25, 10, 50, 0.9);
-    border: 1px solid #c49a3c;
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
     border-radius: 6px;
-    color: #e8d5b5;
+    color: var(--or-doux);
     font-size: 0.85rem;
     outline: none;
     cursor: pointer;
 }
 
-.form-select-small:focus {
-    border-color: #e6b84d;
+.formulaire-liste-petit:focus {
+    border-color: var(--or);
 }
 
-.checkbox-grid {
+.grille-cases {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 0.5rem;
 }
 
-.checkbox-item {
+.element-case {
     display: flex;
     align-items: center;
     gap: 0.4rem;
     padding: 0.3rem 0.5rem;
-    background: rgba(15, 5, 30, 0.6);
+    background: var(--panneau-carte);
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.8rem;
-    color: #e8d5b5;
+    color: var(--or-doux);
 }
 
-.checkbox-item:hover {
-    background: rgba(40, 15, 70, 0.8);
+.element-case:hover {
+    background: var(--panneau-survol);
 }
 
-.checkbox-item input[type="checkbox"] {
-    accent-color: #e6b84d;
+.element-case input[type="checkbox"] {
+    accent-color: var(--or);
 }
 
-.textarea-small {
+.zone-texte-petite {
     width: 100%;
     padding: 0.5rem 0.7rem;
-    background: rgba(25, 10, 50, 0.9);
-    border: 1px solid #c49a3c;
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
     border-radius: 8px;
-    color: #e8d5b5;
+    color: var(--or-doux);
     font-size: 0.85rem;
     outline: none;
     resize: vertical;
     min-height: 60px;
 }
 
-.textarea-small:focus {
-    border-color: #e6b84d;
+.zone-texte-petite:focus {
+    border-color: var(--or);
 }
 
 @media (max-width: 900px) {
-    .sheet-grid-6 {
+    .fiche-grille-6 {
         grid-template-columns: repeat(3, 1fr);
     }
-    .sheet-grid-4 {
+    .fiche-grille-4 {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
 @media (max-width: 600px) {
-    .sheet-grid-6 {
+    .fiche-grille-6 {
         grid-template-columns: repeat(2, 1fr);
     }
-    .sheet-grid-3,
-    .sheet-grid-2 {
+    .fiche-grille-2 {
         grid-template-columns: 1fr;
     }
 }
 </style>
 @endpush
 
-@section('content')
-<div class="sheet-container">
+@section('contenu')
+<div class="fiche-conteneur">
     @if ($errors->any())
-        <div class="alert alert-danger" role="alert">
+        <div class="alerte alerte-danger" role="alert">
             <strong>La sauvegarde a échoué.</strong>
             <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
+                @foreach ($errors->all() as $erreur)
+                    <li>{{ $erreur }}</li>
                 @endforeach
             </ul>
         </div>
     @endif
 
-    <form action="{{ route('personnages.update', $personnage) }}" method="POST" id="editForm">
+    <form action="{{ route('personnages.update', $personnage) }}" method="POST" id="formulaireEdition">
         @csrf
         @method('PATCH')
 
-    <div class="sheet-header">
-        <div class="sheet-header-left">
+    <div class="fiche-entete">
+        <div class="fiche-entete-gauche">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
-                <a href="{{ route('personnages.show', $personnage) }}" class="text-muted" style="text-decoration: none; font-size: 0.85rem;">
+                <a href="{{ route('personnages.show', $personnage) }}" class="texte-attenue" style="text-decoration: none; font-size: 0.85rem;">
                     ← Retour à la fiche
                 </a>
             </div>
-            <h2 class="title-main" style="margin-bottom: 0;">Modifier le personnage</h2>
+            <h2 class="titre-principal" style="margin-bottom: 0;">Modifier le personnage</h2>
         </div>
-        <div class="sheet-header-right">
-            <div class="stat-block">
-                <div class="stat-block-label">Niveau</div>
-                <input type="number" name="niveau" value="{{ old('niveau', $personnage->niveau) }}" min="1" max="20"
-                    style="width:45px;">
+        <div class="fiche-entete-droite">
+            <div class="stat-bloc">
+                <div class="stat-bloc-etiquette">Niveau</div>
+                <div class="stat-bloc-valeur-fixe" title="Le niveau évolue par la montée de niveau">{{ $personnage->niveau }}</div>
             </div>
-            <div class="stat-block">
-                <div class="stat-block-label">PV</div>
+            <div class="stat-bloc">
+                <div class="stat-bloc-etiquette">PV</div>
                 <input type="number" name="point_de_vie" value="{{ old('point_de_vie', $personnage->point_de_vie) }}" min="1"
                     style="width:55px;">
             </div>
         </div>
     </div>
 
-        <div class="sheet-section">
-            <div class="sheet-section-title">Identité</div>
-            <div class="sheet-grid-4">
-                <div class="form-group">
-                    <label class="form-label">Nom</label>
-                    <input type="text" name="nom" value="{{ old('nom', $personnage->nom) }}" class="form-input-small" required>
+        <div class="fiche-section">
+            <div class="fiche-section-titre">Identité</div>
+            <div class="fiche-grille-4">
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Nom</label>
+                    <input type="text" name="nom" value="{{ old('nom', $personnage->nom) }}" class="formulaire-saisie-petit" required>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Race</label>
-                    <select name="race_id" id="raceSelect" class="form-select-small" required onchange="loadSousRaces()">
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Race</label>
+                    <select name="race_id" id="raceListe" class="formulaire-liste-petit" required onchange="chargerSousRaces()">
                         <option value="">-- Choisir --</option>
                         @foreach($races as $race)
                             <option value="{{ $race->id }}" {{ old('race_id', $personnage->race_id) == $race->id ? 'selected' : '' }}>
@@ -291,13 +289,13 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Sous-race</label>
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Sous-race</label>
                     @php
                         $raceActuelle = $races->firstWhere('id', old('race_id', $personnage->race_id));
                         $sousRaceRequise = $raceActuelle && $raceActuelle->sousRaces->isNotEmpty();
                     @endphp
-                    <select name="sous_race_id" id="sousRaceSelect" class="form-select-small" {{ $sousRaceRequise ? 'required' : '' }}>
+                    <select name="sous_race_id" id="sousRaceListe" class="formulaire-liste-petit" {{ $sousRaceRequise ? 'required' : '' }}>
                         <option value="">-- Aucune --</option>
                         @if($raceActuelle)
                             @foreach($raceActuelle->sousRaces as $sousRace)
@@ -308,26 +306,26 @@
                         @endif
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Alignement</label>
-                    <select name="alignement" class="form-select-small">
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Alignement</label>
+                    <select name="alignement" class="formulaire-liste-petit">
                         <option value="">-- Choisir --</option>
                         @foreach([
                             'Loyal bon', 'Neutre bon', 'Chaotique bon',
                             'Loyal neutre', 'Neutre', 'Chaotique neutre',
                             'Loyal méchant', 'Neutre méchant', 'Chaotique méchant',
-                        ] as $align)
-                            <option value="{{ $align }}" {{ old('alignement', $personnage->alignement ?? '') == $align ? 'selected' : '' }}>
-                                {{ $align }}
+                        ] as $optionAlignement)
+                            <option value="{{ $optionAlignement }}" {{ old('alignement', $personnage->alignement ?? '') == $optionAlignement ? 'selected' : '' }}>
+                                {{ $optionAlignement }}
                             </option>
                         @endforeach
                     </select>
                 </div>
             </div>
-            <div class="sheet-grid-2 mt-2">
-                <div class="form-group">
-                    <label class="form-label">Classe</label>
-                    <select name="classe_id" id="classeSelect" class="form-select-small" required onchange="loadSousClasses()">
+            <div class="fiche-grille-2 marge-haut-2">
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Classe</label>
+                    <select name="classe_id" id="classeListe" class="formulaire-liste-petit" required onchange="chargerSousClasses(); avertirChangementClasse()">
                         <option value="">-- Choisir --</option>
                         @foreach($classes as $classe)
                             <option value="{{ $classe->id }}" data-niveau-sous-classe="{{ $classe->niveau_sous_classe }}" data-a-des-sous-classes="{{ $classe->sousClasses->isNotEmpty() ? '1' : '0' }}" {{ old('classe_id', $personnage->classe_id) == $classe->id ? 'selected' : '' }}>
@@ -335,9 +333,12 @@
                             </option>
                         @endforeach
                     </select>
+                    <div id="avertissementClasse" class="texte-attenue" style="display: none; font-size: 0.75rem; margin-top: 0.35rem; color: var(--or-doux);">
+                        Changer de classe réinitialisera les sorts du personnage.
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Sous-classe</label>
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Sous-classe</label>
                     @php
                         $classeActuelle = $classes->firstWhere('id', old('classe_id', $personnage->classe_id));
                         $sousClasseRequise = $classeActuelle
@@ -345,7 +346,7 @@
                             && $personnage->niveau >= $classeActuelle->niveau_sous_classe;
                         $sousClasseBloquee = $classeActuelle && $classeActuelle->sousClasses->isNotEmpty() && $personnage->niveau < $classeActuelle->niveau_sous_classe;
                     @endphp
-                    <select name="sous_classe_id" id="sousClasseSelect" class="form-select-small" {{ $sousClasseBloquee ? 'disabled' : '' }} {{ $sousClasseRequise ? 'required' : '' }}>
+                    <select name="sous_classe_id" id="sousClasseListe" class="formulaire-liste-petit" {{ $sousClasseBloquee ? 'disabled' : '' }} {{ $sousClasseRequise ? 'required' : '' }}>
                         <option value="">-- Aucune --</option>
                         @if($classeActuelle && ! $sousClasseBloquee)
                             @foreach($classeActuelle->sousClasses as $sousClasse)
@@ -355,22 +356,23 @@
                             @endforeach
                         @endif
                     </select>
-                    <div id="sousClasseMessage" class="text-muted" style="font-size: 0.75rem; margin-top: 0.3rem;">
+                    <div id="sousClasseMessage" class="texte-attenue" style="font-size: 0.75rem; margin-top: 0.3rem;">
                         @if($sousClasseBloquee)
                             Sous-classe disponible au niveau {{ $classeActuelle->niveau_sous_classe }} (personnage actuellement niveau {{ $personnage->niveau }}).
                         @endif
                     </div>
                 </div>
             </div>
-            <div class="form-group mt-2">
-                <label class="form-label">Description / Backstory</label>
-                <textarea name="description" class="textarea-small" rows="3">{{ old('description', $personnage->description ?? '') }}</textarea>
+            <div class="formulaire-groupe marge-haut-2">
+                <label class="formulaire-etiquette">Description / Backstory</label>
+                <textarea name="description" class="zone-texte-petite" rows="3">{{ old('description', $personnage->description ?? '') }}</textarea>
             </div>
         </div>
 
-        <div class="sheet-section">
-            <div class="sheet-section-title">Caractéristiques</div>
-            <div class="sheet-grid-6">
+        <div class="fiche-section">
+            <div class="fiche-section-titre">Caractéristiques</div>
+            <p class="note-montee-niveau">Le niveau et les caractéristiques évoluent uniquement par la montée de niveau (amélioration de caractéristiques ou don).</p>
+            <div class="fiche-grille-6">
                 @php
                     $stats = [
                         'force' => 'Force',
@@ -381,41 +383,39 @@
                         'charisme' => 'Cha',
                     ];
                 @endphp
-                @foreach($stats as $key => $label)
+                @foreach($stats as $cle => $libelle)
                     @php
-                        $value = old($key, $personnage->abilites->$key ?? 10);
-                        $mod = floor(($value - 10) / 2);
-                        $modStr = $mod >= 0 ? '+' . $mod : $mod;
+                        $valeur = $personnage->abilites->$cle ?? 10;
+                        $mod = floor(($valeur - 10) / 2);
+                        $modChaine = $mod >= 0 ? '+' . $mod : $mod;
                     @endphp
-                    <div class="ability-box">
-                        <div class="ability-name">{{ $label }}</div>
-                        <input type="number" name="{{ $key }}" value="{{ $value }}" min="1" max="20"
-                            class="ability-input"
-                            oninput="updateMod(this)">
-                        <div class="ability-mod" id="mod-{{ $key }}">{{ $modStr }}</div>
+                    <div class="boite-aptitude">
+                        <div class="nom-aptitude">{{ $libelle }}</div>
+                        <div class="champ-aptitude">{{ $valeur }}</div>
+                        <div class="mod-aptitude">{{ $modChaine }}</div>
                     </div>
                 @endforeach
             </div>
         </div>
 
-        <div class="sheet-grid-2">
-            <div class="sheet-section">
-                <div class="sheet-section-title">Compétences de classe (max {{ $personnage->classe->nombre_competences ?? 2 }})</div>
+        <div class="fiche-grille-2">
+            <div class="fiche-section">
+                <div class="fiche-section-titre">Compétences de classe (max {{ $personnage->classe->nombre_competences ?? 2 }})</div>
                 @if($personnage->historique?->competences)
-                    <div class="text-muted" style="font-size: 0.8rem; margin-bottom: 0.75rem;">
+                    <div class="texte-attenue" style="font-size: 0.8rem; margin-bottom: 0.75rem;">
                         Compétences d’historique incluses et non modifiables : {{ implode(', ', $personnage->historique->competences) }}
                     </div>
                 @endif
-                <div class="checkbox-grid">
+                <div class="grille-cases">
                     @php
-                        $currentCompetences = old('competences', $personnage->listeCompetence->competences ?? []);
+                        $competencesActuelles = old('competences', $personnage->listeCompetence->competences ?? []);
                         $competencesHistorique = $personnage->historique?->competences ?? [];
                     @endphp
-                    @foreach($allCompetences as $comp)
+                    @foreach($toutesCompetences as $comp)
                         @php $estAccordeeParHistorique = in_array($comp, $competencesHistorique, true); @endphp
-                        <label class="checkbox-item">
+                        <label class="element-case">
                             <input type="checkbox" name="competences[]" value="{{ $comp }}"
-                                {{ in_array($comp, $currentCompetences, true) ? 'checked' : '' }}
+                                {{ in_array($comp, $competencesActuelles, true) ? 'checked' : '' }}
                                 {{ $estAccordeeParHistorique ? 'disabled' : '' }}>
                             @if($estAccordeeParHistorique)
                                 <input type="hidden" name="competences[]" value="{{ $comp }}">
@@ -426,11 +426,11 @@
                 </div>
             </div>
 
-            <div class="sheet-section">
-                <div class="sheet-section-title">Historique & Contexte</div>
-                <div class="form-group">
-                    <label class="form-label">Historique *</label>
-                    <select name="historique_id" id="edit_historique_select" class="form-select-small" required onchange="onEditHistoriqueChange(this.value)">
+            <div class="fiche-section">
+                <div class="fiche-section-titre">Historique & Contexte</div>
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Historique *</label>
+                    <select name="historique_id" id="edition_historique_liste" class="formulaire-liste-petit" required onchange="changerHistoriqueEdition(this.value)">
                         <option value="">-- Choisir un historique --</option>
                         @foreach($historiques as $h)
                             <option value="{{ $h->id }}" {{ old('historique_id', $personnage->historique_id) == $h->id ? 'selected' : '' }}>
@@ -439,69 +439,69 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Idéal *</label>
-                    <select name="ideal_id" id="edit_ideal_select" class="form-select-small" required>
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Idéal *</label>
+                    <select name="ideal_id" id="edition_ideal_liste" class="formulaire-liste-petit" required>
                         <option value="">-- Choisir un idéal --</option>
                         @foreach($historiques as $h)
-                            @foreach($h->ideaux as $item)
-                                <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ old('ideal_id', $personnage->ideal_id) == $item->id ? 'selected' : '' }}>
-                                    {{ $item->valeur }}{{ $item->alignement ? ' (' . $item->alignement . ')' : '' }}
+                            @foreach($h->ideaux as $element)
+                                <option value="{{ $element->id }}" data-historique="{{ $h->id }}" {{ old('ideal_id', $personnage->ideal_id) == $element->id ? 'selected' : '' }}>
+                                    {{ $element->valeur }}{{ $element->alignement ? ' (' . $element->alignement . ')' : '' }}
                                 </option>
                             @endforeach
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Défaut *</label>
-                    <select name="defaut_id" id="edit_defaut_select" class="form-select-small" required>
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Défaut *</label>
+                    <select name="defaut_id" id="edition_defaut_liste" class="formulaire-liste-petit" required>
                         <option value="">-- Choisir un défaut --</option>
                         @foreach($historiques as $h)
-                            @foreach($h->defauts as $item)
-                                <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ old('defaut_id', $personnage->defaut_id) == $item->id ? 'selected' : '' }}>
-                                    {{ $item->valeur }}
+                            @foreach($h->defauts as $element)
+                                <option value="{{ $element->id }}" data-historique="{{ $h->id }}" {{ old('defaut_id', $personnage->defaut_id) == $element->id ? 'selected' : '' }}>
+                                    {{ $element->valeur }}
                                 </option>
                             @endforeach
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Attachement *</label>
-                    <select name="attachement_id" id="edit_attachement_select" class="form-select-small" required>
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Attachement *</label>
+                    <select name="attachement_id" id="edition_attachement_liste" class="formulaire-liste-petit" required>
                         <option value="">-- Choisir un attachement --</option>
                         @foreach($historiques as $h)
-                            @foreach($h->attachements as $item)
-                                <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ old('attachement_id', $personnage->attachement_id) == $item->id ? 'selected' : '' }}>
-                                    {{ $item->valeur }}
+                            @foreach($h->attachements as $element)
+                                <option value="{{ $element->id }}" data-historique="{{ $h->id }}" {{ old('attachement_id', $personnage->attachement_id) == $element->id ? 'selected' : '' }}>
+                                    {{ $element->valeur }}
                                 </option>
                             @endforeach
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Trait de personnalité *</label>
-                    <select name="personnalite_id" id="edit_personnalite_select" class="form-select-small" required>
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Trait de personnalité *</label>
+                    <select name="personnalite_id" id="edition_personnalite_liste" class="formulaire-liste-petit" required>
                         <option value="">-- Choisir une personnalité --</option>
                         @foreach($historiques as $h)
-                            @foreach($h->personnalites as $item)
-                                <option value="{{ $item->id }}" data-historique="{{ $h->id }}" {{ old('personnalite_id', $personnage->personnalite_id) == $item->id ? 'selected' : '' }}>
-                                    {{ $item->valeur }}
+                            @foreach($h->personnalites as $element)
+                                <option value="{{ $element->id }}" data-historique="{{ $h->id }}" {{ old('personnalite_id', $personnage->personnalite_id) == $element->id ? 'selected' : '' }}>
+                                    {{ $element->valeur }}
                                 </option>
                             @endforeach
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Langues (max {{ 2 + (int)floor(($personnage->niveau - 1) / 3) }})</label>
-                    <div class="checkbox-grid">
+                <div class="formulaire-groupe">
+                    <label class="formulaire-etiquette">Langues (max {{ 2 + (int)floor(($personnage->niveau - 1) / 3) }})</label>
+                    <div class="grille-cases">
                         @php
-                            $currentLangues = old('langues', $personnage->langues ?? []);
+                            $languesActuelles = old('langues', $personnage->langues ?? []);
                         @endphp
-                        @foreach($langues as $lang)
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="langues[]" value="{{ $lang }}"
-                                    {{ in_array($lang, $currentLangues) ? 'checked' : '' }}>
-                                {{ $lang }}
+                        @foreach($langues as $langue)
+                            <label class="element-case">
+                                <input type="checkbox" name="langues[]" value="{{ $langue }}"
+                                    {{ in_array($langue, $languesActuelles) ? 'checked' : '' }}>
+                                {{ $langue }}
                             </label>
                         @endforeach
                     </div>
@@ -509,9 +509,9 @@
             </div>
         </div>
 
-        <div class="btn-group-row">
-            <a href="{{ route('personnages.show', $personnage) }}" class="btn btn-secondary">Annuler</a>
-            <button type="submit" class="btn btn-primary">Sauvegarder</button>
+        <div class="bouton-groupe-ligne">
+            <a href="{{ route('personnages.show', $personnage) }}" class="bouton bouton-secondaire">Annuler</a>
+            <button type="submit" class="bouton bouton-principal">Sauvegarder</button>
         </div>
     </form>
 </div>
@@ -524,131 +524,128 @@
 // donc la liste complète de chaque select en mémoire et on reconstruit le
 // contenu du select à partir de là à chaque changement d'historique, au
 // lieu de simplement masquer les options qui ne correspondent pas.
-const editHistoriqueOptionsStore = {};
+const reserveOptionsHistorique = {};
 
-function initEditHistoriqueOptionsStore(selectId) {
-    const select = document.getElementById(selectId);
-    if (!select) return;
+function initialiserReserveOptionsHistorique(idListe) {
+    const liste = document.getElementById(idListe);
+    if (!liste) return;
 
-    editHistoriqueOptionsStore[selectId] = {
-        placeholder: select.options[0].outerHTML,
-        current: select.value,
-        options: Array.from(select.options).slice(1).map(opt => ({
-            value: opt.value,
+    reserveOptionsHistorique[idListe] = {
+        placeholder: liste.options[0].outerHTML,
+        courant: liste.value,
+        options: Array.from(liste.options).slice(1).map(opt => ({
+            valeur: opt.value,
             historique: opt.dataset.historique,
             html: opt.innerHTML,
         })),
     };
 }
 
-function filterEditOptions(selectId, historiqueId) {
-    const select = document.getElementById(selectId);
-    const store = editHistoriqueOptionsStore[selectId];
-    if (!select || !store) return;
+function filtrerOptionsEdition(idListe, historiqueId) {
+    const liste = document.getElementById(idListe);
+    const reserve = reserveOptionsHistorique[idListe];
+    if (!liste || !reserve) return;
 
     // Tant qu'aucun historique n'est choisi, ces champs sont entièrement
     // bloqués (comme "Outil" à l'étape Contexte de la création) : ils ne
     // dépendent que de l'historique, donc rien n'est sélectionnable avant.
     const bloque = historiqueId === '' || historiqueId === null || historiqueId === undefined;
-    select.disabled = bloque;
+    liste.disabled = bloque;
 
     const optionsCorrespondantes = bloque
         ? []
-        : store.options.filter(opt => opt.historique == historiqueId);
+        : reserve.options.filter(opt => opt.historique == historiqueId);
 
-    select.innerHTML = store.placeholder + optionsCorrespondantes.map(opt =>
-        '<option value="' + opt.value + '"' + (opt.value === store.current ? ' selected' : '') + '>' + opt.html + '</option>'
+    liste.innerHTML = reserve.placeholder + optionsCorrespondantes.map(opt =>
+        '<option value="' + opt.valeur + '"' + (opt.valeur === reserve.courant ? ' selected' : '') + '>' + opt.html + '</option>'
     ).join('');
 }
 
-function onEditHistoriqueChange(historiqueId) {
-    filterEditOptions('edit_ideal_select', historiqueId);
-    filterEditOptions('edit_defaut_select', historiqueId);
-    filterEditOptions('edit_attachement_select', historiqueId);
-    filterEditOptions('edit_personnalite_select', historiqueId);
+function changerHistoriqueEdition(historiqueId) {
+    filtrerOptionsEdition('edition_ideal_liste', historiqueId);
+    filtrerOptionsEdition('edition_defaut_liste', historiqueId);
+    filtrerOptionsEdition('edition_attachement_liste', historiqueId);
+    filtrerOptionsEdition('edition_personnalite_liste', historiqueId);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    initEditHistoriqueOptionsStore('edit_ideal_select');
-    initEditHistoriqueOptionsStore('edit_defaut_select');
-    initEditHistoriqueOptionsStore('edit_attachement_select');
-    initEditHistoriqueOptionsStore('edit_personnalite_select');
+    initialiserReserveOptionsHistorique('edition_ideal_liste');
+    initialiserReserveOptionsHistorique('edition_defaut_liste');
+    initialiserReserveOptionsHistorique('edition_attachement_liste');
+    initialiserReserveOptionsHistorique('edition_personnalite_liste');
 
-    const form = document.getElementById('editForm');
-    form.addEventListener('invalid', function (event) {
-        if (event.target.validity.valueMissing) {
-            event.target.setCustomValidity(
-                event.target.tagName === 'SELECT'
+    const formulaire = document.getElementById('formulaireEdition');
+    formulaire.addEventListener('invalid', function (evenement) {
+        if (evenement.target.validity.valueMissing) {
+            evenement.target.setCustomValidity(
+                evenement.target.tagName === 'SELECT'
                     ? 'Veuillez sélectionner un élément dans la liste.'
                     : 'Veuillez remplir ce champ.'
             );
         }
     }, true);
-    form.addEventListener('input', event => event.target.setCustomValidity(''));
-    form.addEventListener('change', event => event.target.setCustomValidity(''));
+    formulaire.addEventListener('input', evenement => evenement.target.setCustomValidity(''));
+    formulaire.addEventListener('change', evenement => evenement.target.setCustomValidity(''));
 
-    const histSel = document.getElementById('edit_historique_select');
-    if (histSel && histSel.value) {
-        onEditHistoriqueChange(histSel.value);
+    const choixHist = document.getElementById('edition_historique_liste');
+    if (choixHist && choixHist.value) {
+        changerHistoriqueEdition(choixHist.value);
     } else {
-        filterEditOptions('edit_ideal_select', '');
-        filterEditOptions('edit_defaut_select', '');
-        filterEditOptions('edit_attachement_select', '');
-        filterEditOptions('edit_personnalite_select', '');
+        filtrerOptionsEdition('edition_ideal_liste', '');
+        filtrerOptionsEdition('edition_defaut_liste', '');
+        filtrerOptionsEdition('edition_attachement_liste', '');
+        filtrerOptionsEdition('edition_personnalite_liste', '');
     }
 });
 
-function updateMod(input) {
-    const key = input.name;
-    const value = parseInt(input.value) || 10;
-    const mod = Math.floor((value - 10) / 2);
-    const modStr = mod >= 0 ? '+' + mod : mod;
-    document.getElementById('mod-' + key).textContent = modStr;
-}
-
-function loadSousRaces() {
-    const raceId = document.getElementById('raceSelect').value;
-    const select = document.getElementById('sousRaceSelect');
+function chargerSousRaces() {
+    const raceId = document.getElementById('raceListe').value;
+    const liste = document.getElementById('sousRaceListe');
     const sousRacesParRace = @json($races->mapWithKeys(fn ($race) => [$race->id => $race->sousRaces->map(fn ($sousRace) => ['id' => $sousRace->id, 'nom' => $sousRace->nom])]));
     const sousRaces = sousRacesParRace[raceId] || [];
     const conserverSelection = raceId === @json((string) old('race_id', $personnage->race_id));
-    const current = conserverSelection ? @json(old('sous_race_id', $personnage->sous_race_id ?? '')) : '';
+    const courant = conserverSelection ? @json(old('sous_race_id', $personnage->sous_race_id ?? '')) : '';
 
-    select.innerHTML = '<option value="">-- Aucune --</option>';
-    select.required = sousRaces.length > 0;
+    liste.innerHTML = '<option value="">-- Aucune --</option>';
+    liste.required = sousRaces.length > 0;
 
     sousRaces.forEach(sr => {
         const opt = document.createElement('option');
         opt.value = sr.id;
         opt.textContent = sr.nom;
-        if (sr.id == current) opt.selected = true;
-        select.appendChild(opt);
+        if (sr.id == courant) opt.selected = true;
+        liste.appendChild(opt);
     });
 }
 
-function loadSousClasses() {
-    const classeId = document.getElementById('classeSelect').value;
-    const select = document.getElementById('sousClasseSelect');
+function avertirChangementClasse() {
+    const changee = document.getElementById('classeListe').value !== @json((string) $personnage->classe_id);
+    document.getElementById('avertissementClasse').style.display = changee ? 'block' : 'none';
+}
+
+function chargerSousClasses() {
+    const classeId = document.getElementById('classeListe').value;
+    const liste = document.getElementById('sousClasseListe');
     const message = document.getElementById('sousClasseMessage');
     const sousClassesParClasse = @json($classes->mapWithKeys(fn ($classe) => [$classe->id => $classe->sousClasses->map(fn ($sousClasse) => ['id' => $sousClasse->id, 'nom' => $sousClasse->nom])]));
     const sousClasses = sousClassesParClasse[classeId] || [];
-    const classeOption = document.querySelector('#classeSelect option[value="' + classeId + '"]');
-    const niveauRequis = classeOption ? parseInt(classeOption.dataset.niveauSousClasse, 10) : 0;
+    const optionClasse = document.querySelector('#classeListe option[value="' + classeId + '"]');
+    const niveauRequis = optionClasse ? parseInt(optionClasse.dataset.niveauSousClasse, 10) : 0;
     const niveauPersonnage = {{ $personnage->niveau }};
-    const current = @json(old('sous_classe_id', $personnage->sous_classe_id ?? ''));
+    const courant = @json(old('sous_classe_id', $personnage->sous_classe_id ?? ''));
 
-    select.innerHTML = '<option value="">-- Aucune --</option>';
-    select.disabled = false;
-    select.required = sousClasses.length > 0;
+    liste.innerHTML = '<option value="">-- Aucune --</option>';
+    liste.disabled = false;
+    liste.required = sousClasses.length > 0;
     if (message) message.textContent = '';
 
     if (!classeId) return;
 
-    const aDesSousClasses = classeOption && classeOption.dataset.aDesSousClasses === '1';
+    const aDesSousClasses = optionClasse && optionClasse.dataset.aDesSousClasses === '1';
 
     if (aDesSousClasses && niveauPersonnage < niveauRequis) {
-        select.disabled = true;
-        select.required = false;
+        liste.disabled = true;
+        liste.required = false;
         if (message) {
             message.textContent = 'Sous-classe disponible au niveau ' + niveauRequis + ' (personnage actuellement niveau ' + niveauPersonnage + ').';
         }
@@ -659,8 +656,8 @@ function loadSousClasses() {
         const opt = document.createElement('option');
         opt.value = sc.id;
         opt.textContent = sc.nom + ' (Niv. ' + niveauRequis + ')';
-        if (sc.id == current) opt.selected = true;
-        select.appendChild(opt);
+        if (sc.id == courant) opt.selected = true;
+        liste.appendChild(opt);
     });
 }
 
@@ -669,6 +666,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ci-dessus) : on ne recharge via l'API que lors d'un vrai changement
     // de race/classe par l'utilisateur (onchange), pas au chargement de la
     // page, sinon un échec réseau viderait un sélecteur déjà correct.
+    avertirChangementClasse();
 });
 </script>
 @endpush

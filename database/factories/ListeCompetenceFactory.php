@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ListeCompetenceFactory extends Factory
 {
-    protected $model = ListeCompetence::class;
+    protected $modele = ListeCompetence::class;
 
     public function definition(): array
     {
