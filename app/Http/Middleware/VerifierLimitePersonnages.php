@@ -15,20 +15,19 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * Ce contrôle est une commodité pour l'utilisateur (éviter de lui faire
  * remplir 6 étapes pour rien) : la vérification faisant foi reste celle du
- * PersonnageCreationService, qui protège aussi le point d'entrée API et
- * gère les accès concurrents.
+ * PersonnageCreationService, qui gère aussi les accès concurrents.
  */
-class EnsureLimitePersonnagesNonAtteinte
+class VerifierLimitePersonnages
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $requete, Closure $suivant): Response
     {
-        $nombrePersonnages = Personnage::where('utilisateur_id', $request->user()->id)->count();
+        $nombrePersonnages = Personnage::where('utilisateur_id', $requete->user()->id)->count();
 
         if ($nombrePersonnages >= Personnage::MAX_PAR_UTILISATEUR) {
             return redirect()->route('personnages.index')
-                ->with('error', 'Vous avez atteint la limite de '.Personnage::MAX_PAR_UTILISATEUR.' personnages. Supprimez-en un pour pouvoir en créer un nouveau.');
+                ->with('erreur', 'Vous avez atteint la limite de '.Personnage::MAX_PAR_UTILISATEUR.' personnages. Supprimez-en un pour pouvoir en créer un nouveau.');
         }
 
-        return $next($request);
+        return $suivant($requete);
     }
 }

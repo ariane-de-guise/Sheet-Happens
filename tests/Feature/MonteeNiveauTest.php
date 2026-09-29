@@ -6,6 +6,7 @@ use App\Models\Classe;
 use App\Models\Personnage;
 use App\Models\Utilisateur;
 use Database\Factories\PersonnageFactory;
+use Database\Seeders\CapaciteSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,7 +16,7 @@ class MonteeNiveauTest extends TestCase
 
     private function classe(string $nom = 'Barbare', string $de = '12', int $niveauSousClasse = 3): Classe
     {
-        return Classe::create([
+        $classe = Classe::create([
             'nom' => $nom,
             'de_de_vie' => $de,
             'description' => 'Classe de test',
@@ -23,6 +24,9 @@ class MonteeNiveauTest extends TestCase
             'competences_disponibles' => [],
             'nombre_competences' => 2,
         ]);
+        $this->seed(CapaciteSeeder::class);
+
+        return $classe;
     }
 
     private function personnage(Utilisateur $u, Classe $classe, int $niveau = 1): Personnage
@@ -31,6 +35,7 @@ class MonteeNiveauTest extends TestCase
             'utilisateur_id' => $u->id,
             'classe_id' => $classe->id,
             'niveau' => $niveau,
+            'experience' => 6500, // assez pour atteindre le niveau 5
         ]);
     }
 
@@ -52,41 +57,104 @@ class MonteeNiveauTest extends TestCase
 
     public function test_autre_utilisateur_ne_peut_pas_ouvrir_ecran_de_montee(): void
     {
-        $owner = Utilisateur::factory()->create();
+        $proprietaire = Utilisateur::factory()->create();
         $autre = Utilisateur::factory()->create();
-        $p = $this->personnage($owner, $this->classe());
+        $p = $this->personnage($proprietaire, $this->classe());
 
         $this->actingAs($autre)->get(route('personnages.montee-niveau', $p))->assertForbidden();
     }
 
     public function test_autre_utilisateur_ne_peut_pas_monter_personnage(): void
     {
-        $owner = Utilisateur::factory()->create();
+        $proprietaire = Utilisateur::factory()->create();
         $autre = Utilisateur::factory()->create();
-        $p = $this->personnage($owner, $this->classe());
+        $p = $this->personnage($proprietaire, $this->classe());
 
         $this->actingAs($autre)->post(route('personnages.montee-niveau.store', $p), [])->assertForbidden();
     }
 
     public function test_autre_utilisateur_ne_peut_pas_lancer_le_de_de_vie(): void
     {
-        $owner = Utilisateur::factory()->create();
+        $proprietaire = Utilisateur::factory()->create();
         $autre = Utilisateur::factory()->create();
-        $p = $this->personnage($owner, $this->classe());
+        $p = $this->personnage($proprietaire, $this->classe());
 
-        $this->actingAs($autre)->postJson(route('personnages.montee-niveau.roll-hit-die', $p))->assertForbidden();
+        $this->actingAs($autre)->postJson(route('personnages.montee-niveau.lancer-de-vie', $p))->assertForbidden();
     }
 
     public function test_confirmation_fait_passer_au_niveau_suivant(): void
     {
         $u = Utilisateur::factory()->create();
         $p = $this->personnage($u, $this->classe(), 1);
+        $p->update(['experience' => 300]); // juste assez pour le niveau 2
 
         $this->actingAs($u)->post(route('personnages.montee-niveau.store', $p), [])
             ->assertRedirect(route('personnages.show', $p))
-            ->assertSessionHas('success');
+            ->assertSessionHas('succes');
 
         $this->assertSame(2, $p->fresh()->niveau);
+    }
+
+    public function test_assez_d_experience_pour_deux_niveaux_enchaine_les_montees(): void
+    {
+        $u = Utilisateur::factory()->create();
+        $p = $this->personnage($u, $this->classe(), 1);
+        $p->update(['experience' => 1000]); // seuils : 300 (niv. 2) puis 900 (niv. 3)
+
+        $this->actingAs($u)->post(route('personnages.montee-niveau.store', $p), [])
+            ->assertRedirect(route('personnages.montee-niveau', $p))
+            ->assertSessionHas('succes');
+        $this->assertSame(2, $p->fresh()->niveau);
+
+        // Niveau 3 = choix de sous-classe pour le Barbare : aucune n'existe
+        // ici, on vérifie seulement que l'écran suivant s'ouvre bien.
+        $this->actingAs($u)->get(route('personnages.montee-niveau', $p))
+            ->assertOk()
+            ->assertSee('Niveau 2 → 3');
+    }
+
+    public function test_la_montee_s_arrete_quand_l_experience_ne_suffit_plus(): void
+    {
+        $u = Utilisateur::factory()->create();
+        $p = $this->personnage($u, $this->classe(), 1);
+        $p->update(['experience' => 500]);
+
+        $this->actingAs($u)->post(route('personnages.montee-niveau.store', $p), [])
+            ->assertRedirect(route('personnages.show', $p));
+        $this->assertSame(2, $p->fresh()->niveau);
+    }
+
+    public function test_l_ecran_de_montee_est_refuse_sans_assez_d_experience(): void
+    {
+        $u = Utilisateur::factory()->create();
+        $p = $this->personnage($u, $this->classe(), 1);
+        $p->update(['experience' => 100]);
+
+        $this->actingAs($u)->get(route('personnages.montee-niveau', $p))
+            ->assertRedirect(route('personnages.show', $p))
+            ->assertSessionHasErrors('experience');
+    }
+
+    public function test_confirmer_une_montee_sans_assez_d_experience_est_refuse(): void
+    {
+        $u = Utilisateur::factory()->create();
+        $p = $this->personnage($u, $this->classe(), 1);
+        $p->update(['experience' => 100]);
+
+        $this->actingAs($u)->post(route('personnages.montee-niveau.store', $p), [])
+            ->assertSessionHasErrors('experience');
+
+        $this->assertSame(1, $p->fresh()->niveau);
+    }
+
+    public function test_la_fiche_n_affiche_plus_de_bouton_de_montee(): void
+    {
+        $u = Utilisateur::factory()->create();
+        $p = $this->personnage($u, $this->classe(), 1);
+
+        $this->actingAs($u)->get(route('personnages.show', $p))
+            ->assertOk()
+            ->assertDontSee('Monter de niveau');
     }
 
     public function test_niveau_cinq_redirige_vers_fiche(): void
@@ -96,25 +164,26 @@ class MonteeNiveauTest extends TestCase
 
         $this->actingAs($u)->get(route('personnages.montee-niveau', $p))
             ->assertRedirect(route('personnages.show', $p))
-            ->assertSessionHas('success');
+            ->assertSessionHas('succes');
     }
 
     public function test_confirmation_permet_de_lancer_le_de_de_vie(): void
     {
         $u = Utilisateur::factory()->create();
         $p = $this->personnage($u, $this->classe(), 1);
+        $p->update(['experience' => 300]); // juste assez pour le niveau 2
         $pvAvant = $p->point_de_vie;
 
-        $rollResponse = $this->actingAs($u)->postJson(route('personnages.montee-niveau.roll-hit-die', $p));
-        $rollResponse->assertOk()->assertJsonStructure(['roll', 'faces']);
-        $jet = $rollResponse->json('roll');
+        $reponseLancer = $this->actingAs($u)->postJson(route('personnages.montee-niveau.lancer-de-vie', $p));
+        $reponseLancer->assertOk()->assertJsonStructure(['lancer', 'faces']);
+        $jet = $reponseLancer->json('lancer');
         $this->assertGreaterThanOrEqual(1, $jet);
         $this->assertLessThanOrEqual(12, $jet);
-        $this->assertSame(12, $rollResponse->json('faces'));
+        $this->assertSame(12, $reponseLancer->json('faces'));
 
         $this->actingAs($u)->post(route('personnages.montee-niveau.store', $p), ['mode_pv' => 'de'])
             ->assertRedirect(route('personnages.show', $p))
-            ->assertSessionHas('success');
+            ->assertSessionHas('succes');
 
         $montee = $p->monteesNiveau()->latest('id')->first();
         $this->assertSame('de', $montee->choix['mode_pv']);
@@ -127,19 +196,19 @@ class MonteeNiveauTest extends TestCase
         $u = Utilisateur::factory()->create();
         $p = $this->personnage($u, $this->classe(), 3);
 
-        $rollResponse = $this->actingAs($u)->postJson(route('personnages.montee-niveau.roll-hit-die', $p));
-        $rollResponse->assertOk();
-        $jet = $rollResponse->json('roll');
+        $reponseLancer = $this->actingAs($u)->postJson(route('personnages.montee-niveau.lancer-de-vie', $p));
+        $reponseLancer->assertOk();
+        $jet = $reponseLancer->json('lancer');
 
         $this->actingAs($u)
             ->from(route('personnages.montee-niveau', $p))
             ->post(route('personnages.montee-niveau.store', $p), [
                 'mode_pv' => 'de',
-                'type_amelioration' => 'asi',
-                'asi' => ['force' => 1],
+                'type_amelioration' => 'caracteristiques',
+                'caracteristiques' => ['force' => 1],
             ])
             ->assertRedirect(route('personnages.montee-niveau', $p))
-            ->assertSessionHasErrors('asi')
+            ->assertSessionHasErrors('caracteristiques')
             ->assertSessionHas('montee_niveau.jet_de_vie.'.$p->id, $jet);
 
         $this->get(route('personnages.montee-niveau', $p))

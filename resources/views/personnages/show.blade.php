@@ -2,11 +2,11 @@
 @section('title', $personnage->nom . ' - Sheet Happens')
 @push('styles')
     <style>
-        .sheet-container {
+        .fiche-conteneur {
             max-width: 1100px;
         }
 
-        .sheet-grid {
+        .fiche-grille {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
@@ -14,26 +14,26 @@
         }
 
         @media (max-width: 768px) {
-            .sheet-grid {
+            .fiche-grille {
                 grid-template-columns: 1fr;
             }
         }
 
-        .sheet-box {
+        .fiche-boite {
             background: var(--panneau);
             border: 1px solid var(--or-bordure);
             border-radius: 12px;
             padding: 1rem;
         }
 
-        .sheet-box-title {
+        .fiche-boite-titre {
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--or);
             margin-bottom: 0.5rem;
         }
 
-        .sheet-row {
+        .fiche-ligne {
             display: flex;
             justify-content: space-between;
             gap: 0.75rem;
@@ -42,20 +42,20 @@
             padding: 0.2rem 0;
         }
 
-        .sheet-row > span:first-child {
+        .fiche-ligne > span:first-child {
             flex-shrink: 0;
         }
 
         /* Lignes à colonne unique (capacités, dons...) : pas de valeur à
            droite à préserver, donc le texte doit pouvoir rétrécir et
            passer à la ligne plutôt que déborder de la carte. */
-        .sheet-row > span:first-child:only-child {
+        .fiche-ligne > span:first-child:only-child {
             flex-shrink: 1;
             min-width: 0;
             overflow-wrap: break-word;
         }
 
-        .sheet-row .maitrise-dot {
+        .fiche-ligne .maitrise-point {
             display: inline-block;
             width: 8px;
             height: 8px;
@@ -65,11 +65,11 @@
             vertical-align: middle;
         }
 
-        .sheet-row .maitrise-dot.actif {
+        .fiche-ligne .maitrise-point.actif {
             background: var(--or-vif);
         }
 
-        .sheet-row .valeur {
+        .fiche-ligne .valeur {
             color: var(--or-doux);
             font-weight: 600;
             flex: 1;
@@ -77,7 +77,7 @@
             text-align: right;
         }
 
-        .avatar-label {
+        .avatar-etiquette {
             cursor: pointer;
             display: block;
             width: 120px;
@@ -89,7 +89,7 @@
             position: relative;
         }
 
-        .avatar-label img {
+        .avatar-etiquette img {
             width: 100%;
             height: 100%;
             display: block;
@@ -101,15 +101,15 @@
            entier ("contain") plutôt que rogné. Une vraie photo de
            personnage, elle, n'a pas ce médaillon et gagne à remplir tout
            le cercle. */
-        .avatar-label img.avatar-photo {
+        .avatar-etiquette img.avatar-photo {
             object-fit: cover;
         }
 
-        .avatar-label img.avatar-logo-defaut {
+        .avatar-etiquette img.avatar-logo-defaut {
             object-fit: contain;
         }
 
-        .avatar-overlay {
+        .avatar-voile {
             position: absolute;
             inset: 0;
             background: var(--avatar-overlay-fond);
@@ -124,7 +124,7 @@
             transition: opacity 0.2s;
         }
 
-        .avatar-label:hover .avatar-overlay {
+        .avatar-etiquette:hover .avatar-voile {
             opacity: 1;
         }
 
@@ -149,14 +149,14 @@
     </style>
 @endpush
 @section('content')
-    <div class="sheet-container" style="display: grid; grid-template-columns: 250px 1fr; gap: 1.5rem;">
+    <div class="fiche-conteneur" style="display: grid; grid-template-columns: 250px 1fr; gap: 1.5rem;">
         <!-- Left Sidebar -->
-        <div class="card" style="height: fit-content;">
-            <div class="text-gold mb-3" style="font-size: 1.1rem;">
+        <div class="carte" style="height: fit-content;">
+            <div class="texte-or marge-bas-3" style="font-size: 1.1rem;">
                 Sheet Happens
             </div>
             <div style="border-top: 1px solid var(--or-bordure); padding-top: 1rem;">
-                <a href="{{ route('personnages.index') }}" class="text-muted"
+                <a href="{{ route('personnages.index') }}" class="texte-attenue"
                    style="text-decoration: none; font-size: 0.85rem;">
                     ← Retour à la sélection de personnages
                 </a>
@@ -164,7 +164,7 @@
         </div>
 
         <div>
-            <div class="card" style="height: fit-content;">
+            <div class="carte" style="height: fit-content;">
 
                 <div style="display: flex; gap: 2rem; align-items: flex-start; margin-bottom: 2rem;">
                     <!-- Avatar, CA et Niveau -->
@@ -172,13 +172,13 @@
                         <form action="{{ route('personnages.photo', $personnage) }}" method="POST" enctype="multipart/form-data" style="margin: 0;">
                             @csrf
                             @method('PATCH')
-                            <label for="input-photo-personnage" class="avatar-label" title="Changer la photo">
+                            <label for="champ-photo-personnage" class="avatar-etiquette" title="Changer la photo">
                                 <img src="{{ $personnage->photo ? \Illuminate\Support\Facades\Storage::url($personnage->photo) : asset('images/logo_rmb.png') }}"
                                      alt="Portrait de {{ $personnage->nom }}"
                                      class="{{ $personnage->photo ? 'avatar-photo' : 'avatar-logo-defaut' }}">
-                                <span class="avatar-overlay">Changer<br>la photo</span>
+                                <span class="avatar-voile">Changer<br>la photo</span>
                             </label>
-                            <input type="file" id="input-photo-personnage" name="photo" accept="image/*" style="display: none;" onchange="this.form.submit()">
+                            <input type="file" id="champ-photo-personnage" name="photo" accept="image/*" style="display: none;" onchange="this.form.submit()">
                         </form>
 
                         <div class="badge-ca">CA<br>{{ $classeArmure }}</div>
@@ -242,20 +242,9 @@
                                align-items: flex-end;
                                gap: 0.5rem;
                            ">
-                                <!-- Montée de niveau -->
-                                @if ($personnage->niveau < 5)
-                                    <a href="{{ route('personnages.montee-niveau', $personnage) }}" class="btn btn-small"
-                                       style="
-                                           background: var(--or-vif);
-                                           color: var(--texte-inverse);
-                                           font-weight: 800;
-                                           text-align: center;
-                                           text-decoration: none;
-                                       ">
-                                        ✦ Monter de niveau
-                                    </a>
-                                @else
-                                    <span class="btn btn-small"
+                                <!-- Niveau maximum atteint -->
+                                @if ($personnage->niveau >= 5)
+                                    <span class="bouton bouton-petit"
                                           style="
                                            background: var(--niveau-max-fond);
                                            color: var(--niveau-max-texte);
@@ -265,19 +254,19 @@
                                     </span>
                                 @endif
                                 <!-- Modifier -->
-                                <button type="button" class="btn btn-secondary btn-small" style="text-align: center;"
+                                <button type="button" class="bouton bouton-secondaire bouton-petit" style="text-align: center;"
                                         onclick="window.location.href='{{ route('personnages.edit', $personnage) }}'">
                                     Modifier
                                 </button>
                                 <!-- Supprimer -->
-                                <form id="form-supprimer-personnage"
+                                <form id="formulaire-supprimer-personnage"
                                       action="{{ route('personnages.destroy', $personnage) }}" method="POST"
                                       style="margin: 0;">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="button" class="btn btn-danger btn-small"
+                                    <button type="button" class="bouton bouton-danger bouton-petit"
                                             onclick="ouvrirModalSuppression(
-                                           'form-supprimer-personnage',
+                                           'formulaire-supprimer-personnage',
                                            '{{ addslashes($personnage->nom) }}'
                                        )">
                                         Supprimer
@@ -321,6 +310,12 @@
                            ">
                             </div>
                         </div>
+                        @if ($peutMonterDeNiveau)
+                            <a href="{{ route('personnages.montee-niveau', $personnage) }}"
+                               style="display: block; margin-top: 0.4rem; font-size: 0.8rem; font-weight: 700; color: var(--or); text-decoration: none;">
+                                ✦ Assez d'expérience pour passer au niveau {{ $personnage->niveau + 1 }} — monter de niveau
+                            </a>
+                        @endif
                         @if ($seuilExperience !== null)
                             <form action="{{ route('personnages.experience.ajouter', $personnage) }}" method="POST"
                                   style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
@@ -337,7 +332,7 @@
                                        padding: 0.3rem 0.5rem;
                                        font-size: 0.8rem;
                                    ">
-                                <button type="submit" class="btn btn-small"
+                                <button type="submit" class="bouton bouton-petit"
                                         style="
                                        background: var(--or-vif);
                                        color: var(--texte-inverse);
@@ -357,10 +352,10 @@
                     </div>
                 </div>
                 {{-- Caractéristiques, jets de sauvegarde, PV/vitesse/bonus --}}
-                <div class="sheet-grid">
+                <div class="fiche-grille">
                     <!-- Caractéristiques -->
-                    <div class="sheet-box">
-                        <div class="sheet-box-title">
+                    <div class="fiche-boite">
+                        <div class="fiche-boite-titre">
                             Caractéristiques
                         </div>
                         @php
@@ -373,71 +368,71 @@
                                 'charisme' => 'Cha',
                             ];
                         @endphp
-                        @foreach ($stats as $key => $label)
+                        @foreach ($stats as $cle => $libelle)
                             @php
-                                $mod = floor(($personnage->abilites->$key - 10) / 2);
-                                $modStr = $mod >= 0 ? '+' . $mod : $mod;
+                                $mod = floor(($personnage->abilites->$cle - 10) / 2);
+                                $modChaine = $mod >= 0 ? '+' . $mod : $mod;
                             @endphp
-                            <div class="sheet-row">
-                                <span>{{ $label }}</span>
+                            <div class="fiche-ligne">
+                                <span>{{ $libelle }}</span>
                                 <span class="valeur">
-                                    {{ $personnage->abilites->$key }} ({{ $modStr }})
+                                    {{ $personnage->abilites->$cle }} ({{ $modChaine }})
                                 </span>
                             </div>
                         @endforeach
                     </div>
                     <!-- Jets de sauvegarde -->
-                    <div class="sheet-box">
-                        <div class="sheet-box-title">
+                    <div class="fiche-boite">
+                        <div class="fiche-boite-titre">
                             Jets de sauvegarde
                         </div>
                         @foreach ($jetsDeSauvegarde as $jet)
                             @php
-                                $bonusStr = $jet['bonus'] >= 0 ? '+' . $jet['bonus'] : $jet['bonus'];
+                                $bonusChaine = $jet['bonus'] >= 0 ? '+' . $jet['bonus'] : $jet['bonus'];
                             @endphp
-                            <div class="sheet-row">
+                            <div class="fiche-ligne">
                                 <span>
-                                    <span class="maitrise-dot {{ $jet['maitrise'] ? 'actif' : '' }}"></span>
-                                    {{ $jet['label'] }}
+                                    <span class="maitrise-point {{ $jet['maitrise'] ? 'actif' : '' }}"></span>
+                                    {{ $jet['libelle'] }}
                                 </span>
                                 <span class="valeur">
-                                    {{ $bonusStr }}
+                                    {{ $bonusChaine }}
                                 </span>
                             </div>
                         @endforeach
                     </div>
                     <!-- PV, vitesse et bonus -->
-                    <div class="sheet-box">
-                        <div class="sheet-box-title">PV, vitesse &amp; bonus</div>
-                        <div class="sheet-row"><span>Points de vie</span><span class="valeur">{{ $personnage->point_de_vie }}</span></div>
-                        <div class="sheet-row"><span>Classe d'Armure</span><span class="valeur">{{ $classeArmure }}</span></div>
-                        <div class="sheet-row"><span>Vitesse</span><span class="valeur">{{ $personnage->race->vitesse ? $personnage->race->vitesse . ' pi' : '—' }}</span></div>
-                        <div class="sheet-row"><span>Bonus de maîtrise</span><span class="valeur">+{{ $bonusMaitrise }}</span></div>
-                        <div class="sheet-row"><span>Perception passive</span><span class="valeur">{{ $perceptionPassive }}</span></div>
+                    <div class="fiche-boite">
+                        <div class="fiche-boite-titre">PV, vitesse &amp; bonus</div>
+                        <div class="fiche-ligne"><span>Points de vie</span><span class="valeur">{{ $personnage->point_de_vie }}</span></div>
+                        <div class="fiche-ligne"><span>Classe d'Armure</span><span class="valeur">{{ $classeArmure }}</span></div>
+                        <div class="fiche-ligne"><span>Vitesse</span><span class="valeur">{{ $personnage->race->vitesse ? $personnage->race->vitesse . ' pi' : '—' }}</span></div>
+                        <div class="fiche-ligne"><span>Bonus de maîtrise</span><span class="valeur">+{{ $bonusMaitrise }}</span></div>
+                        <div class="fiche-ligne"><span>Perception passive</span><span class="valeur">{{ $perceptionPassive }}</span></div>
                     </div>
                 </div>
 
                 {{-- Compétences --}}
-                <div class="sheet-box mb-3">
-                    <div class="sheet-box-title">
+                <div class="fiche-boite marge-bas-3">
+                    <div class="fiche-boite-titre">
                         Compétences
                     </div>
                     <div style="columns: 2; column-gap: 1.5rem;">
                         @foreach ($competences as $competence)
                             @php
-                                $bonusStr =
+                                $bonusChaine =
                                     $competence['bonus'] >= 0 ? '+' . $competence['bonus'] : $competence['bonus'];
                             @endphp
-                            <div class="sheet-row" style="break-inside: avoid;">
+                            <div class="fiche-ligne" style="break-inside: avoid;">
                                 <span>
-                                    <span class="maitrise-dot {{ $competence['maitrise'] ? 'actif' : '' }}"></span>
+                                    <span class="maitrise-point {{ $competence['maitrise'] ? 'actif' : '' }}"></span>
                                     {{ $competence['nom'] }}
-                                    <span class="text-muted">
+                                    <span class="texte-attenue">
                                         ({{ $competence['aptitude'] }})
                                     </span>
                                 </span>
                                 <span class="valeur">
-                                    {{ $bonusStr }}
+                                    {{ $bonusChaine }}
                                 </span>
                             </div>
                         @endforeach
@@ -458,7 +453,7 @@
                        ">
                             Langues
                         </div>
-                        <div class="sheet-row">
+                        <div class="fiche-ligne">
                             <span>Langues</span>
                             <span class="valeur">
                                 {{ $personnage->langues && count($personnage->langues) > 0 ? implode(', ', $personnage->langues) : 'Aucune' }}
@@ -467,7 +462,7 @@
                     </div>
                 </div>
                 {{-- Traits --}}
-                <div class="sheet-box mb-3">
+                <div class="fiche-boite marge-bas-3">
                     <div
                         style="
                        display: flex;
@@ -475,16 +470,16 @@
                        align-items: center;
                        margin-bottom: 0.5rem;
                    ">
-                        <span class="sheet-box-title" style="margin-bottom: 0;">
+                        <span class="fiche-boite-titre" style="margin-bottom: 0;">
                             Traits
                         </span>
                         <div style="display: flex; gap: 0.5rem;">
-                            <a href="{{ route('personnages.traits', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
+                            <a href="{{ route('personnages.traits', $personnage) }}" class="bouton bouton-secondaire bouton-petit">Tous voir</a>
                         </div>
                     </div>
                 </div>
-                {{-- Capacités et dons obtenus lors des montées de niveau --}}
-                @if (!empty($personnage->capacites) || !empty($personnage->feats))
+                {{-- Capacités de classe et dons ; la description s'affiche au survol --}}
+                @if ($personnage->capacites->isNotEmpty() || $personnage->dons->isNotEmpty())
                     <div
                         style="
                        display: grid;
@@ -493,31 +488,41 @@
                        margin-bottom: 1.5rem;
                    ">
                         <!-- Capacités -->
-                        <div class="sheet-box">
-                            <div class="sheet-box-title">
+                        <div class="fiche-boite">
+                            <div class="fiche-boite-titre">
                                 Capacités acquises
                             </div>
-                            @forelse($personnage->capacites ?? [] as $capacite)
-                                <div class="sheet-row">
-                                    <span>✦ {{ $capacite }}</span>
+                            @forelse($personnage->capacites as $capacite)
+                                <div class="fiche-ligne">
+                                    @include('partials.info-bulle', [
+                                        'libelle' => '✦ ' . $capacite->nom,
+                                        'titre' => $capacite->nom,
+                                        'meta' => 'Niveau ' . $capacite->niveau . ' · ' . ($capacite->sousClasse?->nom ?? $personnage->classe->nom),
+                                        'description' => $capacite->description,
+                                    ])
                                 </div>
                             @empty
-                                <div class="text-muted" style="font-size: 0.8rem;">
+                                <div class="texte-attenue" style="font-size: 0.8rem;">
                                     Aucune
                                 </div>
                             @endforelse
                         </div>
                         <!-- Dons -->
-                        <div class="sheet-box">
-                            <div class="sheet-box-title">
+                        <div class="fiche-boite">
+                            <div class="fiche-boite-titre">
                                 Dons
                             </div>
-                            @forelse($personnage->feats ?? [] as $feat)
-                                <div class="sheet-row">
-                                    <span>✦ {{ $feat }}</span>
+                            @forelse($personnage->dons as $don)
+                                <div class="fiche-ligne">
+                                    @include('partials.info-bulle', [
+                                        'libelle' => '✦ ' . $don->nom,
+                                        'titre' => $don->nom,
+                                        'meta' => $don->resume,
+                                        'description' => $don->description,
+                                    ])
                                 </div>
                             @empty
-                                <div class="text-muted" style="font-size: 0.8rem;">
+                                <div class="texte-attenue" style="font-size: 0.8rem;">
                                     Aucun
                                 </div>
                             @endforelse
@@ -525,17 +530,17 @@
                     </div>
                 @endif
                 {{-- Actions : sorts ou attaques selon la classe --}}
-                <div class="sheet-box mb-3">
+                <div class="fiche-boite marge-bas-3">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span class="sheet-box-title" style="margin-bottom: 0;">
+                        <span class="fiche-boite-titre" style="margin-bottom: 0;">
                             Actions
                         </span>
                         @if ($aDesSorts)
-                            <a href="{{ route('personnages.sorts.index', $personnage) }}" class="btn btn-secondary btn-small">Sorts connus</a>
+                            <a href="{{ route('personnages.sorts.index', $personnage) }}" class="bouton bouton-secondaire bouton-petit">Sorts connus</a>
                         @endif
                     </div>
                     @if ($personnage->sousClasse)
-                        <div class="text-muted mb-2" style="font-size: 0.8rem;">
+                        <div class="texte-attenue marge-bas-2" style="font-size: 0.8rem;">
                             Sous-classe : {{ $personnage->sousClasse->nom }}
                         </div>
                     @endif
@@ -543,18 +548,18 @@
                         @php
                             $incantation = $actions['incantation'];
                         @endphp
-                        <div class="text-muted mb-2" style="font-size: 0.8rem;">
+                        <div class="texte-attenue marge-bas-2" style="font-size: 0.8rem;">
                             {{ $personnage->classe->nom }}
                             incante avec
                             {{ $incantation['caracteristique'] }}.
                         </div>
-                        <div class="sheet-row">
+                        <div class="fiche-ligne">
                             <span>Jet de sauvegarde de tes sorts</span>
                             <span class="valeur">
                                 {{ $incantation['dd'] }}
                             </span>
                         </div>
-                        <div class="sheet-row">
+                        <div class="fiche-ligne">
                             <span>Bonus d'attaque de sorts</span>
                             <span class="valeur">
                                 +{{ $incantation['bonusAttaque'] }}
@@ -563,25 +568,25 @@
                     @else
                         @forelse($actions['attaques'] as $attaque)
                             @php
-                                $bonusStr =
+                                $bonusChaine =
                                     $attaque['bonusAttaque'] >= 0
                                         ? '+' . $attaque['bonusAttaque']
                                         : $attaque['bonusAttaque'];
                             @endphp
-                            <div class="sheet-row">
+                            <div class="fiche-ligne">
                                 <span>
                                     {{ $attaque['nom'] }}
-                                    <span class="text-muted">
+                                    <span class="texte-attenue">
                                         ({{ $attaque['type'] }})
                                     </span>
                                 </span>
                                 <span class="valeur">
-                                    {{ $bonusStr }} pour toucher,
+                                    {{ $bonusChaine }} pour toucher,
                                     {{ $attaque['degats'] }} dégâts
                                 </span>
                             </div>
                         @empty
-                            <div class="text-muted" style="font-size: 0.85rem;">
+                            <div class="texte-attenue" style="font-size: 0.85rem;">
                                 Aucune arme reconnue dans l'équipement porté.
                             </div>
                         @endforelse
@@ -637,17 +642,17 @@
                     @endif
                 </div>
                 {{-- Inventaire --}}
-                <div class="sheet-box">
+                <div class="fiche-boite">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span class="sheet-box-title" style="margin-bottom: 0;">Inventaire</span>
-                        <a href="{{ route('personnages.inventaire.index', $personnage) }}" class="btn btn-secondary btn-small">Tous voir</a>
+                        <span class="fiche-boite-titre" style="margin-bottom: 0;">Inventaire</span>
+                        <a href="{{ route('personnages.inventaire.index', $personnage) }}" class="bouton bouton-secondaire bouton-petit">Tous voir</a>
                     </div>
                     @if($personnage->objets->count() > 0)
-                        <div class="text-muted" style="font-size: 0.85rem;">
+                        <div class="texte-attenue" style="font-size: 0.85rem;">
                             {{ $personnage->objets->map(fn($objet) => $objet->nom . ($objet->pivot->quantite > 1 ? ' x' . $objet->pivot->quantite : '') . ($objet->pivot->quantite_equipee > 0 ? ' (équipé' . ($objet->pivot->quantite_equipee > 1 ? ' x' . $objet->pivot->quantite_equipee : '') . ')' : ''))->implode(', ') }}
                         </div>
                     @else
-                        <div class="text-muted" style="font-size: 0.85rem;">Aucun équipement enregistré.</div>
+                        <div class="texte-attenue" style="font-size: 0.85rem;">Aucun équipement enregistré.</div>
                     @endif
                 </div>
             </div>

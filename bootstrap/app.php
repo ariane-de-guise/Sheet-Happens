@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Middleware\EnsureLimitePersonnagesNonAtteinte;
+use App\Http\Middleware\VerifierLimitePersonnages;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,10 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(fn (Request $request) => route('connexion.create'));
-        $middleware->redirectUsersTo(fn (Request $request) => route('personnages.index'));
+        $middleware->redirectGuestsTo(fn (Request $requete) => route('connexion.create'));
+        $middleware->redirectUsersTo(fn (Request $requete) => route('personnages.index'));
         $middleware->alias([
-            'limite.personnages' => EnsureLimitePersonnagesNonAtteinte::class,
+            'limite.personnages' => VerifierLimitePersonnages::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

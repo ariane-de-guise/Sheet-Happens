@@ -4,12 +4,15 @@ namespace Tests\Unit;
 
 use App\Models\Abilite;
 use App\Models\Classe;
+use App\Models\Don;
 use App\Models\ListeCompetence;
 use App\Models\Personnage;
 use App\Models\Race;
 use App\Models\SousClasse;
 use App\Models\Utilisateur;
 use App\Services\MonteeNiveauService;
+use Database\Seeders\CapaciteSeeder;
+use Database\Seeders\DonSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -24,6 +27,7 @@ class MonteeNiveauServiceTest extends TestCase
     {
         parent::setUp();
         $this->service = app(MonteeNiveauService::class);
+        $this->seed(DonSeeder::class);
     }
 
     private function personnage(string $classeNom = 'Barbare', int $niveau = 1, int $con = 14): Personnage
@@ -37,6 +41,7 @@ class MonteeNiveauServiceTest extends TestCase
             },
             'competences_disponibles' => [], 'nombre_competences' => 2,
         ]);
+        $this->seed(CapaciteSeeder::class);
 
         return Personnage::create([
             'utilisateur_id' => Utilisateur::factory()->create()->id,
@@ -45,6 +50,7 @@ class MonteeNiveauServiceTest extends TestCase
             'abilites_id' => Abilite::create(['force' => 16, 'dexterite' => 12, 'constitution' => $con, 'intelligence' => 10, 'sagesse' => 10, 'charisme' => 10])->id,
             'liste_competence_id' => ListeCompetence::create(['competences' => []])->id,
             'nom' => 'Test', 'niveau' => $niveau, 'point_de_vie' => 20,
+            'experience' => 6500, // assez pour atteindre le niveau 5
         ]);
     }
 
@@ -55,8 +61,8 @@ class MonteeNiveauServiceTest extends TestCase
         $p->refresh();
         $this->assertSame(2, $p->niveau);
         $this->assertSame(29, $p->point_de_vie); // 7 + CON +2
-        $this->assertContains('Attaque téméraire', $p->capacites);
-        $this->assertContains('Sens du danger', $p->capacites);
+        $this->assertContains('Attaque téméraire', $p->capacites->pluck('nom'));
+        $this->assertContains('Sens du danger', $p->capacites->pluck('nom'));
     }
 
     public function test_sous_classe_est_obligatoire_au_niveau_requis(): void
@@ -78,14 +84,14 @@ class MonteeNiveauServiceTest extends TestCase
     public function test_asi_plus_deux_est_appliquee_au_niveau_4(): void
     {
         $p = $this->personnage('Barbare', 3);
-        $this->service->monter($p, ['type_amelioration' => 'asi', 'asi' => ['force' => 2]]);
+        $this->service->monter($p, ['type_amelioration' => 'caracteristiques', 'caracteristiques' => ['force' => 2]]);
         $this->assertSame(18, $p->abilites->fresh()->force);
     }
 
     public function test_asi_plus_un_plus_un_est_appliquee(): void
     {
         $p = $this->personnage('Barbare', 3);
-        $this->service->monter($p, ['type_amelioration' => 'asi', 'asi' => ['force' => 1, 'constitution' => 1]]);
+        $this->service->monter($p, ['type_amelioration' => 'caracteristiques', 'caracteristiques' => ['force' => 1, 'constitution' => 1]]);
         $this->assertSame(17, $p->abilites->fresh()->force);
         $this->assertSame(15, $p->abilites->fresh()->constitution);
     }
@@ -95,22 +101,22 @@ class MonteeNiveauServiceTest extends TestCase
         $p = $this->personnage('Barbare', 3);
         $p->abilites->update(['force' => 19]);
         $this->expectException(ValidationException::class);
-        $this->service->monter($p, ['type_amelioration' => 'asi', 'asi' => ['force' => 2]]);
+        $this->service->monter($p, ['type_amelioration' => 'caracteristiques', 'caracteristiques' => ['force' => 2]]);
     }
 
     public function test_feat_est_sauvegarde_et_effet_de_stat_applique(): void
     {
         $p = $this->personnage('Barbare', 3);
-        $this->service->monter($p, ['type_amelioration' => 'feat', 'feat' => 'Athlète', 'feat_stat' => 'force']);
+        $this->service->monter($p, ['type_amelioration' => 'don', 'don' => 'Athlète', 'don_caracteristique' => 'force']);
         $p->refresh();
-        $this->assertContains('Athlète', $p->feats);
+        $this->assertContains('Athlète', $p->dons->pluck('nom'));
         $this->assertSame(17, $p->abilites->fresh()->force);
     }
 
     public function test_robuste_ajoute_huit_pv_au_niveau_4(): void
     {
         $p = $this->personnage('Barbare', 3);
-        $this->service->monter($p, ['type_amelioration' => 'feat', 'feat' => 'Robuste']);
+        $this->service->monter($p, ['type_amelioration' => 'don', 'don' => 'Robuste']);
         $this->assertSame(37, $p->fresh()->point_de_vie); // 20 + 8 Robuste + 9 montée
     }
 
@@ -145,15 +151,15 @@ class MonteeNiveauServiceTest extends TestCase
         $this->assertSame(4, $a['pv_base']);
         $this->assertSame(2, $a['bonus_maitrise']);
         $this->assertNotEmpty($a['sous_classes']);
-        $this->assertSame([], $a['feats']);
+        $this->assertSame([], $a['dons']);
     }
 
     public function test_apercu_niveau_quatre_propose_les_dons(): void
     {
         $p = $this->personnage('Barbare', 3);
         $a = $this->service->apercu($p);
-        $this->assertTrue($a['choix_asi']);
-        $this->assertArrayHasKey('Robuste', $a['feats']);
+        $this->assertTrue($a['choix_amelioration']);
+        $this->assertArrayHasKey('Robuste', $a['dons']);
     }
 
     public function test_clerc_utilise_de_d8(): void
@@ -172,6 +178,33 @@ class MonteeNiveauServiceTest extends TestCase
         $this->assertSame(1, $a['pv_base']);
     }
 
+    public function test_monter_sans_assez_d_experience_est_refuse(): void
+    {
+        $p = $this->personnage('Barbare', 1);
+        $p->update(['experience' => 299]);
+
+        try {
+            $this->service->monter($p->fresh(), []);
+            $this->fail('La montée de niveau devait être refusée.');
+        } catch (ValidationException $e) {
+            $this->assertSame(
+                ["Il faut 300 points d'expérience pour atteindre le niveau 2 (299 actuellement)."],
+                $e->errors()['experience'],
+            );
+        }
+        $this->assertSame(1, $p->fresh()->niveau);
+    }
+
+    public function test_un_niveau_non_pris_en_charge_est_inatteignable(): void
+    {
+        $p = $this->personnage('Guerrier', 5);
+
+        $this->assertNull($this->service->xpRequisePourNiveau(6));
+        $this->assertFalse($this->service->peutAtteindreNiveau($p, 6));
+        $this->assertTrue($this->service->peutAtteindreNiveau($p, 3)); // redescendre reste permis
+        $this->assertSame('Le niveau maximum pris en charge est 5.', $this->service->messageExperienceInsuffisante($p, 6));
+    }
+
     public function test_classe_non_supportee_est_refusee(): void
     {
         $p = $this->personnage('Barde', 1);
@@ -185,10 +218,10 @@ class MonteeNiveauServiceTest extends TestCase
 
         foreach ([-1, 3] as $gain) {
             try {
-                $this->service->monter($p->fresh(), ['type_amelioration' => 'asi', 'asi' => ['force' => $gain, 'dexterite' => 2 - $gain]]);
+                $this->service->monter($p->fresh(), ['type_amelioration' => 'caracteristiques', 'caracteristiques' => ['force' => $gain, 'dexterite' => 2 - $gain]]);
                 $this->fail('Une ASI invalide devait être refusée.');
             } catch (ValidationException $e) {
-                $this->assertArrayHasKey('asi', $e->errors());
+                $this->assertArrayHasKey('caracteristiques', $e->errors());
             }
         }
     }
@@ -197,14 +230,14 @@ class MonteeNiveauServiceTest extends TestCase
     {
         $p = $this->personnage('Barbare', 3);
         $this->expectException(ValidationException::class);
-        $this->service->monter($p, ['type_amelioration' => 'asi', 'asi' => ['force' => 1]]);
+        $this->service->monter($p, ['type_amelioration' => 'caracteristiques', 'caracteristiques' => ['force' => 1]]);
     }
 
     public function test_asi_refuse_plus_de_deux_caracteristiques(): void
     {
         $p = $this->personnage('Barbare', 3);
         $this->expectException(ValidationException::class);
-        $this->service->monter($p, ['type_amelioration' => 'asi', 'asi' => ['force' => 1, 'dexterite' => 1, 'sagesse' => 1]]);
+        $this->service->monter($p, ['type_amelioration' => 'caracteristiques', 'caracteristiques' => ['force' => 1, 'dexterite' => 1, 'sagesse' => 1]]);
     }
 
     public function test_type_amelioration_est_obligatoire_au_niveau_quatre(): void
@@ -218,28 +251,28 @@ class MonteeNiveauServiceTest extends TestCase
     {
         $p = $this->personnage('Barbare', 3);
         $this->expectException(ValidationException::class);
-        $this->service->monter($p, ['type_amelioration' => 'feat', 'feat' => 'Inexistant']);
+        $this->service->monter($p, ['type_amelioration' => 'don', 'don' => 'Inexistant']);
     }
 
     public function test_feat_deja_possede_est_refuse(): void
     {
         $p = $this->personnage('Barbare', 3);
-        $p->update(['feats' => ['Chanceux']]);
+        $p->dons()->attach(Don::where('nom', 'Chanceux')->value('id'));
         $this->expectException(ValidationException::class);
-        $this->service->monter($p->fresh(), ['type_amelioration' => 'feat', 'feat' => 'Chanceux']);
+        $this->service->monter($p->fresh(), ['type_amelioration' => 'don', 'don' => 'Chanceux']);
     }
 
     public function test_feat_avec_choix_de_stat_refuse_un_choix_invalide(): void
     {
         $p = $this->personnage('Barbare', 3);
         $this->expectException(ValidationException::class);
-        $this->service->monter($p, ['type_amelioration' => 'feat', 'feat' => 'Athlète', 'feat_stat' => 'sagesse']);
+        $this->service->monter($p, ['type_amelioration' => 'don', 'don' => 'Athlète', 'don_caracteristique' => 'sagesse']);
     }
 
     public function test_feat_avec_stat_fixe_augmente_la_stat(): void
     {
         $p = $this->personnage('Barbare', 3);
-        $this->service->monter($p, ['type_amelioration' => 'feat', 'feat' => 'Acteur']);
+        $this->service->monter($p, ['type_amelioration' => 'don', 'don' => 'Acteur']);
         $this->assertSame(11, $p->abilites->fresh()->charisme);
     }
 
@@ -248,21 +281,21 @@ class MonteeNiveauServiceTest extends TestCase
         $p = $this->personnage('Barbare', 3);
         $p->abilites->update(['charisme' => 20]);
         $this->expectException(ValidationException::class);
-        $this->service->monter($p, ['type_amelioration' => 'feat', 'feat' => 'Acteur']);
+        $this->service->monter($p, ['type_amelioration' => 'don', 'don' => 'Acteur']);
     }
 
     public function test_feat_sans_effet_representable_est_quand_meme_sauvegarde(): void
     {
         $p = $this->personnage('Barbare', 3);
-        $m = $this->service->monter($p, ['type_amelioration' => 'feat', 'feat' => 'Chanceux']);
-        $this->assertContains('Chanceux', $p->fresh()->feats);
-        $this->assertSame([], $m->changements['effets_feat']);
+        $m = $this->service->monter($p, ['type_amelioration' => 'don', 'don' => 'Chanceux']);
+        $this->assertContains('Chanceux', $p->fresh()->dons->pluck('nom'));
+        $this->assertSame([], $m->changements['effets_don']);
     }
 
     public function test_augmentation_de_constitution_retroactive_met_a_jour_les_pv(): void
     {
         $p = $this->personnage('Barbare', 3, 13); // mod +1
-        $this->service->monter($p, ['type_amelioration' => 'asi', 'asi' => ['constitution' => 1, 'force' => 1]]); // CON 14, mod +2
+        $this->service->monter($p, ['type_amelioration' => 'caracteristiques', 'caracteristiques' => ['constitution' => 1, 'force' => 1]]); // CON 14, mod +2
         $this->assertSame(32, $p->fresh()->point_de_vie); // 20 + (7+2) + 3 PV rétroactifs
     }
 

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'photo', 'niveau', 'experience', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'langues', 'capacites', 'feats'])]
+#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'photo', 'niveau', 'experience', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'langues'])]
 class Personnage extends Model
 {
     /**
@@ -22,8 +22,6 @@ class Personnage extends Model
     {
         return [
             'langues' => 'array',
-            'capacites' => 'array',
-            'feats' => 'array',
         ];
     }
 
@@ -98,6 +96,27 @@ class Personnage extends Model
             ->using(PersonnageObjet::class)
             ->withPivot(['id', 'quantite', 'quantite_equipee'])
             ->withTimestamps();
+    }
+
+    /** Capacités (traits de classe) acquises, triées par niveau d'obtention. */
+    public function capacites(): BelongsToMany
+    {
+        return $this->belongsToMany(Capacite::class, 'personnage_capacite')
+            ->withTimestamps()
+            ->orderBy('capacites.niveau')
+            ->orderBy('capacites.id');
+    }
+
+    public function dons(): BelongsToMany
+    {
+        return $this->belongsToMany(Don::class, 'personnage_don')
+            ->withTimestamps()
+            ->orderBy('dons.nom');
+    }
+
+    public function sorts(): HasMany
+    {
+        return $this->hasMany(PersonnageSort::class, 'id_Personnage');
     }
 
     public function effetsActifs(): HasMany

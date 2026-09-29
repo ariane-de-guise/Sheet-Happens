@@ -45,7 +45,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->get(route('personnages.inventaire.ajouter-custom-page', $personnage))
+            ->get(route('personnages.inventaire.ajouter-personnalise-page', $personnage))
             ->assertOk()
             ->assertSee('Créer un objet custom')
             ->assertSee('Objet magique');
@@ -58,7 +58,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $proprietaire->id]);
 
         $this->actingAs($autre)
-            ->get(route('personnages.inventaire.ajouter-custom-page', $personnage))
+            ->get(route('personnages.inventaire.ajouter-personnalise-page', $personnage))
             ->assertForbidden();
     }
 
@@ -144,7 +144,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+            ->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
                 'nom' => 'Amulette du hasard',
                 'description' => 'Un porte-bonheur douteux.',
                 'type' => 'autre',
@@ -167,7 +167,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+            ->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
                 'nom' => 'Décoction de courage',
                 'description' => 'Un liquide amer.',
                 'type' => 'potion',
@@ -191,7 +191,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+            ->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
                 'nom' => 'Élixir de vigueur',
                 'description' => 'Un liquide amer.',
                 'type' => 'potion',
@@ -304,7 +304,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+            ->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
                 'nom' => 'Lame des étoiles',
                 'type' => 'arme',
                 'categorie' => 'une_main',
@@ -332,7 +332,7 @@ class InventaireControllerTest extends TestCase
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
         $this->actingAs($utilisateur)
-            ->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+            ->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
                 'nom' => 'Arbalète de poing improvisée',
                 'type' => 'arme',
                 'categorie' => 'distance',
@@ -352,7 +352,7 @@ class InventaireControllerTest extends TestCase
         $utilisateur = Utilisateur::factory()->create();
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
-        $this->actingAs($utilisateur)->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+        $this->actingAs($utilisateur)->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
             'nom' => 'Bâton ordinaire',
             'type' => 'autre',
             'rarete' => 'legendaire',
@@ -368,7 +368,7 @@ class InventaireControllerTest extends TestCase
         $utilisateur = Utilisateur::factory()->create();
         $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
 
-        $this->actingAs($utilisateur)->post(route('personnages.inventaire.ajouter-custom', $personnage), [
+        $this->actingAs($utilisateur)->post(route('personnages.inventaire.ajouter-personnalise', $personnage), [
             'nom' => 'Grimoire personnel',
             'type' => 'autre',
         ]);
@@ -417,7 +417,7 @@ class InventaireControllerTest extends TestCase
         $this->actingAs($utilisateur)
             ->patch(route('personnages.inventaire.equiper', [$personnage, $ligne]))
             ->assertRedirect()
-            ->assertSessionHas('success');
+            ->assertSessionHas('succes');
 
         $this->assertSame(1, $ligne->fresh()->quantite_equipee);
     }
@@ -435,7 +435,7 @@ class InventaireControllerTest extends TestCase
         $this->actingAs($utilisateur)
             ->patch(route('personnages.inventaire.desequiper', [$personnage, $ligne]))
             ->assertRedirect()
-            ->assertSessionHas('success');
+            ->assertSessionHas('succes');
 
         $this->assertSame(0, $ligne->fresh()->quantite_equipee);
     }
@@ -457,7 +457,7 @@ class InventaireControllerTest extends TestCase
         $this->actingAs($utilisateur)
             ->patch(route('personnages.inventaire.equiper', [$personnage, $ligne]))
             ->assertRedirect()
-            ->assertSessionHas('success');
+            ->assertSessionHas('succes');
 
         $this->assertSame(2, $ligne->fresh()->quantite_equipee);
     }

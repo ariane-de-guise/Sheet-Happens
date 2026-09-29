@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\LimiteMagie;
 use App\Models\LimiteMagieClasse;
 use App\Models\LimiteMagieSousClasse;
+use Illuminate\Database\Seeder;
 
 class LimiteMagieSeeder extends Seeder
 {
@@ -64,7 +64,6 @@ class LimiteMagieSeeder extends Seeder
             'Sagesse'
         );
 
-
         /*
         |--------------------------------------------------------------------------
         | MAGICIEN
@@ -120,7 +119,6 @@ class LimiteMagieSeeder extends Seeder
             'Intelligence'
         );
 
-
         /*
         |--------------------------------------------------------------------------
         | FILOU ARCANİQUE
@@ -164,7 +162,6 @@ class LimiteMagieSeeder extends Seeder
             'Intelligence'
         );
 
-
         /*
         |--------------------------------------------------------------------------
         | CHEVALIER ELDRITCH
@@ -206,7 +203,6 @@ class LimiteMagieSeeder extends Seeder
         );
     }
 
-
     /**
      * Crée les limites de magie d'une classe.
      */
@@ -235,7 +231,6 @@ class LimiteMagieSeeder extends Seeder
             ]);
         }
     }
-
 
     /**
      * Crée les limites de magie d'une sous-classe.

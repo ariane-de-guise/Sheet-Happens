@@ -1,116 +1,116 @@
 // Étape "Race" de la création de personnage.
-// Les données (window.RaceCreationData) sont injectées par race.blade.php ;
+// Les données (window.DonneesCreationRace) sont injectées par race.blade.php ;
 // toutes les races sont déjà chargées côté serveur avec leurs sous-races,
 // donc aucun appel réseau supplémentaire n'est nécessaire pour afficher les
 // sous-races ou les descriptions au clic.
-const racesData = (window.RaceCreationData && window.RaceCreationData.races) || {};
-window.currentSousRaces = (window.RaceCreationData && window.RaceCreationData.initialSousRaces) || [];
+const donneesRaces = (window.DonneesCreationRace && window.DonneesCreationRace.races) || {};
+window.sousRacesCourantes = (window.DonneesCreationRace && window.DonneesCreationRace.sousRacesInitiales) || [];
 
-function selectRace(raceId, element) {
-    document.querySelectorAll('#racesGrid .card-choice').forEach(el => {
-        el.classList.remove('selected');
+function choisirRace(raceId, element) {
+    document.querySelectorAll('#racesGrille .carte-choix').forEach(el => {
+        el.classList.remove('selectionne');
     });
-    element.classList.add('selected');
+    element.classList.add('selectionne');
     element.querySelector('input[type="radio"]').checked = true;
 
-    document.getElementById('raceErrors').style.display = 'none';
+    document.getElementById('raceErreurs').style.display = 'none';
 
-    const race = racesData[raceId];
-    showRaceDescription(race);
-    renderSousRaces(race);
-    updateSuivantState();
+    const race = donneesRaces[raceId];
+    afficherDescriptionRace(race);
+    afficherSousRaces(race);
+    majEtatSuivant();
 }
 
-function showRaceDescription(race) {
-    const box = document.getElementById('raceDescription');
+function afficherDescriptionRace(race) {
+    const boite = document.getElementById('raceDescription');
     if (!race || !race.description) {
-        box.style.display = 'none';
+        boite.style.display = 'none';
         return;
     }
-    document.getElementById('raceDescriptionTitle').textContent = race.nom;
-    document.getElementById('raceDescriptionContent').textContent = race.description;
-    box.style.display = '';
+    document.getElementById('raceDescriptionTitre').textContent = race.nom;
+    document.getElementById('raceDescriptionContenu').textContent = race.description;
+    boite.style.display = '';
 }
 
-function selectSousRace(id, element) {
-    document.querySelectorAll('#sousRacesGrid .card-choice').forEach(el => {
-        el.classList.remove('selected');
+function choisirSousRace(id, element) {
+    document.querySelectorAll('#sousRacesGrille .carte-choix').forEach(el => {
+        el.classList.remove('selectionne');
     });
-    element.classList.add('selected');
+    element.classList.add('selectionne');
     element.querySelector('input[type="radio"]').checked = true;
 
-    const errBox = document.getElementById('sousRaceErrors');
-    if (errBox) errBox.style.display = 'none';
+    const boiteErreur = document.getElementById('sousRaceErreurs');
+    if (boiteErreur) boiteErreur.style.display = 'none';
 
-    const sousRace = (window.currentSousRaces || []).find(sr => sr.id === id);
-    showSousRaceDescription(sousRace);
-    updateSuivantState();
+    const sousRace = (window.sousRacesCourantes || []).find(sr => sr.id === id);
+    afficherDescriptionSousRace(sousRace);
+    majEtatSuivant();
 }
 
-function showSousRaceDescription(sousRace) {
-    const box = document.getElementById('sousRaceDescription');
-    if (!box) return;
+function afficherDescriptionSousRace(sousRace) {
+    const boite = document.getElementById('sousRaceDescription');
+    if (!boite) return;
     if (!sousRace || !sousRace.description) {
-        box.style.display = 'none';
+        boite.style.display = 'none';
         return;
     }
-    document.getElementById('sousRaceDescriptionTitle').textContent = sousRace.nom;
-    document.getElementById('sousRaceDescriptionContent').textContent = sousRace.description;
-    box.style.display = '';
+    document.getElementById('sousRaceDescriptionTitre').textContent = sousRace.nom;
+    document.getElementById('sousRaceDescriptionContenu').textContent = sousRace.description;
+    boite.style.display = '';
 }
 
-function renderSousRaces(race) {
-    const container = document.getElementById('sousRaceContainer');
+function afficherSousRaces(race) {
+    const conteneur = document.getElementById('sousRaceConteneur');
     const sousRaces = (race && race.sous_races) || [];
-    window.currentSousRaces = sousRaces;
+    window.sousRacesCourantes = sousRaces;
 
     if (sousRaces.length === 0) {
-        container.innerHTML = '';
+        conteneur.innerHTML = '';
         return;
     }
 
-    let html = '<h3 class="title-section mb-2">Sous-race</h3>';
-    html += '<div class="alert alert-error" id="sousRaceErrors" style="display:none;">';
+    let html = '<h3 class="titre-section marge-bas-2">Sous-race</h3>';
+    html += '<div class="alerte alerte-erreur" id="sousRaceErreurs" style="display:none;">';
     html += 'Vous devez choisir une sous-race avant de continuer.</div>';
-    html += '<div class="grid-cards mb-4" id="sousRacesGrid">';
+    html += '<div class="grille-cartes marge-bas-4" id="sousRacesGrille">';
 
     sousRaces.forEach(sr => {
-        html += '<div class="card-choice" onclick="selectSousRace(' + sr.id + ', this)">';
+        html += '<div class="carte-choix" onclick="choisirSousRace(' + sr.id + ', this)">';
         html += '<input type="radio" name="sous_race_id" value="' + sr.id + '" required style="display: none;">';
-        html += '<div class="card-title">' + sr.nom + '</div>';
+        html += '<div class="carte-titre">' + sr.nom + '</div>';
         html += '</div>';
     });
 
     html += '</div>';
-    html += '<div class="help-box mb-4" id="sousRaceDescription" style="display:none;">';
-    html += '<div class="title" id="sousRaceDescriptionTitle"></div>';
-    html += '<div class="content" id="sousRaceDescriptionContent"></div>';
+    html += '<div class="boite-aide marge-bas-4" id="sousRaceDescription" style="display:none;">';
+    html += '<div class="titre" id="sousRaceDescriptionTitre"></div>';
+    html += '<div class="contenu" id="sousRaceDescriptionContenu"></div>';
     html += '</div>';
 
-    container.innerHTML = html;
+    conteneur.innerHTML = html;
 }
 
-function updateSuivantState() {
-    const hasRace = !!document.querySelector('#racesGrid input[type="radio"]:checked');
-    const sousGrid = document.getElementById('sousRacesGrid');
-    const hasSousRace = !sousGrid || !!document.querySelector('#sousRacesGrid input[type="radio"]:checked');
-    document.getElementById('btnSuivant').disabled = !(hasRace && hasSousRace);
+function majEtatSuivant() {
+    const aRace = !!document.querySelector('#racesGrille input[type="radio"]:checked');
+    const grilleSous = document.getElementById('sousRacesGrille');
+    const aSousRace = !grilleSous || !!document.querySelector('#sousRacesGrille input[type="radio"]:checked');
+    document.getElementById('boutonSuivant').disabled = !(aRace && aSousRace);
 }
 
-document.getElementById('raceForm').addEventListener('submit', function (event) {
-    const hasSelection = document.querySelector('#racesGrid input[type="radio"]:checked');
-    if (!hasSelection) {
-        event.preventDefault();
-        document.getElementById('raceErrors').style.display = 'block';
+document.getElementById('raceFormulaire').addEventListener('submit', function (evenement) {
+    const aUneSelection = document.querySelector('#racesGrille input[type="radio"]:checked');
+    if (!aUneSelection) {
+        evenement.preventDefault();
+        document.getElementById('raceErreurs').style.display = 'block';
         return;
     }
 
-    const sousGrid = document.getElementById('sousRacesGrid');
-    if (sousGrid && !document.querySelector('#sousRacesGrid input[type="radio"]:checked')) {
-        event.preventDefault();
-        const errBox = document.getElementById('sousRaceErrors');
-        if (errBox) errBox.style.display = 'block';
+    const grilleSous = document.getElementById('sousRacesGrille');
+    if (grilleSous && !document.querySelector('#sousRacesGrille input[type="radio"]:checked')) {
+        evenement.preventDefault();
+        const boiteErreur = document.getElementById('sousRaceErreurs');
+        if (boiteErreur) boiteErreur.style.display = 'block';
     }
 });
 
-updateSuivantState();
+majEtatSuivant();

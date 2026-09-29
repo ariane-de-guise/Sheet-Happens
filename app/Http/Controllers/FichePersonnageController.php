@@ -5,15 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Abilite;
 use App\Models\Classe;
 use App\Models\Historique;
-use App\Models\LimiteMagie;
-use App\Models\LimiteMagieClasse;
-use App\Models\LimiteMagieSousClasse;
 use App\Models\ListeCompetence;
 use App\Models\Personnage;
+use App\Models\PersonnageSort;
 use App\Models\Race;
-use App\Models\Utilisateur;
+use App\Services\CapaciteService;
 use App\Services\FicheDePersonnageService;
 use App\Services\MonteeNiveauService;
+use App\Services\SortService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,18 +22,27 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
-class PersonnageSheetController extends Controller
+class FichePersonnageController extends Controller
 {
+    /**
+     * Niveaux d'amélioration de caractéristiques (ASI) atteignables : jusqu'au
+     * niveau 5 (maximum pris en charge), seul le niveau 4 en accorde une, et
+     * ce pour toutes les classes (celles du Guerrier et du Roublard
+     * n'arrivent qu'aux niveaux 6 et 10).
+     */
+    private const NIVEAUX_ASI = [4];
+
     public function __construct(
         private readonly FicheDePersonnageService $fiche,
         private readonly MonteeNiveauService $monteeNiveau,
+        private readonly CapaciteService $capacites,
+        private readonly SortService $sorts,
     ) {}
 
     public function index(): View
     {
-        $userId = auth()->id() ?? Utilisateur::query()->value('id');
         $personnages = Personnage::query()
-            ->when($userId, fn ($query) => $query->where('utilisateur_id', $userId))
+            ->where('utilisateur_id', Auth::id())
             ->with(['race', 'classe', 'abilites'])
             ->get();
 
@@ -45,13 +53,13 @@ class PersonnageSheetController extends Controller
 
     public function show(Personnage $personnage): View
     {
-        $this->authorizeOwner($personnage);
+        $this->verifierProprietaire($personnage);
 
         $personnage->load([
             'race', 'sousRace', 'classe', 'sousClasse',
             'abilites', 'listeCompetence',
             'historique', 'ideal', 'defaut', 'attachement', 'personnalite',
-            'objets',
+            'objets', 'capacites.sousClasse', 'dons',
         ]);
 
         return view('personnages.show', [
@@ -62,20 +70,18 @@ class PersonnageSheetController extends Controller
             'perceptionPassive' => $this->fiche->perceptionPassive($personnage),
             'classeArmure' => $this->fiche->classeArmure($personnage),
             'actions' => $this->fiche->actions($personnage),
-            'aDesSorts' => $this->aDesSorts($personnage),
+            'aDesSorts' => $this->sorts->aDesSorts($personnage),
             'seuilExperience' => $this->monteeNiveau->xpProchainNiveau($personnage),
+            'peutMonterDeNiveau' => $this->monteeNiveau->peutMonterDeNiveau($personnage),
         ]);
-        // Section "Traits" volontairement vide pour l'instant (à faire plus
-        // tard) : voir FicheDePersonnageService::traits(), déjà prête et
-        // testée, en attendant d'être branchée sur la vue.
     }
 
-    public function getTraits(Personnage $personnage): View
+    public function afficherTraits(Personnage $personnage): View
     {
-        $this->authorizeOwner($personnage);
+        $this->verifierProprietaire($personnage);
 
         $personnage->load([
-            'race.traits', 'sousRace.traits',
+            'race.traits', 'sousRace.traits', 'classe', 'capacites.sousClasse', 'dons',
         ]);
 
         $raceTraits = $personnage->race->traits;
@@ -85,13 +91,15 @@ class PersonnageSheetController extends Controller
             'personnage' => $personnage,
             'raceTraits' => $raceTraits,
             'sousRaceTraits' => $sousRaceTraits,
+            'capacites' => $personnage->capacites,
+            'dons' => $personnage->dons,
         ]);
 
     }
 
     public function edit(Personnage $personnage): View
     {
-        $this->authorizeOwner($personnage);
+        $this->verifierProprietaire($personnage);
 
         $personnage->load([
             'race', 'sousRace', 'classe', 'sousClasse',
@@ -103,7 +111,7 @@ class PersonnageSheetController extends Controller
         $classes = Classe::with('sousClasses')->get();
         $historiques = Historique::with(['ideaux', 'defauts', 'attachements', 'personnalites'])->get();
 
-        $allCompetences = [
+        $toutesCompetences = [
             'Acrobaties', 'Arcanes', 'Athlétisme', 'Art de la duplicité',
             'Discrétion', 'Dressage', 'Escamotage', 'Histoire',
             'Intimidation', 'Intuition', 'Investigation', 'Médecine',
@@ -124,61 +132,50 @@ class PersonnageSheetController extends Controller
             'races' => $races,
             'classes' => $classes,
             'historiques' => $historiques,
-            'allCompetences' => $allCompetences,
+            'toutesCompetences' => $toutesCompetences,
             'langues' => $langues,
         ]);
     }
 
-    public function update(Request $request, Personnage $personnage): RedirectResponse
+    public function update(Request $requete, Personnage $personnage): RedirectResponse
     {
-        $this->authorizeOwner($personnage);
+        $this->verifierProprietaire($personnage);
 
-        $submittedFields = array_keys($request->except(['_token', '_method']));
-        if ($submittedFields === ['niveau']) {
-            $validated = $request->validate([
-                'niveau' => 'required|integer|min:1|max:20',
-            ]);
-
-            $personnage->update(['niveau' => $validated['niveau']]);
-
-            return redirect()->route('personnages.show', $personnage)
-                ->with('success', 'Niveau mis à jour avec succès !');
-        }
-
-        if ($submittedFields === ['point_de_vie']) {
-            $validated = $request->validate([
+        $champsSoumis = array_keys($requete->except(['_token', '_method']));
+        if ($champsSoumis === ['point_de_vie']) {
+            $donneesValidees = $requete->validate([
                 'point_de_vie' => 'required|integer|min:1',
             ]);
             $personnage->load(['abilites', 'classe']);
-            $this->validateHitPoints($validated['point_de_vie'], $personnage->niveau, $personnage->abilites, $personnage->classe);
+            $this->validerPointsDeVie($donneesValidees['point_de_vie'], $personnage->niveau, $personnage->abilites, $personnage->classe);
 
-            $personnage->update(['point_de_vie' => $validated['point_de_vie']]);
+            $personnage->update(['point_de_vie' => $donneesValidees['point_de_vie']]);
 
             return redirect()->route('personnages.show', $personnage)
-                ->with('success', 'Points de vie mis à jour avec succès !');
+                ->with('succes', 'Points de vie mis à jour avec succès !');
         }
 
         $personnage->load(['abilites', 'listeCompetence', 'classe']);
 
-        $niveau = (int) $request->input('niveau', $personnage->niveau);
-        $maxLangues = $this->getMaxLanguesByLevel($niveau);
+        $niveau = (int) $requete->input('niveau', $personnage->niveau);
+        $maxLangues = $this->maxLanguesParNiveau($niveau);
 
-        $validated = $request->validate([
+        $donneesValidees = $requete->validate([
             'nom' => 'required|string|max:100',
             'race_id' => 'required|integer|exists:races,id',
             'sous_race_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('sous_races', 'id')->where(function ($query) use ($request) {
-                    return $query->where('race_id', $request->input('race_id'));
+                Rule::exists('sous_races', 'id')->where(function ($requeteSql) use ($requete) {
+                    return $requeteSql->where('race_id', $requete->input('race_id'));
                 }),
             ],
             'classe_id' => 'required|integer|exists:classes,id',
             'sous_classe_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('sous_classes', 'id')->where(function ($query) use ($request) {
-                    return $query->where('classe_id', $request->input('classe_id'));
+                Rule::exists('sous_classes', 'id')->where(function ($requeteSql) use ($requete) {
+                    return $requeteSql->where('classe_id', $requete->input('classe_id'));
                 }),
             ],
             'niveau' => ['required', 'integer', Rule::in([(int) $personnage->niveau, (int) $personnage->niveau + 1])],
@@ -199,29 +196,29 @@ class PersonnageSheetController extends Controller
             'ideal_id' => [
                 'required',
                 'integer',
-                Rule::exists('ideaux', 'id')->where(function ($query) use ($request) {
-                    return $query->where('historique_id', $request->input('historique_id'));
+                Rule::exists('ideaux', 'id')->where(function ($requeteSql) use ($requete) {
+                    return $requeteSql->where('historique_id', $requete->input('historique_id'));
                 }),
             ],
             'defaut_id' => [
                 'required',
                 'integer',
-                Rule::exists('defauts', 'id')->where(function ($query) use ($request) {
-                    return $query->where('historique_id', $request->input('historique_id'));
+                Rule::exists('defauts', 'id')->where(function ($requeteSql) use ($requete) {
+                    return $requeteSql->where('historique_id', $requete->input('historique_id'));
                 }),
             ],
             'attachement_id' => [
                 'required',
                 'integer',
-                Rule::exists('attachements', 'id')->where(function ($query) use ($request) {
-                    return $query->where('historique_id', $request->input('historique_id'));
+                Rule::exists('attachements', 'id')->where(function ($requeteSql) use ($requete) {
+                    return $requeteSql->where('historique_id', $requete->input('historique_id'));
                 }),
             ],
             'personnalite_id' => [
                 'required',
                 'integer',
-                Rule::exists('personnalites', 'id')->where(function ($query) use ($request) {
-                    return $query->where('historique_id', $request->input('historique_id'));
+                Rule::exists('personnalites', 'id')->where(function ($requeteSql) use ($requete) {
+                    return $requeteSql->where('historique_id', $requete->input('historique_id'));
                 }),
             ],
         ], [
@@ -236,8 +233,10 @@ class PersonnageSheetController extends Controller
             'personnalite_id.exists' => 'Le trait de personnalité choisi ne correspond pas à l’historique sélectionné.',
         ]);
 
-        $race = Race::with('sousRaces')->find($validated['race_id']);
-        if ($race->sousRaces->isNotEmpty() && empty($validated['sous_race_id'])) {
+        $this->verifierExperiencePourNiveau($personnage, (int) $donneesValidees['niveau']);
+
+        $race = Race::with('sousRaces')->find($donneesValidees['race_id']);
+        if ($race->sousRaces->isNotEmpty() && empty($donneesValidees['sous_race_id'])) {
             throw ValidationException::withMessages([
                 'sous_race_id' => 'Vous devez choisir une sous-race pour cette race.',
             ]);
@@ -248,13 +247,13 @@ class PersonnageSheetController extends Controller
         // ancienne classe pour la nouvelle, donc toutes les limites
         // dépendantes de la classe (compétences, dé de vie, ASI) se basent
         // désormais sur la nouvelle classe choisie.
-        $nouvelleClasse = Classe::find($validated['classe_id']);
+        $nouvelleClasse = Classe::find($donneesValidees['classe_id']);
         $maxCompetences = $nouvelleClasse?->nombre_competences ?? 2;
 
         $sousClasseRequise = $nouvelleClasse
-            && $nouvelleClasse->niveau_sous_classe <= (int) $validated['niveau']
+            && $nouvelleClasse->niveau_sous_classe <= (int) $donneesValidees['niveau']
             && $nouvelleClasse->sousClasses()->exists();
-        if ($sousClasseRequise && empty($validated['sous_classe_id'])) {
+        if ($sousClasseRequise && empty($donneesValidees['sous_classe_id'])) {
             throw ValidationException::withMessages([
                 'sous_classe_id' => 'Vous devez choisir une sous-classe pour cette classe.',
             ]);
@@ -263,7 +262,7 @@ class PersonnageSheetController extends Controller
         $historiqueCompetences = [];
         $historiqueIds = array_filter([
             $personnage->historique_id,
-            $validated['historique_id'] ?? null,
+            $donneesValidees['historique_id'] ?? null,
         ]);
         foreach (array_unique($historiqueIds) as $historiqueId) {
             $historiqueCompetences = array_merge(
@@ -272,7 +271,7 @@ class PersonnageSheetController extends Controller
             );
         }
         $competences = array_values(array_unique(array_merge(
-            $validated['competences'] ?? [],
+            $donneesValidees['competences'] ?? [],
             $historiqueCompetences,
         )));
         $anciennesCompetences = array_values(array_unique($personnage->listeCompetence->competences ?? []));
@@ -288,7 +287,7 @@ class PersonnageSheetController extends Controller
             ]);
         }
 
-        $langues = array_values(array_unique($validated['langues'] ?? []));
+        $langues = array_values(array_unique($donneesValidees['langues'] ?? []));
         $anciennesLangues = array_values(array_unique($personnage->langues ?? []));
         $languesTriees = $langues;
         $anciennesLanguesTriees = $anciennesLangues;
@@ -300,11 +299,11 @@ class PersonnageSheetController extends Controller
             ]);
         }
 
-        $sousRaceId = $validated['sous_race_id'] ?? null;
+        $sousRaceId = $donneesValidees['sous_race_id'] ?? null;
 
-        $sousClasseId = $validated['sous_classe_id'] ?? null;
+        $sousClasseId = $donneesValidees['sous_classe_id'] ?? null;
         if ($sousClasseId) {
-            if ($nouvelleClasse->niveau_sous_classe > (int) $validated['niveau']) {
+            if ($nouvelleClasse->niveau_sous_classe > (int) $donneesValidees['niveau']) {
                 throw ValidationException::withMessages([
                     'sous_classe_id' => "Cette sous-classe n'est disponible qu'à partir du niveau {$nouvelleClasse->niveau_sous_classe}.",
                 ]);
@@ -313,62 +312,77 @@ class PersonnageSheetController extends Controller
 
         $anciennesAbilites = $personnage->abilites;
         $nouvellesAbilites = [
-            'force' => $validated['force'],
-            'dexterite' => $validated['dexterite'],
-            'constitution' => $validated['constitution'],
-            'intelligence' => $validated['intelligence'],
-            'sagesse' => $validated['sagesse'],
-            'charisme' => $validated['charisme'],
+            'force' => $donneesValidees['force'],
+            'dexterite' => $donneesValidees['dexterite'],
+            'constitution' => $donneesValidees['constitution'],
+            'intelligence' => $donneesValidees['intelligence'],
+            'sagesse' => $donneesValidees['sagesse'],
+            'charisme' => $donneesValidees['charisme'],
         ];
-        $this->validateAbilityScoreIncrease(
+        $this->validerAugmentationCaracteristiques(
             $nouvellesAbilites,
             $anciennesAbilites,
             $personnage->niveau,
-            $validated['niveau'],
-            $nouvelleClasse,
+            $donneesValidees['niveau'],
         );
 
-        if ((int) $validated['point_de_vie'] !== (int) $personnage->point_de_vie) {
-            $this->validateHitPoints($validated['point_de_vie'], $validated['niveau'], (object) $nouvellesAbilites, $nouvelleClasse);
+        if ((int) $donneesValidees['point_de_vie'] !== (int) $personnage->point_de_vie) {
+            $this->validerPointsDeVie($donneesValidees['point_de_vie'], $donneesValidees['niveau'], (object) $nouvellesAbilites, $nouvelleClasse);
         }
 
-        $personnage->update([
-            'nom' => $validated['nom'],
-            'race_id' => $validated['race_id'],
-            'sous_race_id' => $sousRaceId,
-            'classe_id' => $validated['classe_id'],
-            'sous_classe_id' => $sousClasseId,
-            'historique_id' => $validated['historique_id'],
-            'ideal_id' => $validated['ideal_id'],
-            'defaut_id' => $validated['defaut_id'],
-            'attachement_id' => $validated['attachement_id'],
-            'personnalite_id' => $validated['personnalite_id'],
-            'niveau' => $validated['niveau'],
-            'alignement' => $validated['alignement'] ?? null,
-            'description' => $validated['description'] ?? null,
-            'point_de_vie' => $validated['point_de_vie'],
-            'langues' => $langues,
-        ]);
+        $classeChangee = (int) $donneesValidees['classe_id'] !== (int) $personnage->classe_id;
 
-        if ($personnage->abilites) {
-            $personnage->abilites->update([
-                'force' => $validated['force'],
-                'dexterite' => $validated['dexterite'],
-                'constitution' => $validated['constitution'],
-                'intelligence' => $validated['intelligence'],
-                'sagesse' => $validated['sagesse'],
-                'charisme' => $validated['charisme'],
+        DB::transaction(function () use ($personnage, $donneesValidees, $sousRaceId, $sousClasseId, $langues, $competences, $classeChangee): void {
+            $personnage->update([
+                'nom' => $donneesValidees['nom'],
+                'race_id' => $donneesValidees['race_id'],
+                'sous_race_id' => $sousRaceId,
+                'classe_id' => $donneesValidees['classe_id'],
+                'sous_classe_id' => $sousClasseId,
+                'historique_id' => $donneesValidees['historique_id'],
+                'ideal_id' => $donneesValidees['ideal_id'],
+                'defaut_id' => $donneesValidees['defaut_id'],
+                'attachement_id' => $donneesValidees['attachement_id'],
+                'personnalite_id' => $donneesValidees['personnalite_id'],
+                'niveau' => $donneesValidees['niveau'],
+                'alignement' => $donneesValidees['alignement'] ?? null,
+                'description' => $donneesValidees['description'] ?? null,
+                'point_de_vie' => $donneesValidees['point_de_vie'],
+                'langues' => $langues,
             ]);
-        }
 
-        if ($personnage->listeCompetence) {
-            $personnage->listeCompetence->update([
-                'competences' => $competences,
-            ]);
-        }
+            if ($personnage->abilites) {
+                $personnage->abilites->update([
+                    'force' => $donneesValidees['force'],
+                    'dexterite' => $donneesValidees['dexterite'],
+                    'constitution' => $donneesValidees['constitution'],
+                    'intelligence' => $donneesValidees['intelligence'],
+                    'sagesse' => $donneesValidees['sagesse'],
+                    'charisme' => $donneesValidees['charisme'],
+                ]);
+            }
+
+            if ($personnage->listeCompetence) {
+                $personnage->listeCompetence->update([
+                    'competences' => $competences,
+                ]);
+            }
+
+            // Reclassement complet : les sorts appris et préparés venaient de
+            // la liste de l'ancienne classe, ils ne sont plus valides.
+            if ($classeChangee) {
+                PersonnageSort::query()->where('id_Personnage', $personnage->id)->delete();
+            }
+
+            // Les capacités découlent de la classe, de la sous-classe et du
+            // niveau, qui ont pu changer.
+            $this->capacites->synchroniser($personnage);
+        });
 
         return redirect()->route('personnages.show', $personnage)
-            ->with('success', 'Personnage mis à jour avec succès !');
+            ->with('succes', $classeChangee
+                ? 'Personnage mis à jour avec succès ! Ses sorts ont été réinitialisés suite au changement de classe.'
+                : 'Personnage mis à jour avec succès !');
     }
 
     /**
@@ -377,17 +391,17 @@ class PersonnageSheetController extends Controller
      * fichier (s'il y en avait un) est supprimé du disque pour ne pas
      * accumuler des images orphelines.
      */
-    public function updatePhoto(Request $request, Personnage $personnage): RedirectResponse
+    public function modifierPhoto(Request $requete, Personnage $personnage): RedirectResponse
     {
-        $this->authorizeOwner($personnage);
+        $this->verifierProprietaire($personnage);
 
-        $validated = $request->validate([
+        $donneesValidees = $requete->validate([
             'photo' => 'required|image|max:2048',
         ]);
 
         $ancienChemin = $personnage->photo;
 
-        $chemin = $validated['photo']->store('personnages', 'public');
+        $chemin = $donneesValidees['photo']->store('personnages', 'public');
         $personnage->update(['photo' => $chemin]);
 
         if ($ancienChemin) {
@@ -395,7 +409,7 @@ class PersonnageSheetController extends Controller
         }
 
         return redirect()->route('personnages.show', $personnage)
-            ->with('success', 'Photo mise à jour avec succès !');
+            ->with('succes', 'Photo mise à jour avec succès !');
     }
 
     /**
@@ -405,23 +419,23 @@ class PersonnageSheetController extends Controller
      * amélioration de caractéristiques/don, dé de vie), plutôt que de
      * monter le niveau tout seul sans lui laisser la main.
      */
-    public function ajouterExperience(Request $request, Personnage $personnage): RedirectResponse
+    public function ajouterExperience(Request $requete, Personnage $personnage): RedirectResponse
     {
-        $this->authorizeOwner($personnage);
+        $this->verifierProprietaire($personnage);
 
-        $validated = $request->validate([
+        $donneesValidees = $requete->validate([
             'experience' => 'required|integer|min:1|max:1000000',
         ]);
 
-        $personnage->increment('experience', $validated['experience']);
+        $personnage->increment('experience', $donneesValidees['experience']);
 
         if ($this->monteeNiveau->peutMonterDeNiveau($personnage)) {
             return redirect()->route('personnages.montee-niveau', $personnage)
-                ->with('success', "{$personnage->nom} a assez d'expérience pour monter de niveau !");
+                ->with('succes', "{$personnage->nom} a assez d'expérience pour monter de niveau !");
         }
 
         return redirect()->route('personnages.show', $personnage)
-            ->with('success', "{$validated['experience']} points d'expérience ajoutés.");
+            ->with('succes', "{$donneesValidees['experience']} points d'expérience ajoutés.");
     }
 
     /**
@@ -435,7 +449,7 @@ class PersonnageSheetController extends Controller
      */
     public function destroy(Personnage $personnage): RedirectResponse
     {
-        $this->authorizeOwner($personnage);
+        $this->verifierProprietaire($personnage);
 
         DB::transaction(function () use ($personnage): void {
             $abilitesId = $personnage->abilites_id;
@@ -452,112 +466,73 @@ class PersonnageSheetController extends Controller
         }
 
         return redirect()->route('personnages.index')
-            ->with('success', 'Personnage supprimé avec succès.');
+            ->with('succes', 'Personnage supprimé avec succès.');
     }
 
-    protected function authorizeOwner(Personnage $personnage): void
+    protected function verifierProprietaire(Personnage $personnage): void
     {
         abort_unless($personnage->utilisateur_id === Auth::id(), 403);
     }
 
-    /**
-     * Même règle que la page des sorts : limites de la classe si elle est
-     * magique, sinon de la sous-classe, au niveau atteint. Vrai seulement si
-     * elles accordent au moins un tour de magie ou un emplacement de sort.
-     */
-    protected function aDesSorts(Personnage $personnage): bool
+    /** Refuse une montée de niveau que l'expérience du personnage ne permet pas. */
+    protected function verifierExperiencePourNiveau(Personnage $personnage, int $niveau): void
     {
-        $niveau = (int) $personnage->niveau;
-
-        if (LimiteMagieClasse::query()->where('id_Classe', $personnage->classe_id)->exists()) {
-            $ligne = LimiteMagieClasse::query()
-                ->where('id_Classe', $personnage->classe_id)
-                ->where('Niveau', '<=', $niveau)
-                ->orderByDesc('Niveau')
-                ->first();
-        } elseif ($personnage->sous_classe_id) {
-            $ligne = LimiteMagieSousClasse::query()
-                ->where('id_SousClasse', $personnage->sous_classe_id)
-                ->where('Niveau', '<=', $niveau)
-                ->orderByDesc('Niveau')
-                ->first();
-        } else {
-            return false;
+        if (! $this->monteeNiveau->peutAtteindreNiveau($personnage, $niveau)) {
+            throw ValidationException::withMessages([
+                'niveau' => $this->monteeNiveau->messageExperienceInsuffisante($personnage, $niveau),
+            ]);
         }
-
-        $limite = $ligne ? LimiteMagie::find($ligne->id_LimiteMagie) : null;
-
-        return $limite !== null
-            && ((int) $limite->TourMagie > 0
-                || (int) $limite->Niveau1 > 0
-                || (int) $limite->Niveau2 > 0
-                || (int) $limite->Niveau3 > 0);
     }
 
-    protected function getMaxLanguesByLevel(int $niveau): int
+    protected function maxLanguesParNiveau(int $niveau): int
     {
         return 2 + (int) floor(($niveau - 1) / 3);
     }
 
-    protected function validateAbilityScoreIncrease(
-        array $newScores,
-        object $oldScores,
-        int $oldLevel,
-        int $newLevel,
-        ?Classe $classe,
+    protected function validerAugmentationCaracteristiques(
+        array $nouveauxScores,
+        object $anciensScores,
+        int $ancienNiveau,
+        int $nouveauNiveau,
     ): void {
-        $increases = [];
-        foreach (array_keys($newScores) as $ability) {
-            $difference = $newScores[$ability] - (int) $oldScores->{$ability};
+        $augmentations = [];
+        foreach (array_keys($nouveauxScores) as $caracteristique) {
+            $difference = $nouveauxScores[$caracteristique] - (int) $anciensScores->{$caracteristique};
             if ($difference < 0) {
                 throw ValidationException::withMessages([
-                    $ability => 'Une caractéristique ne peut pas diminuer lors d’une amélioration D&D 5e.',
+                    $caracteristique => 'Une caractéristique ne peut pas diminuer lors d’une amélioration D&D 5e.',
                 ]);
             }
             if ($difference > 0) {
-                $increases[$ability] = $difference;
+                $augmentations[$caracteristique] = $difference;
             }
         }
 
-        if ($increases === []) {
+        if ($augmentations === []) {
             return;
         }
 
-        $asiCount = count(array_filter(
-            $this->getAbilityScoreImprovementLevels($classe),
-            fn (int $level): bool => $level > $oldLevel && $level <= $newLevel,
+        $nombreAsi = count(array_filter(
+            self::NIVEAUX_ASI,
+            fn (int $niveauVise): bool => $niveauVise > $ancienNiveau && $niveauVise <= $nouveauNiveau,
         ));
-        $maximumIncrease = $asiCount * 2;
+        $augmentationMaximale = $nombreAsi * 2;
 
-        if ($asiCount === 0 || array_sum($increases) > $maximumIncrease || count($increases) > 2 || max($increases) > 2) {
+        if ($nombreAsi === 0 || array_sum($augmentations) > $augmentationMaximale || count($augmentations) > 2 || max($augmentations) > 2) {
             $message = 'Les caractéristiques ne peuvent augmenter qu’au niveau d’une amélioration de caractéristiques (ASI), avec un maximum de +2 par ASI.';
-            throw ValidationException::withMessages(array_fill_keys(array_keys($increases), $message));
+            throw ValidationException::withMessages(array_fill_keys(array_keys($augmentations), $message));
         }
     }
 
-    protected function getAbilityScoreImprovementLevels(?Classe $classe): array
+    protected function validerPointsDeVie(int $pointsDeVie, int $niveauVise, object $caracteristiques, ?Classe $classe): void
     {
-        $levels = [4, 8, 12, 16, 19];
-        $className = strtolower($classe?->nom ?? '');
+        $deDeVie = (int) preg_replace('/[^0-9]/', '', (string) ($classe?->de_de_vie ?? '10'));
+        $modificateurConstitution = (int) floor(((int) $caracteristiques->constitution - 10) / 2);
+        $pvPremierNiveau = max(1, $deDeVie + $modificateurConstitution);
+        $minimum = $pvPremierNiveau + max(0, $niveauVise - 1) * max(1, 1 + $modificateurConstitution);
+        $maximum = $pvPremierNiveau + max(0, $niveauVise - 1) * max(1, $deDeVie + $modificateurConstitution);
 
-        if (str_contains($className, 'guerrier')) {
-            $levels = [4, 6, 8, 12, 14, 16, 19];
-        } elseif (str_contains($className, 'roublard')) {
-            $levels = [4, 8, 10, 12, 16, 19];
-        }
-
-        return $levels;
-    }
-
-    protected function validateHitPoints(int $hitPoints, int $level, object $abilities, ?Classe $classe): void
-    {
-        $hitDie = (int) preg_replace('/[^0-9]/', '', (string) ($classe?->de_de_vie ?? '10'));
-        $constitutionModifier = (int) floor(((int) $abilities->constitution - 10) / 2);
-        $firstLevelHitPoints = max(1, $hitDie + $constitutionModifier);
-        $minimum = $firstLevelHitPoints + max(0, $level - 1) * max(1, 1 + $constitutionModifier);
-        $maximum = $firstLevelHitPoints + max(0, $level - 1) * max(1, $hitDie + $constitutionModifier);
-
-        if ($hitPoints < $minimum || $hitPoints > $maximum) {
+        if ($pointsDeVie < $minimum || $pointsDeVie > $maximum) {
             throw ValidationException::withMessages([
                 'point_de_vie' => "Les PV doivent être compris entre $minimum et $maximum pour ce niveau, cette classe et cette Constitution.",
             ]);

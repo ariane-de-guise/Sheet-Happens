@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Capacite;
+use App\Models\Don;
 use App\Models\MonteeNiveau;
 use App\Models\Personnage;
 use App\Models\SousClasse;
@@ -20,62 +22,14 @@ class MonteeNiveauService
         4 => 6500,
     ];
 
-    /** Progression PHB 2014, limitée aux cinq classes prises en charge par le projet. */
-    private const PROGRESSION = [
-        'Barbare' => [
-            2 => ['Attaque téméraire', 'Sens du danger'],
-            3 => ['Voie primitive'],
-            4 => ['Amélioration de caractéristiques ou don'],
-            5 => ['Attaque supplémentaire', 'Déplacement rapide'],
-        ],
-        'Clerc' => [
-            2 => ['Canalisation d’énergie divine', 'Capacité de domaine divin'],
-            3 => ['Emplacements de sorts de niveau 2'],
-            4 => ['Amélioration de caractéristiques ou don', 'Sort mineur supplémentaire'],
-            5 => ['Détruire les morts-vivants (FP 1/2)', 'Emplacements de sorts de niveau 3'],
-        ],
-        'Guerrier' => [
-            2 => ['Sursaut d’activité'],
-            3 => ['Archétype martial'],
-            4 => ['Amélioration de caractéristiques ou don'],
-            5 => ['Attaque supplémentaire'],
-        ],
-        'Magicien' => [
-            2 => ['Tradition arcanique'],
-            3 => ['Emplacements de sorts de niveau 2'],
-            4 => ['Amélioration de caractéristiques ou don', 'Sort mineur supplémentaire'],
-            5 => ['Emplacements de sorts de niveau 3'],
-        ],
-        'Roublard' => [
-            2 => ['Ruse'],
-            3 => ['Archétype de roublard', 'Attaque sournoise 2d6'],
-            4 => ['Amélioration de caractéristiques ou don'],
-            5 => ['Esquive instinctive', 'Attaque sournoise 3d6'],
-        ],
-    ];
+    /**
+     * Classes dont la progression (niveaux 1 à 5) est prise en charge. Les
+     * capacités gagnées à chaque niveau viennent de la table capacites et
+     * les dons proposés, de la table dons.
+     */
+    private const CLASSES_SUPPORTEES = ['Barbare', 'Clerc', 'Guerrier', 'Magicien', 'Roublard'];
 
-    /** Dons PHB 2014 représentables par la fiche actuelle. Les autres effets sont conservés comme effets passifs. */
-    private const FEATS = [
-        'Alerte' => ['resume' => 'Améliore fortement l’initiative et la vigilance.', 'effets' => ['initiative' => 5]],
-        'Athlète' => ['resume' => 'Améliore la mobilité et augmente Force ou Dextérité de 1.', 'choix_stat' => ['force', 'dexterite']],
-        'Acteur' => ['resume' => 'Augmente Charisme de 1 et améliore l’imitation et le déguisement.', 'stat' => 'charisme'],
-        'Résilient' => ['resume' => 'Augmente une caractéristique de 1 et donne la maîtrise de ses jets de sauvegarde.', 'choix_stat' => self::STATS],
-        'Robuste' => ['resume' => 'Augmente le maximum de points de vie de 2 par niveau.', 'effets' => ['pv_par_niveau' => 2]],
-        'Durable' => ['resume' => 'Augmente Constitution de 1 et améliore la récupération avec les dés de vie.', 'stat' => 'constitution'],
-        'Observateur' => ['resume' => 'Augmente Intelligence ou Sagesse de 1 et améliore l’observation.', 'choix_stat' => ['intelligence', 'sagesse']],
-        'Maître des armures lourdes' => ['resume' => 'Augmente Force de 1 et réduit certains dégâts physiques en armure lourde.', 'stat' => 'force'],
-        'Maître des armures intermédiaires' => ['resume' => 'Augmente Force ou Dextérité de 1 et améliore l’usage des armures intermédiaires.', 'choix_stat' => ['force', 'dexterite']],
-        'Maître des armes' => ['resume' => 'Augmente Force ou Dextérité de 1 et accorde des maîtrises d’armes.', 'choix_stat' => ['force', 'dexterite']],
-        'Maître des armes à deux mains' => ['resume' => 'Améliore l’efficacité avec les armes lourdes à deux mains.'],
-        'Maître du bouclier' => ['resume' => 'Ajoute des options défensives et offensives avec un bouclier.'],
-        'Duelliste défensif' => ['resume' => 'Permet d’utiliser sa réaction pour renforcer sa CA avec une arme de finesse.'],
-        'Mobile' => ['resume' => 'Augmente la vitesse et facilite les déplacements au corps à corps.', 'effets' => ['vitesse' => 10]],
-        'Chanceux' => ['resume' => 'Accorde trois points de chance après un repos long.'],
-        'Initié à la magie' => ['resume' => 'Accorde une petite initiation à la magie d’une autre classe.'],
-        'Lanceur de sorts de guerre' => ['resume' => 'Aide à maintenir la concentration et à lancer des sorts au combat.'],
-        'Tireur d’élite' => ['resume' => 'Améliore les attaques à distance à longue portée et contre le couvert.'],
-        'Bagarreur de tavernes' => ['resume' => 'Augmente Force ou Constitution de 1 et améliore le combat improvisé.', 'choix_stat' => ['force', 'constitution']],
-    ];
+    public function __construct(private readonly CapaciteService $capacites) {}
 
     /**
      * Seuil d'expérience cumulée à atteindre pour pouvoir monter au niveau
@@ -90,9 +44,41 @@ class MonteeNiveauService
     /** Le personnage a-t-il assez d'expérience pour monter de niveau ? */
     public function peutMonterDeNiveau(Personnage $personnage): bool
     {
-        $seuil = $this->xpProchainNiveau($personnage);
+        return $this->peutAtteindreNiveau($personnage, $personnage->niveau + 1);
+    }
+
+    /**
+     * Expérience cumulée requise pour atteindre un niveau, ou null si ce
+     * niveau n'est pas pris en charge (au-delà de 5).
+     */
+    public function xpRequisePourNiveau(int $niveau): ?int
+    {
+        return $niveau <= 1 ? 0 : (self::XP_PAR_NIVEAU[$niveau - 1] ?? null);
+    }
+
+    /**
+     * Un personnage peut toujours rester à son niveau ou redescendre ; pour
+     * monter, son expérience doit atteindre le seuil du niveau visé.
+     */
+    public function peutAtteindreNiveau(Personnage $personnage, int $niveau): bool
+    {
+        if ($niveau <= $personnage->niveau) {
+            return true;
+        }
+
+        $seuil = $this->xpRequisePourNiveau($niveau);
 
         return $seuil !== null && $personnage->experience >= $seuil;
+    }
+
+    /** Message d'erreur expliquant pourquoi le niveau visé est refusé. */
+    public function messageExperienceInsuffisante(Personnage $personnage, int $niveau): string
+    {
+        $seuil = $this->xpRequisePourNiveau($niveau);
+
+        return $seuil === null
+            ? 'Le niveau maximum pris en charge est 5.'
+            : "Il faut {$seuil} points d'expérience pour atteindre le niveau {$niveau} ({$personnage->experience} actuellement).";
     }
 
     public function apercu(Personnage $personnage): array
@@ -100,20 +86,19 @@ class MonteeNiveauService
         $personnage->loadMissing(['classe', 'sousClasse', 'sousClasse.classe', 'abilites']);
         $this->verifierPeutMonter($personnage);
         $niveau = $personnage->niveau + 1;
-        $nomClasse = $personnage->classe->nom;
 
         return [
             'niveau_depart' => $personnage->niveau,
             'niveau_arrivee' => $niveau,
-            'capacites' => self::PROGRESSION[$nomClasse][$niveau] ?? [],
+            'capacites' => $this->capacites->capacitesDuNiveau($personnage->classe_id, $personnage->sous_classe_id, $niveau),
             'bonus_maitrise' => $niveau >= 5 ? 3 : 2,
             'pv_base' => $this->gainPvFixe($personnage->classe->de_de_vie),
             'de_vie_faces' => $this->facesDeVie($personnage->classe->de_de_vie),
             'modificateur_constitution' => $this->modificateur($personnage->abilites->constitution),
             'choix_sous_classe' => $personnage->sous_classe_id === null && (int) $personnage->classe->niveau_sous_classe === $niveau,
-            'choix_asi' => $niveau === 4,
+            'choix_amelioration' => $niveau === 4,
             'sous_classes' => $personnage->classe->sousClasses()->get(),
-            'feats' => $niveau === 4 ? self::FEATS : [],
+            'dons' => $niveau === 4 ? Don::query()->orderBy('nom')->get()->keyBy('nom')->all() : [],
         ];
     }
 
@@ -125,7 +110,7 @@ class MonteeNiveauService
             $niveauDepart = $personnage->niveau;
             $niveauArrivee = $apercu['niveau_arrivee'];
             $ancienModCon = $this->modificateur($personnage->abilites->constitution);
-            $changements = ['capacites' => $apercu['capacites']];
+            $changements = ['capacites' => $apercu['capacites']->pluck('nom')->all()];
 
             if ($apercu['choix_sous_classe']) {
                 $sousClasseId = (int) ($choix['sous_classe_id'] ?? 0);
@@ -138,11 +123,20 @@ class MonteeNiveauService
                 }
                 $personnage->sous_classe_id = $sousClasse->id;
                 $changements['sous_classe'] = $sousClasse->nom;
-                $changements['capacites'][] = 'Capacité de sous-classe : '.$sousClasse->nom;
+                // Les capacités de sous-classe des niveaux déjà atteints sont acquises d'un coup.
+                $changements['capacites'] = array_merge(
+                    $changements['capacites'],
+                    Capacite::query()
+                        ->where('sous_classe_id', $sousClasse->id)
+                        ->where('niveau', '<=', $niveauArrivee)
+                        ->orderBy('niveau')
+                        ->pluck('nom')
+                        ->all(),
+                );
             }
 
-            if ($apercu['choix_asi']) {
-                $this->appliquerAsiOuFeat($personnage, $choix, $changements);
+            if ($apercu['choix_amelioration']) {
+                $this->appliquerAmeliorationOuDon($personnage, $choix, $changements);
             }
 
             $modePv = $choix['mode_pv'] ?? 'fixe';
@@ -174,9 +168,9 @@ class MonteeNiveauService
 
             $personnage->niveau = $niveauArrivee;
             $personnage->point_de_vie += $gainPv;
-            $personnage->capacites = array_values(array_unique(array_merge($personnage->capacites ?? [], $changements['capacites'])));
             $personnage->save();
             $personnage->abilites->save();
+            $this->capacites->synchroniser($personnage);
 
             $changements['mode_pv'] = $modePv;
             $changements['pv_base_obtenu'] = $basePv;
@@ -195,67 +189,67 @@ class MonteeNiveauService
         });
     }
 
-    private function appliquerAsiOuFeat(Personnage $personnage, array $choix, array &$changements): void
+    private function appliquerAmeliorationOuDon(Personnage $personnage, array $choix, array &$changements): void
     {
         $type = $choix['type_amelioration'] ?? null;
-        if ($type === 'asi') {
-            $stats = $choix['asi'] ?? [];
+        if ($type === 'caracteristiques') {
+            $stats = $choix['caracteristiques'] ?? [];
             $total = 0;
             foreach (self::STATS as $stat) {
                 $gain = (int) ($stats[$stat] ?? 0);
                 if ($gain < 0 || $gain > 2) {
-                    throw ValidationException::withMessages(['asi' => 'Chaque augmentation doit être comprise entre 0 et 2.']);
+                    throw ValidationException::withMessages(['caracteristiques' => 'Chaque augmentation doit être comprise entre 0 et 2.']);
                 }
                 $total += $gain;
                 if ($personnage->abilites->$stat + $gain > 20) {
-                    throw ValidationException::withMessages(['asi' => 'Une amélioration de caractéristiques ne peut pas dépasser 20.']);
+                    throw ValidationException::withMessages(['caracteristiques' => 'Une amélioration de caractéristiques ne peut pas dépasser 20.']);
                 }
             }
             if ($total !== 2 || count(array_filter($stats, fn ($v) => (int) $v > 0)) > 2) {
-                throw ValidationException::withMessages(['asi' => 'Répartissez exactement 2 points : +2 à une caractéristique ou +1 à deux caractéristiques.']);
+                throw ValidationException::withMessages(['caracteristiques' => 'Répartissez exactement 2 points : +2 à une caractéristique ou +1 à deux caractéristiques.']);
             }
             foreach (self::STATS as $stat) {
                 $personnage->abilites->$stat += (int) ($stats[$stat] ?? 0);
             }
-            $changements['asi'] = $stats;
+            $changements['caracteristiques'] = $stats;
 
             return;
         }
 
-        if ($type === 'feat') {
-            $nom = $choix['feat'] ?? '';
-            $feat = self::FEATS[$nom] ?? null;
-            if (! $feat) {
-                throw ValidationException::withMessages(['feat' => 'Choisissez un don valide.']);
+        if ($type === 'don') {
+            $don = Don::query()->where('nom', $choix['don'] ?? '')->first();
+            if (! $don) {
+                throw ValidationException::withMessages(['don' => 'Choisissez un don valide.']);
             }
-            if (in_array($nom, $personnage->feats ?? [], true)) {
-                throw ValidationException::withMessages(['feat' => 'Ce personnage possède déjà ce don.']);
+            $nom = $don->nom;
+            if ($personnage->dons()->whereKey($don->id)->exists()) {
+                throw ValidationException::withMessages(['don' => 'Ce personnage possède déjà ce don.']);
             }
 
-            $stat = $feat['stat'] ?? null;
-            if (isset($feat['choix_stat'])) {
-                $stat = $choix['feat_stat'] ?? null;
-                if (! in_array($stat, $feat['choix_stat'], true)) {
-                    throw ValidationException::withMessages(['feat_stat' => 'Choisissez une caractéristique valide pour ce don.']);
+            $stat = $don->stat;
+            if (! empty($don->choix_stat)) {
+                $stat = $choix['don_caracteristique'] ?? null;
+                if (! in_array($stat, $don->choix_stat, true)) {
+                    throw ValidationException::withMessages(['don_caracteristique' => 'Choisissez une caractéristique valide pour ce don.']);
                 }
             }
             if ($stat) {
                 if ($personnage->abilites->$stat >= 20) {
-                    throw ValidationException::withMessages(['feat' => 'Ce don ne peut pas augmenter cette caractéristique au-dessus de 20.']);
+                    throw ValidationException::withMessages(['don' => 'Ce don ne peut pas augmenter cette caractéristique au-dessus de 20.']);
                 }
                 $personnage->abilites->$stat++;
-                $changements['feat_stat'] = [$stat => 1];
+                $changements['don_caracteristique'] = [$stat => 1];
             }
 
-            if (($feat['effets']['pv_par_niveau'] ?? 0) > 0) {
+            if (($don->effets['pv_par_niveau'] ?? 0) > 0) {
                 // Le don Robuste donne +2 PV pour chaque niveau, incluant le niveau atteint maintenant.
-                $bonus = (int) $feat['effets']['pv_par_niveau'] * 4;
+                $bonus = (int) $don->effets['pv_par_niveau'] * 4;
                 $personnage->point_de_vie += $bonus;
-                $changements['bonus_pv_feat'] = $bonus;
+                $changements['bonus_pv_don'] = $bonus;
             }
-            $personnage->feats = array_values(array_unique(array_merge($personnage->feats ?? [], [$nom])));
-            $changements['feat'] = $nom;
-            $changements['effets_feat'] = $feat['effets'] ?? [];
+            $personnage->dons()->attach($don->id);
+            $changements['don'] = $nom;
+            $changements['effets_don'] = $don->effets ?? [];
 
             return;
         }
@@ -268,8 +262,13 @@ class MonteeNiveauService
         if ($personnage->niveau >= 5) {
             throw ValidationException::withMessages(['niveau' => 'Le niveau maximum pris en charge est 5.']);
         }
-        if (! isset(self::PROGRESSION[$personnage->classe->nom])) {
+        if (! in_array($personnage->classe->nom, self::CLASSES_SUPPORTEES, true)) {
             throw ValidationException::withMessages(['classe' => 'Cette classe n’est pas prise en charge pour la montée de niveau.']);
+        }
+        if (! $this->peutMonterDeNiveau($personnage)) {
+            throw ValidationException::withMessages([
+                'experience' => $this->messageExperienceInsuffisante($personnage, $personnage->niveau + 1),
+            ]);
         }
     }
 

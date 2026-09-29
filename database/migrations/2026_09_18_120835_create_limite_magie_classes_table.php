@@ -31,7 +31,6 @@ return new class extends Migration
                 ->on('limite_magies')
                 ->cascadeOnDelete();
 
-
             $table->unique(
                 ['id_Classe', 'Niveau'],
                 'limite_magie_classe_niveau_unique'

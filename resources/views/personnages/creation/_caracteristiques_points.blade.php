@@ -1,10 +1,10 @@
-<form action="{{ route('creation.caracteristiques.save') }}" method="POST">
+<form action="{{ route('creation.caracteristiques.enregistrer') }}" method="POST">
     @csrf
-    <div class="stats-container">
-        <div class="stats-list">
+    <div class="stats-conteneur">
+        <div class="stats-liste">
             @include('personnages.creation._caracteristiques_bonus')
             @php
-                $stats = $labels ?? [
+                $stats = $libelles ?? [
                     'force' => 'Force',
                     'dexterite' => 'Dextérité',
                     'constitution' => 'Constitution',
@@ -13,34 +13,34 @@
                     'charisme' => 'Charisme',
                 ];
             @endphp
-            @foreach($stats as $key => $label)
-                <div class="stat-row">
-                    <div class="stat-icon"></div>
-                    <span class="stat-name">{{ $label }}</span>
-                    @php $bonusStat = $bonusParAptitude[$key] ?? 0; @endphp
-                    <span class="stat-bonus-total" data-key="{{ $key }}" data-value="{{ $bonusStat }}">{{ $bonusStat > 0 ? '+' : '' }}{{ $bonusStat }}</span>
-                    <input type="number" name="{{ $key }}" value="{{ $abilites[$key] }}"
-                           min="8" max="15" class="stat-base-value" id="stat-{{ $key }}"
-                           data-key="{{ $key }}">
-                    <div class="stat-controls">
-                        <button type="button" class="btn btn-primary btn-icon"
-                                onclick="modifierStat('{{ $key }}', -1)">-</button>
-                        <button type="button" class="btn btn-secondary btn-icon"
-                                onclick="modifierStat('{{ $key }}', 1)">+</button>
+            @foreach($stats as $cle => $libelle)
+                <div class="stat-ligne">
+                    <div class="stat-icone"></div>
+                    <span class="stat-nom">{{ $libelle }}</span>
+                    @php $bonusStat = $bonusParAptitude[$cle] ?? 0; @endphp
+                    <span class="stat-bonus-total" data-key="{{ $cle }}" data-value="{{ $bonusStat }}">{{ $bonusStat > 0 ? '+' : '' }}{{ $bonusStat }}</span>
+                    <input type="number" name="{{ $cle }}" value="{{ $abilites[$cle] }}"
+                           min="8" max="15" class="stat-valeur-base" id="stat-{{ $cle }}"
+                           data-key="{{ $cle }}">
+                    <div class="stat-controles">
+                        <button type="button" class="bouton bouton-principal bouton-icone"
+                                onclick="modifierStat('{{ $cle }}', -1)">-</button>
+                        <button type="button" class="bouton bouton-secondaire bouton-icone"
+                                onclick="modifierStat('{{ $cle }}', 1)">+</button>
                     </div>
                 </div>
             @endforeach
         </div>
 
         <div>
-            <div class="points-box">
-                <div class="label">Points restants</div>
-                <div class="value" id="pointsRestants">27</div>
+            <div class="points-boite">
+                <div class="etiquette">Points restants</div>
+                <div class="valeur-affichee" id="pointsRestants">27</div>
             </div>
 
-            <div class="help-box">
-                <div class="title">Aide</div>
-                <div class="content">
+            <div class="boite-aide">
+                <div class="titre">Aide</div>
+                <div class="contenu">
                     Chaque caractéristique commence à 8. Augmenter une valeur coûte des points croissants :
                     9(1), 10(2), 11(3), 12(4), 13(6), 14(8), 15(10).
                 </div>
@@ -48,66 +48,66 @@
         </div>
     </div>
 
-    <div class="btn-group-row">
-        <a href="{{ route('creation.methode') }}" class="btn btn-secondary">Retour</a>
-        <button type="submit" class="btn btn-primary" id="btnSuivant">Suivant</button>
+    <div class="bouton-groupe-ligne">
+        <a href="{{ route('creation.methode') }}" class="bouton bouton-secondaire">Retour</a>
+        <button type="submit" class="bouton bouton-principal" id="boutonSuivant">Suivant</button>
     </div>
 </form>
 
 @push('scripts')
     <script>
-        const costTable = {
+        const tableCouts = {
             8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 6, 14: 8, 15: 10
         };
-        const totalBudget = 27;
+        const budgetTotal = 27;
 
-        function getCost(value) {
-            return costTable[value] ?? 0;
+        function cout(valeur) {
+            return tableCouts[valeur] ?? 0;
         }
 
-        function getTotalCost() {
+        function coutTotal() {
             let total = 0;
-            document.querySelectorAll('.stat-base-value').forEach(input => {
-                total += getCost(parseInt(input.value) || 8);
+            document.querySelectorAll('.stat-valeur-base').forEach(champ => {
+                total += cout(parseInt(champ.value) || 8);
             });
             return total;
         }
 
-        function updateUI() {
-            const used = getTotalCost();
-            const remaining = totalBudget - used;
-            const display = document.getElementById('pointsRestants');
-            display.textContent = remaining;
-            display.style.color = remaining < 0 ? 'var(--texte-negatif)' : 'var(--or)';
-            document.getElementById('btnSuivant').disabled = remaining !== 0;
+        function majInterface() {
+            const utilise = coutTotal();
+            const restant = budgetTotal - utilise;
+            const affichage = document.getElementById('pointsRestants');
+            affichage.textContent = restant;
+            affichage.style.color = restant < 0 ? 'var(--texte-negatif)' : 'var(--or)';
+            document.getElementById('boutonSuivant').disabled = restant !== 0;
         }
 
-        function modifierStat(key, delta) {
-            const input = document.getElementById('stat-' + key);
-            let value = parseInt(input.value) || 8;
-            const newCost = getCost(value + delta);
-            const currentCost = getCost(value);
-            const used = getTotalCost();
+        function modifierStat(cle, delta) {
+            const champ = document.getElementById('stat-' + cle);
+            let valeur = parseInt(champ.value) || 8;
+            const nouveauCout = cout(valeur + delta);
+            const coutActuel = cout(valeur);
+            const utilise = coutTotal();
 
-            if (delta > 0 && value >= 15) return;
-            if (delta > 0 && used + (newCost - currentCost) > totalBudget) return;
-            if (delta < 0 && value <= 8) return;
+            if (delta > 0 && valeur >= 15) return;
+            if (delta > 0 && utilise + (nouveauCout - coutActuel) > budgetTotal) return;
+            if (delta < 0 && valeur <= 8) return;
 
-            input.value = value + delta;
-            updateUI();
+            champ.value = valeur + delta;
+            majInterface();
         }
 
-        document.querySelectorAll('.stat-base-value').forEach(input => {
-            input.addEventListener('change', function() {
+        document.querySelectorAll('.stat-valeur-base').forEach(champ => {
+            champ.addEventListener('change', function() {
                 let val = parseInt(this.value);
                 if (isNaN(val)) val = 8;
                 if (val < 8) val = 8;
                 if (val > 15) val = 15;
                 this.value = val;
-                updateUI();
+                majInterface();
             });
         });
 
-        updateUI();
+        majInterface();
     </script>
 @endpush

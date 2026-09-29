@@ -95,11 +95,11 @@ class ClassesSeeder extends Seeder
             ],
         ];
 
-        foreach ($classes as $classeData) {
-            $sousClasses = $classeData['sous_classes'];
-            unset($classeData['sous_classes']);
+        foreach ($classes as $donneesClasse) {
+            $sousClasses = $donneesClasse['sous_classes'];
+            unset($donneesClasse['sous_classes']);
 
-            $classe = Classe::create($classeData);
+            $classe = Classe::create($donneesClasse);
 
             foreach ($sousClasses as $sc) {
                 SousClasse::create([

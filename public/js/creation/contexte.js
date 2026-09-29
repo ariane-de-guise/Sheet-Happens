@@ -1,49 +1,49 @@
 // Étape "Contexte" de la création de personnage.
-// Les données (window.ContexteData) sont injectées par contexte.blade.php :
+// Les données (window.DonneesContexte) sont injectées par contexte.blade.php :
 // les historiques (avec leur équipement de départ, leurs idéaux, défauts,
 // attachements et personnalités).
-const contexteData = window.ContexteData || {};
-const historiquesById = {};
-(contexteData.historiques || []).forEach(h => {
-    historiquesById[h.id] = h;
+const donneesContexte = window.DonneesContexte || {};
+const historiquesParId = {};
+(donneesContexte.historiques || []).forEach(h => {
+    historiquesParId[h.id] = h;
 });
 
 // L'historique détermine l'équipement de départ : on met à jour l'aperçu
 // dès que le choix change. Les outils accordés automatiquement sans choix
-// (outils_fixes) font partie de l'équipement final (voir saveContexte()
+// (outils_fixes) font partie de l'équipement final (voir enregistrerContexte()
 // côté serveur), donc on les affiche ici aussi.
-function updateEquipementPreview(historiqueId) {
-    const equipementList = document.getElementById('equipementPreview');
-    if (!equipementList) return;
+function majApercuEquipement(historiqueId) {
+    const listeEquipement = document.getElementById('apercuEquipement');
+    if (!listeEquipement) return;
 
-    const historique = historiquesById[historiqueId];
+    const historique = historiquesParId[historiqueId];
     const equipement = historique
         ? (historique.equipement_depart || []).concat(historique.outils_fixes || [])
         : null;
 
-    equipementList.innerHTML = (equipement && equipement.length)
-        ? equipement.map(item => '<li>' + item + '</li>').join('')
+    listeEquipement.innerHTML = (equipement && equipement.length)
+        ? equipement.map(element => '<li>' + element + '</li>').join('')
         : '<li>Choisissez un historique pour voir votre équipement.</li>';
 }
 
 // L'outil de départ n'est jamais un choix totalement libre : il dépend de
 // l'historique choisi (voir Historique::outils_disponibles /
 // outils_fixes). On reconstruit donc les options du select à chaque
-// changement d'historique. "preselect" ne sert qu'au chargement initial de
+// changement d'historique. "preselection" ne sert qu'au chargement initial de
 // la page (retour en arrière, erreur de validation qui renvoie l'ancienne
 // valeur) pour resélectionner l'outil déjà choisi.
-function updateOutilOptions(historiqueId, preselect) {
-    const select = document.getElementById('outil_select');
-    const hint = document.getElementById('outil_hint');
-    if (!select) return;
+function majOptionsOutils(historiqueId, preselection) {
+    const liste = document.getElementById('outil_liste');
+    const indice = document.getElementById('outil_indice');
+    if (!liste) return;
 
-    const historique = historiquesById[historiqueId];
+    const historique = historiquesParId[historiqueId];
 
     if (!historique) {
-        select.innerHTML = '<option value="">-- Choisissez d\'abord un historique --</option>';
-        select.disabled = true;
-        select.required = false;
-        if (hint) hint.textContent = 'Choisissez un historique pour voir les outils disponibles.';
+        liste.innerHTML = '<option value="">-- Choisissez d\'abord un historique --</option>';
+        liste.disabled = true;
+        liste.required = false;
+        if (indice) indice.textContent = 'Choisissez un historique pour voir les outils disponibles.';
         return;
     }
 
@@ -51,20 +51,20 @@ function updateOutilOptions(historiqueId, preselect) {
     const fixes = historique.outils_fixes || [];
 
     if (disponibles.length > 0) {
-        select.innerHTML = '<option value="">-- Choisir un outil --</option>' +
+        liste.innerHTML = '<option value="">-- Choisir un outil --</option>' +
             disponibles.map(function (o) {
-                const selectedAttr = (preselect && preselect === o) ? ' selected' : '';
-                return '<option value="' + o + '"' + selectedAttr + '>' + o + '</option>';
+                const attributSelection = (preselection && preselection === o) ? ' selected' : '';
+                return '<option value="' + o + '"' + attributSelection + '>' + o + '</option>';
             }).join('');
-        select.disabled = false;
-        select.required = true;
-        hint && (hint.textContent = 'À choisir parmi ceux offerts par votre historique.');
+        liste.disabled = false;
+        liste.required = true;
+        indice && (indice.textContent = 'À choisir parmi ceux offerts par votre historique.');
     } else {
-        select.innerHTML = '<option value="">Aucun choix pour cet historique</option>';
-        select.disabled = true;
-        select.required = false;
-        if (hint) {
-            hint.textContent = fixes.length
+        liste.innerHTML = '<option value="">Aucun choix pour cet historique</option>';
+        liste.disabled = true;
+        liste.required = false;
+        if (indice) {
+            indice.textContent = fixes.length
                 ? 'Cet historique accorde directement ' + fixes.join(', ') + ' (voir Équipement ci-dessous).'
                 : 'Cet historique n\'accorde aucun outil.';
         }
@@ -74,9 +74,9 @@ function updateOutilOptions(historiqueId, preselect) {
 // Lit l'attribut data-alignement de l'<option> actuellement sélectionnée
 // dans un <select> donné (vide si rien n'est sélectionné ou si le trait ne
 // porte pas d'étiquette d'alignement).
-function selectedAlignement(selectId) {
-    const select = document.getElementById(selectId);
-    const option = select ? select.options[select.selectedIndex] : null;
+function alignementChoisi(idListe) {
+    const liste = document.getElementById(idListe);
+    const option = liste ? liste.options[liste.selectedIndex] : null;
     return option ? (option.dataset.alignement || '') : '';
 }
 
@@ -86,20 +86,20 @@ function selectedAlignement(selectId) {
 // bien/mal). Cette logique doit rester identique à
 // CreationPersonnageController::calculateAlignement() côté serveur, qui
 // fait foi (cet aperçu n'est là que pour l'affichage en temps réel).
-function updateAlignementPreview() {
-    const alignementList = document.getElementById('alignementPreview');
-    if (!alignementList) return;
+function majApercuAlignement() {
+    const listeAlignement = document.getElementById('apercuAlignement');
+    if (!listeAlignement) return;
 
     const alignements = [
-        selectedAlignement('ideal_select'),
-        selectedAlignement('defaut_select'),
-        selectedAlignement('attachement_select'),
-        selectedAlignement('personnalite_select'),
+        alignementChoisi('ideal_select'),
+        alignementChoisi('defaut_select'),
+        alignementChoisi('attachement_select'),
+        alignementChoisi('personnalite_select'),
     ];
 
     if (!alignements[0]) {
         // Sans idéal choisi, on n'a encore rien à afficher.
-        alignementList.innerHTML = '<li>Choisissez un idéal pour déterminer l\'alignement.</li>';
+        listeAlignement.innerHTML = '<li>Choisissez un idéal pour déterminer l\'alignement.</li>';
         return;
     }
 
@@ -136,73 +136,73 @@ function updateAlignementPreview() {
         resultat = loi + ' ' + bien;
     }
 
-    alignementList.innerHTML = '<li>' + resultat + '</li>';
+    listeAlignement.innerHTML = '<li>' + resultat + '</li>';
 }
 
 // Idéal, défaut, attachement et personnalité dépendent de l'historique
 // choisi : chaque <option> porte un data-historique, on masque celles qui
 // ne correspondent pas et on réinitialise le select si sa valeur actuelle
 // n'est plus valide.
-function filterByHistorique(selectId, historiqueId) {
-    const select = document.getElementById(selectId);
-    if (!select) return;
+function filtrerParHistorique(idListe, historiqueId) {
+    const liste = document.getElementById(idListe);
+    if (!liste) return;
 
-    let selectedStillValid = false;
-    Array.from(select.options).forEach(option => {
+    let selectionToujoursValide = false;
+    Array.from(liste.options).forEach(option => {
         if (!option.value) {
             option.hidden = false;
             option.disabled = false;
             return;
         }
-        const matches = String(historiqueId) !== '' && option.dataset.historique === String(historiqueId);
-        option.hidden = !matches;
-        option.disabled = !matches;
-        if (matches && option.selected) {
-            selectedStillValid = true;
+        const correspond = String(historiqueId) !== '' && option.dataset.historique === String(historiqueId);
+        option.hidden = !correspond;
+        option.disabled = !correspond;
+        if (correspond && option.selected) {
+            selectionToujoursValide = true;
         }
     });
 
-    if (!selectedStillValid) {
-        select.value = '';
+    if (!selectionToujoursValide) {
+        liste.value = '';
     }
 }
 
 // Même présentation que pour la race/classe choisie : un encadré ("help-box")
 // avec le nom de l'historique en titre et sa description en contenu,
 // masqué tant qu'aucun historique n'est sélectionné (voir race.js /
-// showRaceDescription()).
-function updateHistoriqueDescription(historiqueId) {
-    const box = document.getElementById('historique_description');
-    if (!box) return;
+// afficherDescriptionRace()).
+function majDescriptionHistorique(historiqueId) {
+    const boite = document.getElementById('historique_description');
+    if (!boite) return;
 
-    const historique = historiquesById[historiqueId];
+    const historique = historiquesParId[historiqueId];
     if (!historique || !historique.description) {
-        box.style.display = 'none';
+        boite.style.display = 'none';
         return;
     }
 
-    document.getElementById('historique_description_title').textContent = historique.nom;
-    document.getElementById('historique_description_content').textContent = historique.description;
-    box.style.display = '';
+    document.getElementById('historique_description_titre').textContent = historique.nom;
+    document.getElementById('historique_description_contenu').textContent = historique.description;
+    boite.style.display = '';
 }
 
-function onHistoriqueChange(historiqueId, preselectOutil) {
-    filterByHistorique('ideal_select', historiqueId);
-    filterByHistorique('defaut_select', historiqueId);
-    filterByHistorique('attachement_select', historiqueId);
-    filterByHistorique('personnalite_select', historiqueId);
-    updateHistoriqueDescription(historiqueId);
-    updateEquipementPreview(historiqueId);
-    updateOutilOptions(historiqueId, preselectOutil);
-    updateAlignementPreview();
+function changerHistorique(historiqueId, outilPreselectionne) {
+    filtrerParHistorique('ideal_select', historiqueId);
+    filtrerParHistorique('defaut_select', historiqueId);
+    filtrerParHistorique('attachement_select', historiqueId);
+    filtrerParHistorique('personnalite_select', historiqueId);
+    majDescriptionHistorique(historiqueId);
+    majApercuEquipement(historiqueId);
+    majOptionsOutils(historiqueId, outilPreselectionne);
+    majApercuAlignement();
 }
 
-function validateContextForm() {
+function validerFormulaireContexte() {
     // Les champs obligatoires (historique, idéal, défaut, attachement,
     // personnalité, nom) portent déjà l'attribut HTML "required" : la
     // validation native du navigateur suffit ici. Le select "outil" ne
     // porte l'attribut "required" que lorsque l'historique choisi propose
-    // effectivement un choix (voir updateOutilOptions()) : un select
+    // effectivement un choix (voir majOptionsOutils()) : un select
     // désactivé n'est jamais bloquant.
     return true;
 }
@@ -212,14 +212,14 @@ function validateContextForm() {
 // validation renvoyant les anciennes valeurs, ...), on réaffiche les
 // aperçus et on ré-applique le filtrage des options correspondantes.
 document.addEventListener('DOMContentLoaded', function () {
-    const historiqueSelect = document.getElementById('historique_select');
-    const outilSelect = document.getElementById('outil_select');
-    const oldOutil = outilSelect ? outilSelect.dataset.old : '';
+    const choixHistorique = document.getElementById('historique_liste');
+    const choixOutil = document.getElementById('outil_liste');
+    const ancienOutil = choixOutil ? choixOutil.dataset.old : '';
 
-    if (historiqueSelect && historiqueSelect.value) {
-        onHistoriqueChange(historiqueSelect.value, oldOutil);
+    if (choixHistorique && choixHistorique.value) {
+        changerHistorique(choixHistorique.value, ancienOutil);
     } else {
-        updateAlignementPreview();
-        updateOutilOptions('', oldOutil);
+        majApercuAlignement();
+        majOptionsOutils('', ancienOutil);
     }
 });

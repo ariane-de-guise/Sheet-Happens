@@ -8,13 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasColumn('limite_magie_classes', 'AbiliteMagie')) {
+        if (! Schema::hasColumn('limite_magie_classes', 'AbiliteMagie')) {
             Schema::table('limite_magie_classes', function (Blueprint $table) {
                 $table->string('AbiliteMagie')->default('Intelligence');
             });
         }
 
-        if (!Schema::hasColumn('limite_magie_sous_classes', 'AbiliteMagie')) {
+        if (! Schema::hasColumn('limite_magie_sous_classes', 'AbiliteMagie')) {
             Schema::table('limite_magie_sous_classes', function (Blueprint $table) {
                 $table->string('AbiliteMagie')->default('Intelligence');
             });
