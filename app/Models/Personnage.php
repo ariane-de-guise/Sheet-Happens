@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'photo', 'niveau', 'experience', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'langues', 'capacites', 'feats'])]
+#[Fillable(['utilisateur_id', 'race_id', 'sous_race_id', 'classe_id', 'sous_classe_id', 'abilites_id', 'liste_competence_id', 'nom', 'photo', 'niveau', 'experience', 'alignement', 'historique_id', 'ideal_id', 'defaut_id', 'attachement_id', 'personnalite_id', 'description', 'point_de_vie', 'point_de_vie_actuel', 'langues'])]
 class Personnage extends Model
 {
     /**
@@ -18,12 +18,29 @@ class Personnage extends Model
      */
     public const MAX_PAR_UTILISATEUR = 5;
 
+    /** Un nouveau personnage démarre avec tous ses points de vie. */
+    protected static function booted(): void
+    {
+        static::creating(function (Personnage $personnage): void {
+            $personnage->point_de_vie_actuel ??= $personnage->point_de_vie;
+        });
+    }
+
+    /**
+     * Applique des dégâts (delta négatif) ou des soins (delta positif) aux
+     * PV actuels, sans descendre sous 0 ni dépasser le maximum.
+     */
+    public function modifierPointsDeVieActuels(int $delta): void
+    {
+        $actuels = $this->point_de_vie_actuel ?? $this->point_de_vie;
+
+        $this->update(['point_de_vie_actuel' => max(0, min($this->point_de_vie, $actuels + $delta))]);
+    }
+
     protected function casts(): array
     {
         return [
             'langues' => 'array',
-            'capacites' => 'array',
-            'feats' => 'array',
         ];
     }
 
@@ -98,6 +115,27 @@ class Personnage extends Model
             ->using(PersonnageObjet::class)
             ->withPivot(['id', 'quantite', 'quantite_equipee'])
             ->withTimestamps();
+    }
+
+    /** Capacités (traits de classe) acquises, triées par niveau d'obtention. */
+    public function capacites(): BelongsToMany
+    {
+        return $this->belongsToMany(Capacite::class, 'personnage_capacite')
+            ->withTimestamps()
+            ->orderBy('capacites.niveau')
+            ->orderBy('capacites.id');
+    }
+
+    public function dons(): BelongsToMany
+    {
+        return $this->belongsToMany(Don::class, 'personnage_don')
+            ->withTimestamps()
+            ->orderBy('dons.nom');
+    }
+
+    public function sorts(): HasMany
+    {
+        return $this->hasMany(PersonnageSort::class, 'personnage_id');
     }
 
     public function effetsActifs(): HasMany

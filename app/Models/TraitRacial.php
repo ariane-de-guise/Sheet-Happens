@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class TraitModel extends Model
+class TraitRacial extends Model
 {
     /**
      * Nom de la table associée au modèle.

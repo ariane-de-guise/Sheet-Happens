@@ -1,5 +1,37 @@
 # Changelog
 
+## [Non publié] - Dons, capacités, PV actuels et passage du code en français
+
+### Ajouté
+
+- **Dons et capacités de classe** : tables `dons` et `capacites` (reliées aux personnages par `personnage_don` / `personnage_capacite`), `DonSeeder` (19 dons) et `CapaciteSeeder` (88 capacités, niveaux 1 à 5). Les capacités sont synchronisées à la création, à la montée de niveau et à l'édition ; leur description s'affiche au survol.
+- **PV actuels** (`point_de_vie_actuel`) : `point_de_vie` reste le maximum. La fiche affiche « actuels / maximum » et permet d'appliquer des dégâts ou des soins ; les potions agissent sur les PV actuels, bornés entre 0 et le maximum.
+- `PersonnagePolicy` appliquée à toutes les routes `/personnages/{personnage}/…` par le middleware `can:gerer,personnage`.
+- `ModifierPersonnageRequest` et `AjouterObjetPersonnaliseRequest` (validation sortie des contrôleurs), `SortService`, `CalculCreationService`.
+- Messages de validation en français (`lang/fr`), limitation des tentatives de connexion et d'inscription.
+- Test `CoherenceIdsHtmlTest` : tout identifiant HTML utilisé par le JavaScript doit exister.
+
+### Modifié
+
+- Le niveau et les caractéristiques ne changent plus depuis le formulaire d'édition : uniquement par l'écran de montée de niveau, qui exige l'expérience nécessaire et enchaîne si plusieurs niveaux sont disponibles.
+- Colonnes des tables de magie en `snake_case` (`id_Personnage` → `personnage_id`, `SortConnue` → `sorts_prepares`, etc.) ; table `sousclasse_sorts` renommée `sous_classe_sorts`.
+- Tout le code nommé en français : classes, méthodes, variables, JavaScript, routes non REST, sections Blade, ids HTML et classes CSS.
+- Styles en ligne de la fiche, de la montée de niveau et de la page des traits déplacés dans `app.css`.
+- `public/storage` n'est plus versionné (voir `storage:link` dans le README).
+
+### Corrigé
+
+- Changer de classe réinitialise les sorts du personnage.
+- Les routes des sorts ne vérifiaient pas le propriétaire du personnage.
+- Une potion modifiait le maximum de PV de façon permanente.
+- Consommer un objet se fait désormais dans une transaction.
+- Unicité des capacités par classe / sous-classe garantie en base.
+
+### Retiré
+
+- API `/api/personnages`, qui contournait les règles de création.
+- Code mort : vue `sorts/index`, `FicheDePersonnageService::traits()`, requêtes « niveau seul » et « PV seuls », classes CSS inutilisées.
+
 ## [Non publié] - Correction de l'édition de personnage (sous-race, sous-classe, historique)
 
 ### Corrigé

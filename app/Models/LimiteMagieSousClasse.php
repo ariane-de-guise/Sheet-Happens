@@ -9,9 +9,9 @@ class LimiteMagieSousClasse extends Model
     protected $table = 'limite_magie_sous_classes';
 
     protected $fillable = [
-        'id_SousClasse',
-        'id_LimiteMagie',
-        'Niveau',
-        'AbiliteMagie',
+        'sous_classe_id',
+        'limite_magie_id',
+        'niveau',
+        'caracteristique_magie',
     ];
 }

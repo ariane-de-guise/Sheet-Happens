@@ -52,18 +52,6 @@ class FicheDePersonnageService
         'Occultiste' => ['sagesse', 'charisme'],
     ];
 
-    /** Caractéristique d'incantation des classes lanceuses de sorts (5e SRD). */
-    private const CARACTERISTIQUE_INCANTATION_PAR_CLASSE = [
-        'Clerc' => 'sagesse',
-        'Magicien' => 'intelligence',
-        'Druide' => 'sagesse',
-        'Barde' => 'charisme',
-        'Paladin' => 'charisme',
-        'Rôdeur' => 'sagesse',
-        'Ensorceleur' => 'charisme',
-        'Occultiste' => 'charisme',
-    ];
-
     /** Caractéristique associée à chacune des 18 compétences (5e SRD). */
     private const COMPETENCES = [
         'Acrobaties' => 'dexterite',
@@ -122,7 +110,7 @@ class FicheDePersonnageService
     }
 
     /**
-     * @return array<int, array{aptitude: string, label: string, modificateur: int, maitrise: bool, bonus: int}>
+     * @return array<int, array{aptitude: string, libelle: string, modificateur: int, maitrise: bool, bonus: int}>
      */
     public function jetsDeSauvegarde(Personnage $personnage): array
     {
@@ -135,13 +123,13 @@ class FicheDePersonnageService
         $bonusObjetGlobal = $this->inventaire->bonusActifs($personnage)['bonus_jets_sauvegarde'] ?? 0;
 
         $resultat = [];
-        foreach (self::ABILITES as $cle => $label) {
+        foreach (self::ABILITES as $cle => $libelle) {
             $mod = $this->modificateur($this->scoreEffectif($personnage, $cle));
             $maitrise = in_array($cle, $maitrisees, true);
 
             $resultat[] = [
                 'aptitude' => $cle,
-                'label' => $label,
+                'libelle' => $libelle,
                 'modificateur' => $mod,
                 'maitrise' => $maitrise,
                 'bonus' => $mod + ($maitrise ? $bonusMaitrise : 0) + $bonusObjetGlobal,
@@ -202,7 +190,7 @@ class FicheDePersonnageService
     {
         $nomClasse = $personnage->classe?->nom;
 
-        return array_key_exists($nomClasse, self::CARACTERISTIQUE_INCANTATION_PAR_CLASSE);
+        return array_key_exists($nomClasse, SortService::CARACTERISTIQUE_INCANTATION_PAR_CLASSE);
     }
 
     /**
@@ -211,7 +199,7 @@ class FicheDePersonnageService
     public function statistiquesIncantation(Personnage $personnage): ?array
     {
         $nomClasse = $personnage->classe?->nom;
-        $cle = self::CARACTERISTIQUE_INCANTATION_PAR_CLASSE[$nomClasse] ?? null;
+        $cle = SortService::CARACTERISTIQUE_INCANTATION_PAR_CLASSE[$nomClasse] ?? null;
 
         if (! $cle) {
             return null;
@@ -287,31 +275,5 @@ class FicheDePersonnageService
             'incantation' => null,
             'attaques' => $this->attaques($personnage),
         ];
-    }
-
-    /**
-     * Section "Traits" : bonus et capacités du personnage, dérivés des
-     * descriptions déjà enregistrées sur sa race, sous-race, classe et
-     * sous-classe.
-     *
-     * @return array<int, array{label: string, texte: string}>
-     */
-    public function traits(Personnage $personnage): array
-    {
-        $sources = [
-            'Race' => $personnage->race?->description,
-            $personnage->sousRace?->nom => $personnage->sousRace?->description,
-            'Classe' => $personnage->classe?->description,
-            $personnage->sousClasse?->nom => $personnage->sousClasse?->description,
-        ];
-
-        $resultat = [];
-        foreach ($sources as $label => $texte) {
-            if (! empty($label) && ! empty($texte)) {
-                $resultat[] = ['label' => $label, 'texte' => $texte];
-            }
-        }
-
-        return $resultat;
     }
 }

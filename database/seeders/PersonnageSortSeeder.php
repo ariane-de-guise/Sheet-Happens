@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\PersonnageSort;
+use Illuminate\Database\Seeder;
 
 class PersonnageSortSeeder extends Seeder
 {
@@ -30,9 +30,9 @@ class PersonnageSortSeeder extends Seeder
             |--------------------------------------------------------------------------
             |
             | [
-            |     'id_Personnage' => 1,
-            |     'id_Sort' => 1,
-            |     'Prepare' => 1,
+            |     'personnage_id' => 1,
+            |     'sort_id' => 1,
+            |     'preparation' => 1,
             | ],
             |
             */
@@ -41,11 +41,11 @@ class PersonnageSortSeeder extends Seeder
         foreach ($sorts as $sort) {
             PersonnageSort::updateOrCreate(
                 [
-                    'id_Personnage' => $sort['id_Personnage'],
-                    'id_Sort' => $sort['id_Sort'],
+                    'personnage_id' => $sort['personnage_id'],
+                    'sort_id' => $sort['sort_id'],
                 ],
                 [
-                    'Prepare' => $sort['Prepare'],
+                    'preparation' => $sort['preparation'],
                 ]
             );
         }

@@ -14,7 +14,7 @@ class UtilisateurFactory extends Factory
     /**
      * Le modèle associé à la factory.
      */
-    protected $model = Utilisateur::class;
+    protected $modele = Utilisateur::class;
 
     /**
      * Mot de passe mis en cache pour accélérer la génération en masse.

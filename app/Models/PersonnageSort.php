@@ -9,18 +9,18 @@ class PersonnageSort extends Model
     protected $table = 'personnage_sorts';
 
     protected $fillable = [
-        'id_Personnage',
-        'id_Sort',
-        'Prepare',
+        'personnage_id',
+        'sort_id',
+        'preparation',
     ];
 
     public function sort()
     {
-        return $this->belongsTo(Sort::class, 'id_Sort');
+        return $this->belongsTo(Sort::class, 'sort_id');
     }
 
     public function personnage()
     {
-        return $this->belongsTo(Personnage::class, 'id_Personnage');
+        return $this->belongsTo(Personnage::class, 'personnage_id');
     }
 }

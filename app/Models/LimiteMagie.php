@@ -9,10 +9,10 @@ class LimiteMagie extends Model
     protected $table = 'limite_magies';
 
     protected $fillable = [
-        'TourMagie',
-        'SortConnue',
-        'Niveau1',
-        'Niveau2',
-        'Niveau3',
+        'tours_de_magie',
+        'sorts_prepares',
+        'emplacements_niveau_1',
+        'emplacements_niveau_2',
+        'emplacements_niveau_3',
     ];
 }

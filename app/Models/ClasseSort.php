@@ -3,24 +3,23 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ClasseSort extends Model
 {
     protected $table = 'classe_sorts';
 
     protected $fillable = [
-        'id_Classe',
-        'id_Sort',
+        'classe_id',
+        'sort_id',
     ];
 
     public function classe()
     {
-        return $this->belongsTo(Classe::class, 'id_Classe');
+        return $this->belongsTo(Classe::class, 'classe_id');
     }
 
     public function sort()
     {
-        return $this->belongsTo(Sort::class, 'id_Sort');
+        return $this->belongsTo(Sort::class, 'sort_id');
     }
 }

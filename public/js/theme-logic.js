@@ -8,16 +8,16 @@
  * s'agit d'interface (manipulation du DOM).
  */
 
-export const STORAGE_KEY = "theme";
-export const THEME_DARK = "dark";
-export const THEME_LIGHT = "light";
+export const CLE_STOCKAGE = "theme";
+export const THEME_SOMBRE = "sombre";
+export const THEME_CLAIR = "clair";
 
 /**
  * @param {unknown} value
  * @returns {boolean} vrai si `value` est un nom de thème valide.
  */
-export function isValidTheme(value) {
-    return value === THEME_DARK || value === THEME_LIGHT;
+export function estThemeValide(valeur) {
+    return valeur === THEME_SOMBRE || valeur === THEME_CLAIR;
 }
 
 /**
@@ -27,13 +27,13 @@ export function isValidTheme(value) {
  * quota dépassé, storage désactivé, etc.).
  *
  * @param {{ getItem(key: string): string | null } | null | undefined} storage
- * @returns {"dark" | "light" | null}
+ * @returns {"sombre" | "clair" | null}
  */
-export function readStoredTheme(storage) {
-    if (!storage) return null;
+export function lireThemeMemorise(stockage) {
+    if (!stockage) return null;
     try {
-        const value = storage.getItem(STORAGE_KEY);
-        return isValidTheme(value) ? value : null;
+        const valeur = stockage.getItem(CLE_STOCKAGE);
+        return estThemeValide(valeur) ? valeur : null;
     } catch {
         return null;
     }
@@ -43,17 +43,17 @@ export function readStoredTheme(storage) {
  * Mémorise le thème choisi dans le stockage fourni.
  *
  * @param {{ setItem(key: string, value: string): void } | null | undefined} storage
- * @param {"dark" | "light"} theme
+ * @param {"sombre" | "clair"} theme
  * @returns {boolean} vrai si l'écriture a réussi.
  * @throws {Error} si `theme` n'est pas un thème valide.
  */
-export function writeStoredTheme(storage, theme) {
-    if (!isValidTheme(theme)) {
+export function ecrireThemeMemorise(stockage, theme) {
+    if (!estThemeValide(theme)) {
         throw new Error(`Thème invalide : "${theme}"`);
     }
-    if (!storage) return false;
+    if (!stockage) return false;
     try {
-        storage.setItem(STORAGE_KEY, theme);
+        stockage.setItem(CLE_STOCKAGE, theme);
         return true;
     } catch {
         return false;
@@ -67,17 +67,17 @@ export function writeStoredTheme(storage, theme) {
  * l'application (la préférence système du navigateur n'est
  * volontairement pas consultée ici).
  *
- * @param {"dark" | "light" | null} storedTheme
- * @returns {"dark" | "light"}
+ * @param {"sombre" | "clair" | null} themeMemorise
+ * @returns {"sombre" | "clair"}
  */
-export function resolveInitialTheme(storedTheme) {
-    return isValidTheme(storedTheme) ? storedTheme : THEME_DARK;
+export function resoudreThemeInitial(themeMemorise) {
+    return estThemeValide(themeMemorise) ? themeMemorise : THEME_SOMBRE;
 }
 
 /**
- * @param {"dark" | "light"} currentTheme
- * @returns {"dark" | "light"} l'autre thème.
+ * @param {"sombre" | "clair"} themeCourant
+ * @returns {"sombre" | "clair"} l'autre thème.
  */
-export function toggleTheme(currentTheme) {
-    return currentTheme === THEME_DARK ? THEME_LIGHT : THEME_DARK;
+export function basculerTheme(themeCourant) {
+    return themeCourant === THEME_SOMBRE ? THEME_CLAIR : THEME_SOMBRE;
 }

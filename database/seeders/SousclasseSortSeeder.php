@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\SousClasseSort;
 use App\Models\Sort;
+use App\Models\SousClasseSort;
 use Illuminate\Database\Seeder;
 
 /**
@@ -88,19 +88,19 @@ class SousClasseSortSeeder extends Seeder
         foreach ($sousClasses as $idSousClasse => $niveaux) {
             foreach ($niveaux as $sorts) {
                 foreach ($sorts as $nomAnglais) {
-                    $sort = Sort::where('NomAnglais', $nomAnglais)->first();
+                    $sort = Sort::where('nom_anglais', $nomAnglais)->first();
 
-                    if (!$sort) {
+                    if (! $sort) {
                         throw new \RuntimeException(
-                            "Sort introuvable dans la table sorts : {$nomAnglais}. " .
+                            "Sort introuvable dans la table sorts : {$nomAnglais}. ".
                             "Ajoute d'abord ce sort dans SortSeeder."
                         );
                     }
 
                     SousClasseSort::updateOrCreate(
                         [
-                            'id_SousClasse' => $idSousClasse,
-                            'id_Sort' => $sort->id,
+                            'sous_classe_id' => $idSousClasse,
+                            'sort_id' => $sort->id,
                         ],
                         []
                     );

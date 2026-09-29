@@ -3,12 +3,18 @@
 namespace Tests\Feature;
 
 use App\Models\Attachement;
+use App\Models\Capacite;
 use App\Models\Defaut;
 use App\Models\Historique;
 use App\Models\Ideal;
+use App\Models\LimiteMagie;
+use App\Models\LimiteMagieClasse;
+use App\Models\PersonnageSort;
 use App\Models\Personnalite;
-use App\Models\TraitModel;
+use App\Models\Sort;
+use App\Models\TraitRacial;
 use App\Models\Utilisateur;
+use App\Services\CapaciteService;
 use Database\Factories\ClasseFactory;
 use Database\Factories\ObjetFactory;
 use Database\Factories\PersonnageFactory;
@@ -21,7 +27,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-class PersonnageSheetTest extends TestCase
+class FichePersonnageTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -89,11 +95,11 @@ class PersonnageSheetTest extends TestCase
             'race_id' => $race->id,
             'sous_race_id' => $sousRace->id,
         ]);
-        $raceTrait = TraitModel::query()->create([
+        $raceTrait = TraitRacial::query()->create([
             'nom' => 'Vision dans le noir',
             'niveau' => 1,
         ]);
-        $sousRaceTrait = TraitModel::query()->create([
+        $sousRaceTrait = TraitRacial::query()->create([
             'nom' => 'Résilience',
             'niveau' => 1,
         ]);
@@ -179,6 +185,23 @@ class PersonnageSheetTest extends TestCase
             ->assertSee('Jet de sauvegarde de tes sorts')
             ->assertSee('attaque de sorts')
             ->assertDontSee('DD de sauvegarde des sorts');
+    }
+
+    public function test_la_fiche_propose_les_sorts_connus_si_la_classe_accorde_de_la_magie_au_niveau_atteint(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['nom' => 'Clerc']);
+        $limite = LimiteMagie::create(['tours_de_magie' => 3, 'sorts_prepares' => 2, 'emplacements_niveau_1' => 2]);
+        LimiteMagieClasse::create(['classe_id' => $classe->id, 'limite_magie_id' => $limite->id, 'niveau' => 1, 'caracteristique_magie' => 'Sagesse']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+        ]);
+
+        $this->actingAs($utilisateur)
+            ->get("/personnages/{$personnage->id}")
+            ->assertOk()
+            ->assertSee('Sorts connus');
     }
 
     public function test_la_fiche_mentionne_la_sous_classe_dans_la_section_actions_le_cas_echeant(): void
@@ -277,11 +300,11 @@ class PersonnageSheetTest extends TestCase
             ->get("/personnages/{$personnage->id}/edit")
             ->assertOk()
             ->assertDontSee('onchange="this.form.submit()"', false)
-            ->assertSee('id="edit_historique_select" class="form-select-small" required', false)
-            ->assertSee('id="edit_ideal_select" class="form-select-small" required', false)
-            ->assertSee('id="edit_defaut_select" class="form-select-small" required', false)
-            ->assertSee('id="edit_attachement_select" class="form-select-small" required', false)
-            ->assertSee('id="edit_personnalite_select" class="form-select-small" required', false)
+            ->assertSee('id="edition_historique_liste" class="formulaire-liste-petit" required', false)
+            ->assertSee('id="edition_ideal_liste" class="formulaire-liste-petit" required', false)
+            ->assertSee('id="edition_defaut_liste" class="formulaire-liste-petit" required', false)
+            ->assertSee('id="edition_attachement_liste" class="formulaire-liste-petit" required', false)
+            ->assertSee('id="edition_personnalite_liste" class="formulaire-liste-petit" required', false)
             ->assertSee('Veuillez sélectionner un élément dans la liste.', false)
             ->assertDontSee('Gérer l’inventaire', false)
             ->assertDontSee('Gérer l\'inventaire', false);
@@ -289,7 +312,7 @@ class PersonnageSheetTest extends TestCase
 
     public function test_le_formulaire_edition_preselectionne_l_alignement_calcule_a_la_creation(): void
     {
-        // calculateAlignement() (CreationPersonnageController) doit produire
+        // CalculCreationService::alignement() doit produire
         // exactement les mêmes chaînes que les options du select
         // "Alignement" ci-dessous, sinon la valeur enregistrée en base ne
         // s'y retrouve jamais présélectionnée (elle affiche "-- Choisir --"
@@ -347,7 +370,7 @@ class PersonnageSheetTest extends TestCase
             ->get("/personnages/{$personnage->id}/edit")
             ->assertOk()
             ->assertDontSee('<option value="'.$sousClasse->id.'">', false)
-            ->assertSee('id="sousClasseSelect" class="form-select-small" disabled', false)
+            ->assertSee('id="sousClasseListe" class="formulaire-liste-petit" disabled', false)
             ->assertSee('Sous-classe disponible au niveau 3', false);
     }
 
@@ -403,10 +426,10 @@ class PersonnageSheetTest extends TestCase
             'competences' => ['Acrobaties', 'Athlétisme', 'Perception', 'Survie', 'Religion', 'Histoire'],
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertRedirect(route('personnages.show', $personnage));
+        $reponse->assertRedirect(route('personnages.show', $personnage));
         $this->assertSame(
             ['Acrobaties', 'Athlétisme', 'Perception', 'Survie', 'Religion', 'Histoire'],
             $personnage->refresh()->listeCompetence->competences,
@@ -428,10 +451,10 @@ class PersonnageSheetTest extends TestCase
             ->assertForbidden();
     }
 
-    private function donneesMiseAJour(array $overrides = []): array
+    private function donneesMiseAJour(array $surcharges = []): array
     {
-        $historique = isset($overrides['historique_id'])
-            ? Historique::find($overrides['historique_id'])
+        $historique = isset($surcharges['historique_id'])
+            ? Historique::find($surcharges['historique_id'])
             : null;
         $historique ??= Historique::create(['nom' => fake()->unique()->words(3, true)]);
 
@@ -465,7 +488,140 @@ class PersonnageSheetTest extends TestCase
                 'historique_id' => $historique->id,
                 'valeur' => 'Qualité de test',
             ])->id,
-        ], $overrides);
+        ], $surcharges);
+    }
+
+    public function test_un_nouveau_personnage_demarre_avec_tous_ses_points_de_vie(): void
+    {
+        $personnage = PersonnageFactory::new()->create(['point_de_vie' => 14]);
+
+        $this->assertSame(14, $personnage->fresh()->point_de_vie_actuel);
+    }
+
+    public function test_la_fiche_affiche_les_points_de_vie_actuels_sur_le_maximum(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id, 'point_de_vie' => 20]);
+        $personnage->update(['point_de_vie_actuel' => 13]);
+
+        $this->actingAs($utilisateur)->get(route('personnages.show', $personnage))
+            ->assertOk()
+            ->assertSee('13 / 20');
+    }
+
+    public function test_des_degats_puis_des_soins_modifient_les_points_de_vie_actuels_dans_les_bornes(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id, 'point_de_vie' => 20]);
+        $route = route('personnages.points-de-vie', $personnage);
+
+        $this->actingAs($utilisateur)->patch($route, ['montant' => 8, 'type' => 'degats'])
+            ->assertRedirect(route('personnages.show', $personnage));
+        $this->assertSame(12, $personnage->fresh()->point_de_vie_actuel);
+
+        $this->actingAs($utilisateur)->patch($route, ['montant' => 50, 'type' => 'soins']);
+        $this->assertSame(20, $personnage->fresh()->point_de_vie_actuel);
+
+        $this->actingAs($utilisateur)->patch($route, ['montant' => 99, 'type' => 'degats']);
+        $this->assertSame(0, $personnage->fresh()->point_de_vie_actuel);
+        $this->assertSame(20, $personnage->fresh()->point_de_vie);
+    }
+
+    public function test_ajuster_les_points_de_vie_exige_un_montant_et_un_type_valides(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $this->actingAs($utilisateur)
+            ->patch(route('personnages.points-de-vie', $personnage), ['montant' => 0, 'type' => 'autre'])
+            ->assertSessionHasErrors(['montant', 'type']);
+    }
+
+    public function test_un_autre_utilisateur_ne_peut_pas_modifier_les_points_de_vie(): void
+    {
+        $personnage = PersonnageFactory::new()->create(['point_de_vie' => 20]);
+
+        $this->actingAs(Utilisateur::factory()->create())
+            ->patch(route('personnages.points-de-vie', $personnage), ['montant' => 5, 'type' => 'degats'])
+            ->assertForbidden();
+
+        $this->assertSame(20, $personnage->fresh()->point_de_vie_actuel);
+    }
+
+    public function test_le_niveau_et_les_caracteristiques_ne_changent_pas_depuis_l_edition(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'niveau' => 1,
+            'experience' => 6500,
+        ]);
+        $forceAvant = $personnage->abilites->force;
+
+        $this->actingAs($utilisateur)->patch(route('personnages.update', $personnage), $this->donneesMiseAJour([
+            'race_id' => $personnage->race_id,
+            'classe_id' => $personnage->classe_id,
+            'niveau' => 4,
+            'force' => 20,
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $personnage->fresh()->niveau);
+        $this->assertSame($forceAvant, $personnage->abilites->fresh()->force);
+    }
+
+    public function test_le_formulaire_d_edition_affiche_le_niveau_et_les_caracteristiques_sans_champ_modifiable(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $personnage = PersonnageFactory::new()->create(['utilisateur_id' => $utilisateur->id]);
+
+        $this->actingAs($utilisateur)->get(route('personnages.edit', $personnage))
+            ->assertOk()
+            ->assertDontSee('name="niveau"', false)
+            ->assertDontSee('name="force"', false)
+            ->assertSee('évoluent uniquement par la montée de niveau');
+    }
+
+    public function test_modifier_le_maximum_de_pv_conserve_les_degats_subis(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['de_de_vie' => '10']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+            'niveau' => 3,
+            'point_de_vie' => 20,
+        ]);
+        $personnage->update(['point_de_vie_actuel' => 15]); // 5 dégâts subis
+
+        $this->actingAs($utilisateur)->patch(route('personnages.update', $personnage), $this->donneesMiseAJour([
+            'race_id' => $personnage->race_id,
+            'classe_id' => $classe->id,
+            'niveau' => 3,
+            'point_de_vie' => 24,
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame(24, $personnage->fresh()->point_de_vie);
+        $this->assertSame(19, $personnage->fresh()->point_de_vie_actuel);
+    }
+
+    public function test_le_maximum_de_pv_reste_borne_selon_le_niveau_et_la_classe(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $classe = ClasseFactory::new()->create(['de_de_vie' => '10']);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'classe_id' => $classe->id,
+            'niveau' => 1,
+            'point_de_vie' => 10,
+        ]);
+
+        $this->actingAs($utilisateur)->patch(route('personnages.update', $personnage), $this->donneesMiseAJour([
+            'race_id' => $personnage->race_id,
+            'classe_id' => $classe->id,
+            'point_de_vie' => 50,
+        ]))->assertSessionHasErrors('point_de_vie');
+
+        $this->assertSame(10, $personnage->fresh()->point_de_vie);
     }
 
     public function test_un_proprietaire_peut_mettre_a_jour_son_personnage(): void
@@ -488,11 +644,11 @@ class PersonnageSheetTest extends TestCase
             'competences' => ['Athlétisme', 'Perception'],
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertRedirect(route('personnages.show', $personnage));
-        $response->assertSessionHas('success');
+        $reponse->assertRedirect(route('personnages.show', $personnage));
+        $reponse->assertSessionHas('succes');
 
         $personnage->refresh();
         $this->assertSame('Aragorn Mis à jour', $personnage->nom);
@@ -584,60 +740,98 @@ class PersonnageSheetTest extends TestCase
             'competences' => ['Athlétisme', 'Perception', 'Nature', 'Survie'],
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasNoErrors();
-        $response->assertRedirect(route('personnages.show', $personnage));
+        $reponse->assertSessionHasNoErrors();
+        $reponse->assertRedirect(route('personnages.show', $personnage));
         $this->assertSame($nouvelleClasse->id, $personnage->refresh()->classe_id);
     }
 
-    public function test_un_proprietaire_peut_modifier_uniquement_le_niveau(): void
+    private function sort(string $nom): Sort
+    {
+        return Sort::create([
+            'nom' => $nom,
+            'description' => 'Sort de test',
+            'niveau' => 0,
+            'temps_activation' => '1 action',
+            'duree' => 'Instantanée',
+            'ecole' => 'Évocation',
+            'distance' => '18 mètres',
+        ]);
+    }
+
+    public function test_changer_de_classe_reinitialise_les_sorts_du_personnage(): void
     {
         $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create();
+        $ancienneClasse = ClasseFactory::new()->create();
+        $nouvelleClasse = ClasseFactory::new()->create();
         $personnage = PersonnageFactory::new()->create([
             'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
+            'classe_id' => $ancienneClasse->id,
             'niveau' => 1,
         ]);
+        foreach (['Lumière', 'Flamme sacrée'] as $nom) {
+            PersonnageSort::create(['personnage_id' => $personnage->id, 'sort_id' => $this->sort($nom)->id, 'preparation' => 1]);
+        }
 
-        $response = $this->actingAs($utilisateur)
-            ->patch("/personnages/{$personnage->id}", ['niveau' => 2]);
+        $reponse = $this->actingAs($utilisateur)->patch("/personnages/{$personnage->id}", $this->donneesMiseAJour([
+            'race_id' => $race->id,
+            'classe_id' => $nouvelleClasse->id,
+        ]));
 
-        $response->assertRedirect(route('personnages.show', $personnage));
-        $this->assertSame(2, $personnage->refresh()->niveau);
+        $reponse->assertSessionHasNoErrors();
+        $reponse->assertSessionHas('succes', fn ($message) => str_contains($message, 'sorts ont été réinitialisés'));
+        $this->assertDatabaseMissing('personnage_sorts', ['personnage_id' => $personnage->id]);
     }
 
-    public function test_la_mise_a_jour_partielle_refuse_des_points_de_vie_invalides(): void
+    public function test_modifier_le_personnage_sans_changer_de_classe_conserve_les_sorts(): void
     {
         $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create();
+        $classe = ClasseFactory::new()->create();
         $personnage = PersonnageFactory::new()->create([
             'utilisateur_id' => $utilisateur->id,
-            'point_de_vie' => 8,
-        ]);
-
-        $response = $this->actingAs($utilisateur)
-            ->patch("/personnages/{$personnage->id}", ['point_de_vie' => 25]);
-
-        $response->assertSessionHasErrors(['point_de_vie']);
-        $this->assertSame(8, $personnage->refresh()->point_de_vie);
-    }
-
-    public function test_un_proprietaire_peut_modifier_uniquement_les_points_de_vie(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $classe = ClasseFactory::new()->create(['de_de_vie' => 'd10']);
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
             'classe_id' => $classe->id,
-            'point_de_vie' => 8,
+            'niveau' => 1,
         ]);
+        $sort = $this->sort('Lumière');
+        PersonnageSort::create(['personnage_id' => $personnage->id, 'sort_id' => $sort->id, 'preparation' => 1]);
 
-        $response = $this->actingAs($utilisateur)
-            ->patch("/personnages/{$personnage->id}", ['point_de_vie' => 10]);
+        $this->actingAs($utilisateur)->patch("/personnages/{$personnage->id}", $this->donneesMiseAJour([
+            'race_id' => $race->id,
+            'classe_id' => $classe->id,
+        ]))->assertSessionHasNoErrors();
 
-        $response->assertRedirect(route('personnages.show', $personnage));
-        $response->assertSessionHas('success');
-        $this->assertSame(10, $personnage->refresh()->point_de_vie);
+        $this->assertDatabaseHas('personnage_sorts', ['personnage_id' => $personnage->id, 'sort_id' => $sort->id, 'preparation' => 1]);
+    }
+
+    public function test_changer_de_classe_remplace_les_capacites_de_l_ancienne_classe(): void
+    {
+        $utilisateur = Utilisateur::factory()->create();
+        $race = RaceFactory::new()->create();
+        $ancienneClasse = ClasseFactory::new()->create();
+        $nouvelleClasse = ClasseFactory::new()->create();
+        Capacite::create(['classe_id' => $ancienneClasse->id, 'nom' => 'Rage', 'niveau' => 1]);
+        $nouvelle = Capacite::create(['classe_id' => $nouvelleClasse->id, 'nom' => 'Second souffle', 'niveau' => 1]);
+        Capacite::create(['classe_id' => $nouvelleClasse->id, 'nom' => 'Sursaut d’activité', 'niveau' => 2]);
+        $personnage = PersonnageFactory::new()->create([
+            'utilisateur_id' => $utilisateur->id,
+            'race_id' => $race->id,
+            'classe_id' => $ancienneClasse->id,
+            'niveau' => 1,
+        ]);
+        app(CapaciteService::class)->synchroniser($personnage);
+
+        $this->actingAs($utilisateur)->patch("/personnages/{$personnage->id}", $this->donneesMiseAJour([
+            'race_id' => $race->id,
+            'classe_id' => $nouvelleClasse->id,
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame([$nouvelle->id], $personnage->refresh()->capacites->modelKeys());
     }
 
     public function test_la_mise_a_jour_efface_les_listes_quand_toutes_les_options_sont_decoches(): void
@@ -654,10 +848,10 @@ class PersonnageSheetTest extends TestCase
             'langues' => [],
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasNoErrors();
+        $reponse->assertSessionHasNoErrors();
         $personnage->refresh();
         $this->assertSame([], $personnage->langues);
         $this->assertSame([], $personnage->listeCompetence->fresh()->competences);
@@ -680,105 +874,13 @@ class PersonnageSheetTest extends TestCase
             'competences' => $competences,
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertRedirect(route('personnages.show', $personnage));
+        $reponse->assertRedirect(route('personnages.show', $personnage));
         $personnage->refresh();
         $this->assertSame('Nom conservé', $personnage->nom);
         $this->assertSame($competences, $personnage->listeCompetence->fresh()->competences);
-    }
-
-    public function test_les_statistiques_pv_et_niveau_sont_acceptes_avec_un_asi_valide(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-            'niveau' => 3,
-            'point_de_vie' => 10,
-        ]);
-        $competences = ['Athlétisme', 'Perception', 'Nature'];
-        $personnage->listeCompetence->update(['competences' => $competences]);
-
-        $donnees = $this->donneesMiseAJour([
-            'race_id' => $personnage->race_id,
-            'classe_id' => $personnage->classe_id,
-            'niveau' => 4,
-            'point_de_vie' => 20,
-            'force' => 12,
-            'competences' => $competences,
-        ]);
-
-        $response = $this->actingAs($utilisateur)
-            ->patch("/personnages/{$personnage->id}", $donnees);
-
-        $response->assertRedirect(route('personnages.show', $personnage));
-        $personnage->refresh();
-        $this->assertSame(4, $personnage->niveau);
-        $this->assertSame(20, $personnage->point_de_vie);
-        $this->assertSame(12, $personnage->abilites->fresh()->force);
-        $this->assertSame($competences, $personnage->listeCompetence->fresh()->competences);
-    }
-
-    public function test_la_mise_a_jour_refuse_de_diminuer_une_caracteristique(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-        ]);
-        $donnees = $this->donneesMiseAJour([
-            'race_id' => $personnage->race_id,
-            'classe_id' => $personnage->classe_id,
-            'force' => 9,
-        ]);
-
-        $this->actingAs($utilisateur)
-            ->patch(route('personnages.update', $personnage), $donnees)
-            ->assertSessionHasErrors('force');
-    }
-
-    public function test_la_mise_a_jour_refuse_une_augmentation_hors_asi(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-        $personnage = PersonnageFactory::new()->create([
-            'utilisateur_id' => $utilisateur->id,
-        ]);
-        $donnees = $this->donneesMiseAJour([
-            'race_id' => $personnage->race_id,
-            'classe_id' => $personnage->classe_id,
-            'force' => 11,
-        ]);
-
-        $this->actingAs($utilisateur)
-            ->patch(route('personnages.update', $personnage), $donnees)
-            ->assertSessionHasErrors('force');
-    }
-
-    public function test_les_niveaux_asi_specifiques_du_guerrier_et_du_roublard_sont_acceptes(): void
-    {
-        $utilisateur = Utilisateur::factory()->create();
-
-        foreach ([['Guerrier', 5, 6], ['Roublard', 9, 10]] as [$nomClasse, $ancienNiveau, $nouveauNiveau]) {
-            $classe = ClasseFactory::new()->create(['nom' => $nomClasse]);
-            $personnage = PersonnageFactory::new()->create([
-                'utilisateur_id' => $utilisateur->id,
-                'classe_id' => $classe->id,
-                'niveau' => $ancienNiveau,
-            ]);
-            $donnees = $this->donneesMiseAJour([
-                'race_id' => $personnage->race_id,
-                'classe_id' => $classe->id,
-                'niveau' => $nouveauNiveau,
-                'point_de_vie' => $personnage->point_de_vie,
-                'force' => 12,
-            ]);
-
-            $this->actingAs($utilisateur)
-                ->patch(route('personnages.update', $personnage), $donnees)
-                ->assertSessionHasNoErrors();
-
-            $this->assertSame(12, $personnage->abilites->fresh()->force);
-        }
     }
 
     public function test_la_mise_a_jour_conserve_une_sous_race_valide_meme_si_race_id_est_une_chaine(): void
@@ -806,10 +908,10 @@ class PersonnageSheetTest extends TestCase
             'sous_race_id' => $sousRace->id,
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasNoErrors();
+        $reponse->assertSessionHasNoErrors();
         $personnage->refresh();
         $this->assertSame($sousRace->id, $personnage->sous_race_id);
     }
@@ -833,10 +935,10 @@ class PersonnageSheetTest extends TestCase
             'sous_race_id' => $sousRace->id,
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasNoErrors();
+        $reponse->assertSessionHasNoErrors();
         $personnage->refresh();
         $this->assertSame($sousRace->id, $personnage->sous_race_id);
     }
@@ -859,10 +961,10 @@ class PersonnageSheetTest extends TestCase
             'classe_id' => $classe->id,
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasErrors(['sous_race_id']);
+        $reponse->assertSessionHasErrors(['sous_race_id']);
         $this->assertSame($ancienneRace->id, $personnage->refresh()->race_id);
     }
 
@@ -887,10 +989,10 @@ class PersonnageSheetTest extends TestCase
             'niveau' => 1,
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasErrors(['sous_classe_id']);
+        $reponse->assertSessionHasErrors(['sous_classe_id']);
         $personnage->refresh();
         $this->assertNull($personnage->sous_classe_id);
     }
@@ -916,10 +1018,10 @@ class PersonnageSheetTest extends TestCase
             'niveau' => 1,
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasNoErrors();
+        $reponse->assertSessionHasNoErrors();
         $personnage->refresh();
         $this->assertSame($sousClasse->id, $personnage->sous_classe_id);
     }
@@ -942,10 +1044,10 @@ class PersonnageSheetTest extends TestCase
             'classe_id' => $nouvelleClasse->id,
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasErrors(['sous_classe_id']);
+        $reponse->assertSessionHasErrors(['sous_classe_id']);
         $this->assertSame($ancienneClasse->id, $personnage->refresh()->classe_id);
     }
 
@@ -969,10 +1071,10 @@ class PersonnageSheetTest extends TestCase
             'competences' => ['Athlétisme', 'Perception', 'Nature'],
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasErrors(['competences']);
+        $reponse->assertSessionHasErrors(['competences']);
     }
 
     public function test_la_mise_a_jour_respecte_la_limite_de_langues_selon_le_niveau(): void
@@ -995,10 +1097,10 @@ class PersonnageSheetTest extends TestCase
             'langues' => ['Commun', 'Elfe', 'Nain'],
         ]);
 
-        $response = $this->actingAs($utilisateur)
+        $reponse = $this->actingAs($utilisateur)
             ->patch("/personnages/{$personnage->id}", $donnees);
 
-        $response->assertSessionHasErrors(['langues']);
+        $reponse->assertSessionHasErrors(['langues']);
     }
 
     public function test_un_proprietaire_peut_changer_la_photo_de_son_personnage(): void

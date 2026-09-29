@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Inventaire de ' . $personnage->nom)
+@section('titre', 'Inventaire de ' . $personnage->nom)
 
 @push('styles')
     <style>
@@ -12,7 +12,7 @@
             margin-bottom: 1rem;
         }
 
-        .inventaire-section-title {
+        .inventaire-section-titre {
             font-size: 1rem;
             font-weight: 600;
             color: var(--or);
@@ -65,13 +65,13 @@
             flex-wrap: wrap;
         }
 
-        .quantite-form {
+        .quantite-formulaire {
             display: flex;
             align-items: center;
             gap: 0.3rem;
         }
 
-        .quantite-form .valeur-quantite {
+        .quantite-formulaire .valeur-quantite {
             color: var(--or-doux);
             font-weight: 600;
             min-width: 1.5rem;
@@ -79,7 +79,7 @@
             display: inline-block;
         }
 
-        .btn-mini {
+        .bouton-mini {
             padding: 0.15rem 0.5rem;
             font-size: 0.75rem;
             line-height: 1.4;
@@ -121,18 +121,18 @@
     </style>
 @endpush
 
-@section('content')
-    <div class="sheet-container" style="max-width: 900px;">
+@section('contenu')
+    <div class="fiche-conteneur" style="max-width: 900px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
             <div>
-                <div class="text-gold" style="font-size: 1.3rem; font-weight: 700;">Inventaire de {{ $personnage->nom }}</div>
-                <div class="text-muted" style="font-size: 0.85rem;">{{ $personnage->classe->nom }} - {{ $personnage->race->nom }} · Classe d'Armure {{ $classeArmure }}</div>
+                <div class="texte-or" style="font-size: 1.3rem; font-weight: 700;">Inventaire de {{ $personnage->nom }}</div>
+                <div class="texte-attenue" style="font-size: 0.85rem;">{{ $personnage->classe->nom }} - {{ $personnage->race->nom }} · Classe d'Armure {{ $classeArmure }}</div>
             </div>
-            <a href="{{ route('personnages.show', $personnage) }}" class="btn btn-secondary btn-small">← Retour à la fiche</a>
+            <a href="{{ route('personnages.show', $personnage) }}" class="bouton bouton-secondaire bouton-petit">← Retour à la fiche</a>
         </div>
 
-        @if(session('success'))
-            <div class="inventaire-section" style="border-color: var(--alerte-succes-bordure);">{{ session('success') }}</div>
+        @if(session('succes'))
+            <div class="inventaire-section" style="border-color: var(--alerte-succes-bordure);">{{ session('succes') }}</div>
         @endif
         @if($errors->any())
             <div class="inventaire-section" style="border-color: var(--alerte-erreur-bordure);">
@@ -147,7 +147,7 @@
              main (pas de correspondance fiable avec le temps réel en combat). --}}
         @if($personnage->effetsActifs->count() > 0)
             <div class="inventaire-section">
-                <div class="inventaire-section-title">Effets actifs</div>
+                <div class="inventaire-section-titre">Effets actifs</div>
                 @foreach($personnage->effetsActifs as $effet)
                     @php
                         $texteBonus = collect($effet->bonus)->map(fn($v, $k) => ($v >= 0 ? '+' : '').$v.' '.str_replace('_', ' ', $k))->implode(', ');
@@ -158,18 +158,18 @@
                             <div class="objet-meta objet-bonus">{{ $texteBonus }}</div>
                         </div>
                         @if($effet->unite === 'tours')
-                            <form action="{{ route('personnages.inventaire.effets.tours', [$personnage, $effet]) }}" method="POST" class="quantite-form">
+                            <form action="{{ route('personnages.inventaire.effets.tours', [$personnage, $effet]) }}" method="POST" class="quantite-formulaire">
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="delta" value="-1">
-                                <button type="submit" class="btn btn-secondary btn-mini">−</button>
+                                <button type="submit" class="bouton bouton-secondaire bouton-mini">−</button>
                             </form>
                             <span class="valeur-quantite">{{ $effet->tours_restants }} tour(s)</span>
-                            <form action="{{ route('personnages.inventaire.effets.tours', [$personnage, $effet]) }}" method="POST" class="quantite-form">
+                            <form action="{{ route('personnages.inventaire.effets.tours', [$personnage, $effet]) }}" method="POST" class="quantite-formulaire">
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="delta" value="1">
-                                <button type="submit" class="btn btn-secondary btn-mini">+</button>
+                                <button type="submit" class="bouton bouton-secondaire bouton-mini">+</button>
                             </form>
                         @else
                             <div class="temps-restant" data-expire="{{ $effet->expire_a->toIso8601String() }}">…</div>
@@ -181,7 +181,7 @@
 
         {{-- Équipement porté : uniquement ce qui est réellement équipé --}}
         <div class="inventaire-section">
-            <div class="inventaire-section-title">Équipement porté</div>
+            <div class="inventaire-section-titre">Équipement porté</div>
             @php $equipes = $personnage->objets->filter(fn($objet) => $objet->pivot->quantite_equipee > 0); @endphp
             @forelse($equipes as $objet)
                 <div class="objet-ligne">
@@ -195,19 +195,19 @@
                     <form action="{{ route('personnages.inventaire.desequiper', [$personnage, $objet->pivot->id]) }}" method="POST" style="margin:0;">
                         @csrf
                         @method('PATCH')
-                        <button type="submit" class="btn btn-secondary btn-mini">Déséquiper</button>
+                        <button type="submit" class="bouton bouton-secondaire bouton-mini">Déséquiper</button>
                     </form>
                 </div>
             @empty
-                <div class="text-muted" style="font-size: 0.9rem;">Aucun équipement porté pour le moment.</div>
+                <div class="texte-attenue" style="font-size: 0.9rem;">Aucun équipement porté pour le moment.</div>
             @endforelse
         </div>
 
         {{-- Inventaire réel --}}
         <div class="inventaire-section">
-            <div class="inventaire-section-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="inventaire-section-titre" style="display: flex; justify-content: space-between; align-items: center;">
                 <span>Objets possédés</span>
-                <a href="{{ route('personnages.inventaire.ajouter-page', $personnage) }}" class="btn btn-primary btn-small">+ Ajouter un objet</a>
+                <a href="{{ route('personnages.inventaire.ajouter-page', $personnage) }}" class="bouton bouton-principal bouton-petit">+ Ajouter un objet</a>
             </div>
             @forelse($personnage->objets as $objet)
                 <div class="objet-ligne">
@@ -219,18 +219,18 @@
                         @include('partials.objet-stats', ['objet' => $objet])
                     </div>
                     <div class="objet-actions">
-                        <form action="{{ route('personnages.inventaire.quantite', [$personnage, $objet->pivot->id]) }}" method="POST" class="quantite-form">
+                        <form action="{{ route('personnages.inventaire.quantite', [$personnage, $objet->pivot->id]) }}" method="POST" class="quantite-formulaire">
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="delta" value="-1">
-                            <button type="submit" class="btn btn-secondary btn-mini" @disabled($objet->pivot->quantite <= 1)>−</button>
+                            <button type="submit" class="bouton bouton-secondaire bouton-mini" @disabled($objet->pivot->quantite <= 1)>−</button>
                         </form>
                         <span class="valeur-quantite">{{ $objet->pivot->quantite }}</span>
-                        <form action="{{ route('personnages.inventaire.quantite', [$personnage, $objet->pivot->id]) }}" method="POST" class="quantite-form">
+                        <form action="{{ route('personnages.inventaire.quantite', [$personnage, $objet->pivot->id]) }}" method="POST" class="quantite-formulaire">
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="delta" value="1">
-                            <button type="submit" class="btn btn-secondary btn-mini">+</button>
+                            <button type="submit" class="bouton bouton-secondaire bouton-mini">+</button>
                         </form>
 
                         @if(in_array($objet->type, ['arme', 'armure', 'bouclier']))
@@ -238,14 +238,14 @@
                                 <form action="{{ route('personnages.inventaire.desequiper', [$personnage, $objet->pivot->id]) }}" method="POST" style="margin:0;">
                                     @csrf
                                     @method('PATCH')
-                                    <button type="submit" class="btn btn-secondary btn-mini">Déséquiper</button>
+                                    <button type="submit" class="bouton bouton-secondaire bouton-mini">Déséquiper</button>
                                 </form>
                             @endif
                             @if($objet->pivot->quantite_equipee < $objet->pivot->quantite)
                                 <form action="{{ route('personnages.inventaire.equiper', [$personnage, $objet->pivot->id]) }}" method="POST" style="margin:0;">
                                     @csrf
                                     @method('PATCH')
-                                    <button type="submit" class="btn btn-primary btn-mini">Équiper{{ $objet->pivot->quantite_equipee > 0 ? ' un de plus' : '' }}</button>
+                                    <button type="submit" class="bouton bouton-principal bouton-mini">Équiper{{ $objet->pivot->quantite_equipee > 0 ? ' un de plus' : '' }}</button>
                                 </form>
                             @endif
                         @endif
@@ -253,7 +253,7 @@
                         @if($objet->est_consommable)
                             <form action="{{ route('personnages.inventaire.utiliser', [$personnage, $objet->pivot->id]) }}" method="POST" style="margin:0;">
                                 @csrf
-                                <button type="submit" class="btn btn-primary btn-mini">Utiliser</button>
+                                <button type="submit" class="bouton bouton-principal bouton-mini">Utiliser</button>
                             </form>
                         @endif
 
@@ -261,12 +261,12 @@
                               onsubmit="return confirm('Retirer {{ addslashes($objet->nom) }} de l\'inventaire ?');">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-mini">Retirer</button>
+                            <button type="submit" class="bouton bouton-danger bouton-mini">Retirer</button>
                         </form>
                     </div>
                 </div>
             @empty
-                <div class="text-muted" style="font-size: 0.9rem;">Aucun objet dans l'inventaire.</div>
+                <div class="texte-attenue" style="font-size: 0.9rem;">Aucun objet dans l'inventaire.</div>
             @endforelse
         </div>
     </div>

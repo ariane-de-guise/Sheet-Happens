@@ -20,17 +20,17 @@
  */
 
 import {
-    isValidTheme,
-    readStoredTheme,
-    writeStoredTheme,
-    resolveInitialTheme,
+    estThemeValide,
+    lireThemeMemorise,
+    ecrireThemeMemorise,
+    resoudreThemeInitial,
 } from "./theme-logic.js";
 
 /**
- * @param {"dark" | "light"} theme
+ * @param {"sombre" | "clair"} theme
  * @param {Document} doc
  */
-export function applyThemeToDocument(theme, doc) {
+export function appliquerThemeAuDocument(theme, doc) {
     doc.documentElement.setAttribute("data-theme", theme);
 }
 
@@ -41,27 +41,27 @@ export function applyThemeToDocument(theme, doc) {
  *
  * @param {Window} win
  * @param {Document} doc
- * @returns {"dark" | "light"} le thème appliqué.
+ * @returns {"sombre" | "clair"} le thème appliqué.
  */
-export function initTheme(win, doc) {
-    const stored = readStoredTheme(win.localStorage);
-    const theme = resolveInitialTheme(stored);
-    applyThemeToDocument(theme, doc);
+export function initialiserTheme(fenetre, doc) {
+    const memorise = lireThemeMemorise(fenetre.localStorage);
+    const theme = resoudreThemeInitial(memorise);
+    appliquerThemeAuDocument(theme, doc);
     return theme;
 }
 
-function updateToggleButtons(buttons, theme) {
-    buttons.forEach((button) => {
-        button.setAttribute(
+function majBoutonsTheme(boutons, theme) {
+    boutons.forEach((bouton) => {
+        bouton.setAttribute(
             "aria-pressed",
-            String(button.dataset.themeSet === theme)
+            String(bouton.dataset.themeChoisi === theme)
         );
     });
 }
 
 /**
- * Câble les boutons de thème (`[data-theme-set="light"]` et
- * `[data-theme-set="dark"]`) trouvés dans le document, s'ils
+ * Câble les boutons de thème (`[data-theme-choisi="clair"]` et
+ * `[data-theme-choisi="sombre"]`) trouvés dans le document, s'ils
  * existent. Chaque bouton applique explicitement le thème qu'il
  * représente, le mémorise, et met à jour l'état visuel des deux
  * boutons (curseur qui glisse, `aria-pressed`).
@@ -69,24 +69,24 @@ function updateToggleButtons(buttons, theme) {
  * @param {Window} win
  * @param {Document} doc
  */
-export function setupThemeToggle(win, doc) {
-    const buttons = Array.from(doc.querySelectorAll("[data-theme-set]"));
-    if (buttons.length === 0) return;
+export function brancherBoutonsTheme(fenetre, doc) {
+    const boutons = Array.from(doc.querySelectorAll("[data-theme-choisi]"));
+    if (boutons.length === 0) return;
 
-    let current = doc.documentElement.getAttribute("data-theme");
-    if (!isValidTheme(current)) {
-        current = initTheme(win, doc);
+    let courant = doc.documentElement.getAttribute("data-theme");
+    if (!estThemeValide(courant)) {
+        courant = initialiserTheme(fenetre, doc);
     }
-    updateToggleButtons(buttons, current);
+    majBoutonsTheme(boutons, courant);
 
-    buttons.forEach((button) => {
-        button.addEventListener("click", () => {
-            const target = button.dataset.themeSet;
-            if (!isValidTheme(target) || target === current) return;
-            current = target;
-            applyThemeToDocument(current, doc);
-            writeStoredTheme(win.localStorage, current);
-            updateToggleButtons(buttons, current);
+    boutons.forEach((bouton) => {
+        bouton.addEventListener("click", () => {
+            const cible = bouton.dataset.themeChoisi;
+            if (!estThemeValide(cible) || cible === courant) return;
+            courant = cible;
+            appliquerThemeAuDocument(courant, doc);
+            ecrireThemeMemorise(fenetre.localStorage, courant);
+            majBoutonsTheme(boutons, courant);
         });
     });
 }
@@ -94,12 +94,12 @@ export function setupThemeToggle(win, doc) {
 /* Auto-initialisation lorsque le fichier est chargé dans un navigateur
    (absent lors des imports depuis les tests Node). */
 if (typeof window !== "undefined" && typeof document !== "undefined") {
-    initTheme(window, document);
+    initialiserTheme(window, document);
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", () =>
-            setupThemeToggle(window, document)
+            brancherBoutonsTheme(window, document)
         );
     } else {
-        setupThemeToggle(window, document);
+        brancherBoutonsTheme(window, document);
     }
 }

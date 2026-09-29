@@ -383,14 +383,14 @@ class HistoriquesSeeder extends Seeder
             ],
         ];
 
-        foreach ($historiques as $data) {
-            $ideaux = $data['ideaux'];
-            $defauts = $data['defauts'];
-            $attachements = $data['attachements'];
-            $personnalites = $data['personnalites'];
-            unset($data['ideaux'], $data['defauts'], $data['attachements'], $data['personnalites']);
+        foreach ($historiques as $donnees) {
+            $ideaux = $donnees['ideaux'];
+            $defauts = $donnees['defauts'];
+            $attachements = $donnees['attachements'];
+            $personnalites = $donnees['personnalites'];
+            unset($donnees['ideaux'], $donnees['defauts'], $donnees['attachements'], $donnees['personnalites']);
 
-            $historique = Historique::create($data);
+            $historique = Historique::create($donnees);
 
             foreach ($ideaux as $ideal) {
                 Ideal::create(['historique_id' => $historique->id, ...$ideal]);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AjouterObjetPersonnaliseRequest;
 use App\Models\EffetActif;
 use App\Models\Objet;
 use App\Models\Personnage;
@@ -24,8 +25,6 @@ class InventaireController extends Controller
 
     public function index(Personnage $personnage): View
     {
-        $this->authorizeOwner($personnage);
-
         $this->inventaire->purgerEffetsExpires($personnage);
         $personnage->load(['race', 'classe', 'objets', 'effetsActifs']);
 
@@ -36,13 +35,11 @@ class InventaireController extends Controller
         ]);
     }
 
-    public function ajouterPage(Personnage $personnage): View
+    public function pageAjout(Personnage $personnage): View
     {
-        $this->authorizeOwner($personnage);
-
         $catalogue = Objet::query()
-            ->where(function ($query) {
-                $query->whereNull('utilisateur_id')->orWhere('utilisateur_id', Auth::id());
+            ->where(function ($requeteSql) {
+                $requeteSql->whereNull('utilisateur_id')->orWhere('utilisateur_id', Auth::id());
             })
             ->orderBy('type')
             ->orderBy('nom')
@@ -54,76 +51,51 @@ class InventaireController extends Controller
         ]);
     }
 
-    public function ajouterCustomPage(Personnage $personnage): View
+    public function pageAjoutPersonnalise(Personnage $personnage): View
     {
-        $this->authorizeOwner($personnage);
-
-        return view('personnages.inventaire-ajouter-custom', [
+        return view('personnages.inventaire-ajouter-personnalise', [
             'personnage' => $personnage,
         ]);
     }
 
-    public function ajouter(Request $request, Personnage $personnage): RedirectResponse
+    public function ajouter(Request $requete, Personnage $personnage): RedirectResponse
     {
-        $this->authorizeOwner($personnage);
-
-        $validated = $request->validate([
+        $donneesValidees = $requete->validate([
             'objet_id' => [
                 'required',
                 'integer',
-                Rule::exists('objets', 'id')->where(function ($query) {
-                    $query->whereNull('utilisateur_id')->orWhere('utilisateur_id', Auth::id());
+                Rule::exists('objets', 'id')->where(function ($requeteSql) {
+                    $requeteSql->whereNull('utilisateur_id')->orWhere('utilisateur_id', Auth::id());
                 }),
             ],
             'quantite' => 'nullable|integer|min:1|max:999',
         ]);
 
-        $objet = Objet::findOrFail($validated['objet_id']);
+        $objet = Objet::findOrFail($donneesValidees['objet_id']);
 
-        $this->inventaire->ajouter($personnage, $objet, $validated['quantite'] ?? 1);
+        $this->inventaire->ajouter($personnage, $objet, $donneesValidees['quantite'] ?? 1);
 
         return redirect()->route('personnages.inventaire.index', $personnage)
-            ->with('success', "{$objet->nom} ajouté à l'inventaire.");
+            ->with('succes', "{$objet->nom} ajouté à l'inventaire.");
     }
 
-    public function ajouterCustom(Request $request, Personnage $personnage): RedirectResponse
+    public function ajouterPersonnalise(AjouterObjetPersonnaliseRequest $requete, Personnage $personnage): RedirectResponse
     {
-        $this->authorizeOwner($personnage);
+        $donneesValidees = $requete->validated();
 
-        $validated = $request->validate([
-            'nom' => 'required|string|max:100',
-            'description' => 'nullable|string|max:1000',
-            'type' => ['required', Rule::in(Objet::TYPES)],
-            'categorie' => 'nullable|string|max:50',
-            'cout_mains' => 'nullable|integer|in:1,2',
-            'quantite' => 'nullable|integer|min:1|max:999',
-            'magique' => 'nullable|boolean',
-            'rarete' => ['nullable', Rule::in(Objet::RARETES)],
-            'bonus_toujours_actif' => 'nullable|boolean',
-            'bonus' => 'nullable|array',
-            'bonus.*' => 'nullable|integer|min:-20|max:20',
-            'degats' => 'nullable|string|max:20',
-            'type_degats' => ['nullable', Rule::in(['tranchant', 'perforant', 'contondant'])],
-            'caracteristique_degats' => ['nullable', Rule::in(['force', 'dexterite'])],
-            'ca_base' => 'nullable|integer|min:1|max:30',
-            'effet_pv' => 'nullable|integer|min:-100|max:100',
-            'duree_valeur' => 'nullable|integer|min:1|max:999',
-            'duree_unite' => ['nullable', Rule::in(['tours', 'minutes'])],
-        ]);
+        $estPotion = $donneesValidees['type'] === 'potion';
+        $estArme = $donneesValidees['type'] === 'arme';
+        $estArmure = $donneesValidees['type'] === 'armure';
+        $magique = (bool) ($donneesValidees['magique'] ?? false);
 
-        $estPotion = $validated['type'] === 'potion';
-        $estArme = $validated['type'] === 'arme';
-        $estArmure = $validated['type'] === 'armure';
-        $magique = (bool) ($validated['magique'] ?? false);
-
-        $description = $validated['description'] ?? null;
-        if ($estPotion && ! empty($validated['duree_valeur'])) {
-            $unite = $validated['duree_unite'] ?? 'tours';
-            $phraseDuree = "Durée : {$validated['duree_valeur']} {$unite}.";
+        $description = $donneesValidees['description'] ?? null;
+        if ($estPotion && ! empty($donneesValidees['duree_valeur'])) {
+            $unite = $donneesValidees['duree_unite'] ?? 'tours';
+            $phraseDuree = "Durée : {$donneesValidees['duree_valeur']} {$unite}.";
             $description = $description ? "{$description}\n\n{$phraseDuree}" : $phraseDuree;
         }
 
-        $bonusSaisi = array_filter($validated['bonus'] ?? [], fn ($valeur) => (int) $valeur !== 0);
+        $bonusSaisi = array_filter($donneesValidees['bonus'] ?? [], fn ($valeur) => (int) $valeur !== 0);
 
         // Pour une potion, le bonus saisi n'est pas un bonus d'équipement
         // permanent (une potion se consomme, ne s'équipe pas) : il devient
@@ -135,66 +107,66 @@ class InventaireController extends Controller
         $effetUtilisation = null;
         if ($estPotion) {
             $effetUtilisation = [];
-            if (! empty($validated['effet_pv'])) {
-                $effetUtilisation['pv'] = (int) $validated['effet_pv'];
+            if (! empty($donneesValidees['effet_pv'])) {
+                $effetUtilisation['pv'] = (int) $donneesValidees['effet_pv'];
             }
-            if ($bonusSaisi && ! empty($validated['duree_valeur'])) {
-                $unite = $validated['duree_unite'] ?? 'tours';
+            if ($bonusSaisi && ! empty($donneesValidees['duree_valeur'])) {
+                $unite = $donneesValidees['duree_unite'] ?? 'tours';
                 $effetUtilisation['bonus'] = $bonusSaisi;
-                $effetUtilisation['duree_valeur'] = (int) $validated['duree_valeur'];
+                $effetUtilisation['duree_valeur'] = (int) $donneesValidees['duree_valeur'];
                 $effetUtilisation['duree_unite'] = $unite;
-                $effetUtilisation['duree_secondes'] = (int) $validated['duree_valeur'] * ($unite === 'minutes' ? 60 : 6);
+                $effetUtilisation['duree_secondes'] = (int) $donneesValidees['duree_valeur'] * ($unite === 'minutes' ? 60 : 6);
             }
             $effetUtilisation = $effetUtilisation ?: null;
         }
 
         $coutMains = match (true) {
-            $validated['type'] === 'bouclier' => 1,
-            $estArme => (int) ($validated['cout_mains'] ?? ($validated['categorie'] === 'une_main' ? 1 : 2)),
+            $donneesValidees['type'] === 'bouclier' => 1,
+            $estArme => (int) ($donneesValidees['cout_mains'] ?? ($donneesValidees['categorie'] === 'une_main' ? 1 : 2)),
             default => 0,
         };
 
         $objet = Objet::create([
             'utilisateur_id' => Auth::id(),
-            'nom' => $validated['nom'],
+            'nom' => $donneesValidees['nom'],
             'description' => $description,
-            'type' => $validated['type'],
+            'type' => $donneesValidees['type'],
             'magique' => $magique,
-            'rarete' => $magique ? ($validated['rarete'] ?? null) : null,
-            'categorie' => $validated['categorie'] ?? null,
+            'rarete' => $magique ? ($donneesValidees['rarete'] ?? null) : null,
+            'categorie' => $donneesValidees['categorie'] ?? null,
             'cout_mains' => $coutMains,
             'bonus' => $estPotion ? null : ($bonusSaisi ?: null),
-            'bonus_toujours_actif' => $estPotion ? false : (bool) ($validated['bonus_toujours_actif'] ?? false),
+            'bonus_toujours_actif' => $estPotion ? false : (bool) ($donneesValidees['bonus_toujours_actif'] ?? false),
             'est_consommable' => $estPotion,
             'effet_utilisation' => $effetUtilisation,
-            'degats' => $estArme ? ($validated['degats'] ?? null) : null,
-            'type_degats' => $estArme ? ($validated['type_degats'] ?? null) : null,
-            'caracteristique_degats' => $estArme ? ($validated['caracteristique_degats'] ?? null) : null,
-            'ca_base' => $estArmure ? ($validated['ca_base'] ?? null) : null,
+            'degats' => $estArme ? ($donneesValidees['degats'] ?? null) : null,
+            'type_degats' => $estArme ? ($donneesValidees['type_degats'] ?? null) : null,
+            'caracteristique_degats' => $estArme ? ($donneesValidees['caracteristique_degats'] ?? null) : null,
+            'ca_base' => $estArmure ? ($donneesValidees['ca_base'] ?? null) : null,
         ]);
 
-        $this->inventaire->ajouter($personnage, $objet, $validated['quantite'] ?? 1);
+        $this->inventaire->ajouter($personnage, $objet, $donneesValidees['quantite'] ?? 1);
 
         return redirect()->route('personnages.inventaire.index', $personnage)
-            ->with('success', "{$objet->nom} créé et ajouté à l'inventaire.");
+            ->with('succes', "{$objet->nom} créé et ajouté à l'inventaire.");
     }
 
-    public function ajusterQuantite(Request $request, Personnage $personnage, PersonnageObjet $personnageObjet): RedirectResponse
+    public function ajusterQuantite(Request $requete, Personnage $personnage, PersonnageObjet $personnageObjet): RedirectResponse
     {
-        $this->authorizeLigne($personnage, $personnageObjet);
+        $this->verifierLigne($personnage, $personnageObjet);
 
-        $validated = $request->validate([
+        $donneesValidees = $requete->validate([
             'delta' => 'required|integer',
         ]);
 
-        $this->inventaire->ajusterQuantite($personnageObjet, $validated['delta'], permetSuppression: false);
+        $this->inventaire->ajusterQuantite($personnageObjet, $donneesValidees['delta'], permetSuppression: false);
 
         return back();
     }
 
     public function equiper(Personnage $personnage, PersonnageObjet $personnageObjet): RedirectResponse
     {
-        $this->authorizeLigne($personnage, $personnageObjet);
+        $this->verifierLigne($personnage, $personnageObjet);
 
         try {
             $this->inventaire->equiper($personnage, $personnageObjet);
@@ -202,21 +174,21 @@ class InventaireController extends Controller
             return back()->withErrors($e->errors());
         }
 
-        return back()->with('success', 'Objet équipé.');
+        return back()->with('succes', 'Objet équipé.');
     }
 
     public function desequiper(Personnage $personnage, PersonnageObjet $personnageObjet): RedirectResponse
     {
-        $this->authorizeLigne($personnage, $personnageObjet);
+        $this->verifierLigne($personnage, $personnageObjet);
 
         $this->inventaire->desequiper($personnageObjet);
 
-        return back()->with('success', 'Objet déséquipé.');
+        return back()->with('succes', 'Objet déséquipé.');
     }
 
     public function utiliser(Personnage $personnage, PersonnageObjet $personnageObjet): RedirectResponse
     {
-        $this->authorizeLigne($personnage, $personnageObjet);
+        $this->verifierLigne($personnage, $personnageObjet);
 
         try {
             $this->inventaire->utiliser($personnage, $personnageObjet);
@@ -224,16 +196,16 @@ class InventaireController extends Controller
             return back()->withErrors($e->errors());
         }
 
-        return back()->with('success', 'Objet utilisé.');
+        return back()->with('succes', 'Objet utilisé.');
     }
 
     public function retirer(Personnage $personnage, PersonnageObjet $personnageObjet): RedirectResponse
     {
-        $this->authorizeLigne($personnage, $personnageObjet);
+        $this->verifierLigne($personnage, $personnageObjet);
 
         $this->inventaire->retirer($personnageObjet);
 
-        return back()->with('success', 'Objet retiré de l\'inventaire.');
+        return back()->with('succes', 'Objet retiré de l\'inventaire.');
     }
 
     /**
@@ -241,33 +213,26 @@ class InventaireController extends Controller
      * InventaireService::ajusterTours()) : les effets en minutes, eux,
      * expirent tout seuls et n'ont pas besoin de cette action.
      */
-    public function ajusterTours(Request $request, Personnage $personnage, EffetActif $effetActif): RedirectResponse
+    public function ajusterTours(Request $requete, Personnage $personnage, EffetActif $effetActif): RedirectResponse
     {
-        $this->authorizeEffet($personnage, $effetActif);
+        $this->verifierEffet($personnage, $effetActif);
 
-        $validated = $request->validate([
+        $donneesValidees = $requete->validate([
             'delta' => 'required|integer',
         ]);
 
-        $this->inventaire->ajusterTours($effetActif, $validated['delta']);
+        $this->inventaire->ajusterTours($effetActif, $donneesValidees['delta']);
 
         return back();
     }
 
-    private function authorizeOwner(Personnage $personnage): void
+    private function verifierLigne(Personnage $personnage, PersonnageObjet $personnageObjet): void
     {
-        abort_unless($personnage->utilisateur_id === Auth::id(), 403);
-    }
-
-    private function authorizeLigne(Personnage $personnage, PersonnageObjet $personnageObjet): void
-    {
-        $this->authorizeOwner($personnage);
         abort_unless($personnageObjet->personnage_id === $personnage->id, 404);
     }
 
-    private function authorizeEffet(Personnage $personnage, EffetActif $effetActif): void
+    private function verifierEffet(Personnage $personnage, EffetActif $effetActif): void
     {
-        $this->authorizeOwner($personnage);
         abort_unless($effetActif->personnage_id === $personnage->id, 404);
     }
 }

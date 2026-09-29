@@ -2,116 +2,116 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    STORAGE_KEY,
-    THEME_DARK,
-    THEME_LIGHT,
-    isValidTheme,
-    readStoredTheme,
-    writeStoredTheme,
-    resolveInitialTheme,
-    toggleTheme,
+    CLE_STOCKAGE,
+    THEME_SOMBRE,
+    THEME_CLAIR,
+    estThemeValide,
+    lireThemeMemorise,
+    ecrireThemeMemorise,
+    resoudreThemeInitial,
+    basculerTheme,
 } from "../../public/js/theme-logic.js";
 
 /** Petit faux localStorage pour les tests. */
 function createFakeStorage(initial = {}) {
-    const store = { ...initial };
+    const reserve = { ...initial };
     return {
-        getItem(key) {
-            return Object.prototype.hasOwnProperty.call(store, key)
-                ? store[key]
+        getItem(cle) {
+            return Object.prototype.hasOwnProperty.call(reserve, cle)
+                ? reserve[cle]
                 : null;
         },
-        setItem(key, value) {
-            store[key] = String(value);
+        setItem(cle, valeur) {
+            reserve[cle] = String(valeur);
         },
-        _dump: () => ({ ...store }),
+        _dump: () => ({ ...reserve }),
     };
 }
 
-test("isValidTheme accepte uniquement 'dark' et 'light'", () => {
-    assert.equal(isValidTheme(THEME_DARK), true);
-    assert.equal(isValidTheme(THEME_LIGHT), true);
-    assert.equal(isValidTheme("sombre"), false);
-    assert.equal(isValidTheme(""), false);
-    assert.equal(isValidTheme(null), false);
-    assert.equal(isValidTheme(undefined), false);
-    assert.equal(isValidTheme(42), false);
+test("estThemeValide accepte uniquement 'sombre' et 'clair'", () => {
+    assert.equal(estThemeValide(THEME_SOMBRE), true);
+    assert.equal(estThemeValide(THEME_CLAIR), true);
+    assert.equal(estThemeValide("dark"), false);
+    assert.equal(estThemeValide(""), false);
+    assert.equal(estThemeValide(null), false);
+    assert.equal(estThemeValide(undefined), false);
+    assert.equal(estThemeValide(42), false);
 });
 
-test("readStoredTheme lit une valeur valide", () => {
-    const storage = createFakeStorage({ [STORAGE_KEY]: THEME_LIGHT });
-    assert.equal(readStoredTheme(storage), THEME_LIGHT);
+test("lireThemeMemorise lit une valeur valide", () => {
+    const stockage = createFakeStorage({ [CLE_STOCKAGE]: THEME_CLAIR });
+    assert.equal(lireThemeMemorise(stockage), THEME_CLAIR);
 });
 
-test("readStoredTheme renvoie null quand rien n'est stocké", () => {
-    const storage = createFakeStorage();
-    assert.equal(readStoredTheme(storage), null);
+test("lireThemeMemorise renvoie null quand rien n'est stocké", () => {
+    const stockage = createFakeStorage();
+    assert.equal(lireThemeMemorise(stockage), null);
 });
 
-test("readStoredTheme renvoie null pour une valeur corrompue", () => {
-    const storage = createFakeStorage({ [STORAGE_KEY]: "not-a-theme" });
-    assert.equal(readStoredTheme(storage), null);
+test("lireThemeMemorise renvoie null pour une valeur corrompue", () => {
+    const stockage = createFakeStorage({ [CLE_STOCKAGE]: "not-a-theme" });
+    assert.equal(lireThemeMemorise(stockage), null);
 });
 
-test("readStoredTheme renvoie null si le stockage est absent", () => {
-    assert.equal(readStoredTheme(null), null);
-    assert.equal(readStoredTheme(undefined), null);
+test("lireThemeMemorise renvoie null si le stockage est absent", () => {
+    assert.equal(lireThemeMemorise(null), null);
+    assert.equal(lireThemeMemorise(undefined), null);
 });
 
-test("readStoredTheme renvoie null si le stockage lève une exception", () => {
-    const storage = {
+test("lireThemeMemorise renvoie null si le stockage lève une exception", () => {
+    const stockage = {
         getItem() {
             throw new Error("stockage indisponible");
         },
     };
-    assert.equal(readStoredTheme(storage), null);
+    assert.equal(lireThemeMemorise(stockage), null);
 });
 
-test("writeStoredTheme mémorise un thème valide", () => {
-    const storage = createFakeStorage();
-    const ok = writeStoredTheme(storage, THEME_DARK);
+test("ecrireThemeMemorise mémorise un thème valide", () => {
+    const stockage = createFakeStorage();
+    const ok = ecrireThemeMemorise(stockage, THEME_SOMBRE);
     assert.equal(ok, true);
-    assert.equal(storage._dump()[STORAGE_KEY], THEME_DARK);
+    assert.equal(stockage._dump()[CLE_STOCKAGE], THEME_SOMBRE);
 });
 
-test("writeStoredTheme rejette un thème invalide", () => {
-    const storage = createFakeStorage();
-    assert.throws(() => writeStoredTheme(storage, "bleu"), /Thème invalide/);
+test("ecrireThemeMemorise rejette un thème invalide", () => {
+    const stockage = createFakeStorage();
+    assert.throws(() => ecrireThemeMemorise(stockage, "bleu"), /Thème invalide/);
 });
 
-test("writeStoredTheme renvoie false si le stockage est absent", () => {
-    assert.equal(writeStoredTheme(null, THEME_DARK), false);
+test("ecrireThemeMemorise renvoie false si le stockage est absent", () => {
+    assert.equal(ecrireThemeMemorise(null, THEME_SOMBRE), false);
 });
 
-test("writeStoredTheme renvoie false si le stockage lève une exception", () => {
-    const storage = {
+test("ecrireThemeMemorise renvoie false si le stockage lève une exception", () => {
+    const stockage = {
         setItem() {
             throw new Error("quota dépassé");
         },
     };
-    assert.equal(writeStoredTheme(storage, THEME_LIGHT), false);
+    assert.equal(ecrireThemeMemorise(stockage, THEME_CLAIR), false);
 });
 
-test("resolveInitialTheme respecte le thème mémorisé, qu'il soit clair ou sombre", () => {
-    assert.equal(resolveInitialTheme(THEME_LIGHT), THEME_LIGHT);
-    assert.equal(resolveInitialTheme(THEME_DARK), THEME_DARK);
+test("resoudreThemeInitial respecte le thème mémorisé, qu'il soit clair ou sombre", () => {
+    assert.equal(resoudreThemeInitial(THEME_CLAIR), THEME_CLAIR);
+    assert.equal(resoudreThemeInitial(THEME_SOMBRE), THEME_SOMBRE);
 });
 
-test("resolveInitialTheme retombe sur le thème sombre par défaut si rien n'est mémorisé", () => {
-    assert.equal(resolveInitialTheme(null), THEME_DARK);
-    assert.equal(resolveInitialTheme(undefined), THEME_DARK);
+test("resoudreThemeInitial retombe sur le thème sombre par défaut si rien n'est mémorisé", () => {
+    assert.equal(resoudreThemeInitial(null), THEME_SOMBRE);
+    assert.equal(resoudreThemeInitial(undefined), THEME_SOMBRE);
 });
 
-test("resolveInitialTheme retombe sur le thème sombre si la valeur mémorisée est invalide", () => {
-    assert.equal(resolveInitialTheme("corrompu"), THEME_DARK);
+test("resoudreThemeInitial retombe sur le thème sombre si la valeur mémorisée est invalide", () => {
+    assert.equal(resoudreThemeInitial("corrompu"), THEME_SOMBRE);
 });
 
-test("toggleTheme bascule entre les deux thèmes", () => {
-    assert.equal(toggleTheme(THEME_DARK), THEME_LIGHT);
-    assert.equal(toggleTheme(THEME_LIGHT), THEME_DARK);
+test("basculerTheme bascule entre les deux thèmes", () => {
+    assert.equal(basculerTheme(THEME_SOMBRE), THEME_CLAIR);
+    assert.equal(basculerTheme(THEME_CLAIR), THEME_SOMBRE);
 });
 
-test("toggleTheme est involutif (appliqué deux fois, revient au thème de départ)", () => {
-    assert.equal(toggleTheme(toggleTheme(THEME_DARK)), THEME_DARK);
-    assert.equal(toggleTheme(toggleTheme(THEME_LIGHT)), THEME_LIGHT);
+test("basculerTheme est involutif (appliqué deux fois, revient au thème de départ)", () => {
+    assert.equal(basculerTheme(basculerTheme(THEME_SOMBRE)), THEME_SOMBRE);
+    assert.equal(basculerTheme(basculerTheme(THEME_CLAIR)), THEME_CLAIR);
 });

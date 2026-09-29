@@ -1,103 +1,103 @@
 @extends('layouts.app')
 
-@section('title', 'Créer un personnage - Race')
+@section('titre', 'Créer un personnage - Race')
 
-@section('content')
-    <div class="card">
-        <div class="text-center mb-3">
-            <span class="text-gold">Créer un personnage</span>
+@section('contenu')
+    <div class="carte">
+        <div class="texte-centre marge-bas-3">
+            <span class="texte-or">Créer un personnage</span>
         </div>
 
-        <div class="progress-bar">
-            <div class="progress-line">
-                <div class="progress-fill" style="width: 0%;"></div>
+        <div class="barre-progression">
+            <div class="ligne-progression">
+                <div class="remplissage-progression" style="width: 0%;"></div>
             </div>
             @for($i = 1; $i <= 6; $i++)
-                <div class="progress-step {{ $i === 1 ? 'active' : '' }}">
+                <div class="etape-progression {{ $i === 1 ? 'active' : '' }}">
                     {{ $i }}
                 </div>
             @endfor
         </div>
 
-        <h2 class="title-section text-center">Choisissez votre race</h2>
+        <h2 class="titre-section texte-centre">Choisissez votre race</h2>
 
-        @if(session('error'))
-            <div class="alert alert-error">{{ session('error') }}</div>
+        @if(session('erreur'))
+            <div class="alerte alerte-erreur">{{ session('erreur') }}</div>
         @endif
 
         @if($errors->any())
-            <div class="alert alert-error" id="raceErrors">
-                @foreach($errors->all() as $error)
-                    {{ $error }}<br>
+            <div class="alerte alerte-erreur" id="raceErreurs">
+                @foreach($errors->all() as $erreur)
+                    {{ $erreur }}<br>
                 @endforeach
             </div>
         @else
-            <div class="alert alert-error" id="raceErrors" style="display: none;">
+            <div class="alerte alerte-erreur" id="raceErreurs" style="display: none;">
                 Vous devez choisir une race avant de continuer.
             </div>
         @endif
 
         @php
-            $selectedRaceModel = $selectedRace ? $races->find($selectedRace) : null;
-            $selectedSousRaceModel = $selectedRaceModel && $selectedSousRace
-                ? $selectedRaceModel->sousRaces->firstWhere('id', $selectedSousRace)
+            $raceChoisieModele = $raceChoisie ? $races->find($raceChoisie) : null;
+            $sousRaceChoisieModele = $raceChoisieModele && $sousRaceChoisie
+                ? $raceChoisieModele->sousRaces->firstWhere('id', $sousRaceChoisie)
                 : null;
         @endphp
 
-        <form action="{{ route('creation.race.save') }}" method="POST" id="raceForm">
+        <form action="{{ route('creation.race.enregistrer') }}" method="POST" id="raceFormulaire">
             @csrf
-            <div class="grid-cards mb-4" id="racesGrid">
+            <div class="grille-cartes marge-bas-4" id="racesGrille">
                 @foreach($races as $race)
-                    <div class="card-choice {{ $selectedRace == $race->id ? 'selected' : '' }}"
-                         onclick="selectRace({{ $race->id }}, this)">
+                    <div class="carte-choix {{ $raceChoisie == $race->id ? 'selectionne' : '' }}"
+                         onclick="choisirRace({{ $race->id }}, this)">
                         <input type="radio" name="race_id" value="{{ $race->id }}"
-                               {{ $selectedRace == $race->id ? 'checked' : '' }}
+                               {{ $raceChoisie == $race->id ? 'checked' : '' }}
                                required
                                style="display: none;">
-                        <div class="card-title">{{ $race->nom }}</div>
+                        <div class="carte-titre">{{ $race->nom }}</div>
                         @if($race->taille)
-                            <div class="card-desc">{{ $race->taille }}</div>
+                            <div class="carte-desc">{{ $race->taille }}</div>
                         @endif
                         @if($race->vitesse)
-                            <div class="card-desc">Vitesse: {{ $race->vitesse }} ft</div>
+                            <div class="carte-desc">Vitesse: {{ $race->vitesse }} ft</div>
                         @endif
                     </div>
                 @endforeach
             </div>
 
-            <div class="help-box mb-4" id="raceDescription" style="{{ $selectedRaceModel && $selectedRaceModel->description ? '' : 'display:none;' }}">
-                <div class="title" id="raceDescriptionTitle">{{ $selectedRaceModel->nom ?? '' }}</div>
-                <div class="content" id="raceDescriptionContent">{{ $selectedRaceModel->description ?? '' }}</div>
+            <div class="boite-aide marge-bas-4" id="raceDescription" style="{{ $raceChoisieModele && $raceChoisieModele->description ? '' : 'display:none;' }}">
+                <div class="titre" id="raceDescriptionTitre">{{ $raceChoisieModele->nom ?? '' }}</div>
+                <div class="contenu" id="raceDescriptionContenu">{{ $raceChoisieModele->description ?? '' }}</div>
             </div>
 
-            <div id="sousRaceContainer">
-                @if($selectedRaceModel && $selectedRaceModel->sousRaces->count() > 0)
-                    <h3 class="title-section mb-2">Sous-race</h3>
-                    <div class="alert alert-error" id="sousRaceErrors" style="display: none;">
+            <div id="sousRaceConteneur">
+                @if($raceChoisieModele && $raceChoisieModele->sousRaces->count() > 0)
+                    <h3 class="titre-section marge-bas-2">Sous-race</h3>
+                    <div class="alerte alerte-erreur" id="sousRaceErreurs" style="display: none;">
                         Vous devez choisir une sous-race avant de continuer.
                     </div>
-                    <div class="grid-cards mb-4" id="sousRacesGrid">
-                        @foreach($selectedRaceModel->sousRaces as $sousRace)
-                            <div class="card-choice {{ $selectedSousRace == $sousRace->id ? 'selected' : '' }}"
-                                 onclick="selectSousRace({{ $sousRace->id }}, this)">
+                    <div class="grille-cartes marge-bas-4" id="sousRacesGrille">
+                        @foreach($raceChoisieModele->sousRaces as $sousRace)
+                            <div class="carte-choix {{ $sousRaceChoisie == $sousRace->id ? 'selectionne' : '' }}"
+                                 onclick="choisirSousRace({{ $sousRace->id }}, this)">
                                 <input type="radio" name="sous_race_id" value="{{ $sousRace->id }}"
-                                       {{ $selectedSousRace == $sousRace->id ? 'checked' : '' }}
+                                       {{ $sousRaceChoisie == $sousRace->id ? 'checked' : '' }}
                                        required
                                        style="display: none;">
-                                <div class="card-title">{{ $sousRace->nom }}</div>
+                                <div class="carte-titre">{{ $sousRace->nom }}</div>
                             </div>
                         @endforeach
                     </div>
-                    <div class="help-box mb-4" id="sousRaceDescription" style="{{ $selectedSousRaceModel && $selectedSousRaceModel->description ? '' : 'display:none;' }}">
-                        <div class="title" id="sousRaceDescriptionTitle">{{ $selectedSousRaceModel->nom ?? '' }}</div>
-                        <div class="content" id="sousRaceDescriptionContent">{{ $selectedSousRaceModel->description ?? '' }}</div>
+                    <div class="boite-aide marge-bas-4" id="sousRaceDescription" style="{{ $sousRaceChoisieModele && $sousRaceChoisieModele->description ? '' : 'display:none;' }}">
+                        <div class="titre" id="sousRaceDescriptionTitre">{{ $sousRaceChoisieModele->nom ?? '' }}</div>
+                        <div class="contenu" id="sousRaceDescriptionContenu">{{ $sousRaceChoisieModele->description ?? '' }}</div>
                     </div>
                 @endif
             </div>
 
-            <div class="btn-group-row">
-                <a href="{{ route('welcome') }}" class="btn btn-secondary">Retour</a>
-                <button type="submit" class="btn btn-primary" id="btnSuivant">Suivant</button>
+            <div class="bouton-groupe-ligne">
+                <a href="{{ route('welcome') }}" class="bouton bouton-secondaire">Retour</a>
+                <button type="submit" class="bouton bouton-principal" id="boutonSuivant">Suivant</button>
             </div>
         </form>
     </div>
@@ -106,9 +106,9 @@
         <script>
             // Données injectées par le serveur pour cette page ; toute la logique
             // vit dans un fichier séparé (public/js/creation/race.js).
-            window.RaceCreationData = {
+            window.DonneesCreationRace = {
                 races: @json($races->keyBy('id')),
-                initialSousRaces: @json($selectedRaceModel->sousRaces ?? []),
+                sousRacesInitiales: @json($raceChoisieModele->sousRaces ?? []),
             };
         </script>
         <script src="{{ asset('js/creation/race.js') }}"></script>

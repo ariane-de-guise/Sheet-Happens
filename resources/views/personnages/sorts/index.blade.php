@@ -1,15 +1,15 @@
 @extends('layouts.app')
-@section('title', $personnage->nom . ' — Sorts connus')
+@section('titre', $personnage->nom . ' — Sorts connus')
 
 @push('styles')
     <style>
-        .sorts-page {
+        .page-sorts {
             max-width: 880px;
             margin: 0 auto;
             color: var(--or);
         }
 
-        .maquette-header {
+        .maquette-entete {
             background: var(--panneau);
             border: 1px solid var(--or-bordure);
             padding: 1rem;
@@ -18,7 +18,7 @@
         }
 
         /* Use same 3-column grid as levels so columns align */
-        .spell-slots {
+        .emplacements-sorts {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
@@ -26,7 +26,7 @@
             align-items: start;
         }
 
-        .slot-box {
+        .boite-emplacement {
             flex: 1;
             border: 1px dashed var(--or-bordure);
             padding: 0.75rem;
@@ -36,7 +36,7 @@
             color: var(--or-doux);
         }
 
-        .cast-bar {
+        .barre-lancement {
             background: var(--panneau);
             border: 1px solid var(--or-bordure);
             padding: 1rem;
@@ -45,14 +45,14 @@
         }
 
         /* cast-grid uses the same 3-column template to align with slots and levels */
-        .cast-grid {
+        .grille-lancement {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
             align-items: center;
         }
 
-        .cast-item {
+        .element-lancement {
             display: flex;
             align-items: center;
             gap: 0.6rem;
@@ -60,13 +60,13 @@
             font-weight: 600;
         }
 
-        .levels {
+        .niveaux {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
         }
 
-        .level-card {
+        .carte-niveau {
             background: var(--panneau);
             border: 1px solid var(--or-bordure);
             padding: 0.75rem;
@@ -75,13 +75,13 @@
             color: var(--or);
         }
 
-        .level-card .slots {
+        .carte-niveau .emplacements {
             margin-bottom: 0.75rem;
             color: var(--or-doux);
             font-weight: 700;
         }
 
-        .spell-list {
+        .liste-sorts {
             list-style: none;
             padding: 0;
             margin: 0;
@@ -90,13 +90,13 @@
             gap: 0.5rem;
         }
 
-        .spell-list li {
+        .liste-sorts li {
             display: flex;
             gap: 0.5rem;
             align-items: center;
         }
 
-        .spell-list-header .col-label {
+        .liste-sorts-entete .etiquette-colonne {
             display: inline-block;
             width: 14px;
             margin-right: 6px;
@@ -108,16 +108,16 @@
         }
 
         /* Make spell name clearly interactive for hover */
-        .spell-hover {
+        .sort-survol {
             cursor: pointer;
             text-decoration: underline dotted var(--or-ligne-forte);
         }
-        .spell-hover:hover {
+        .sort-survol:hover {
             color: var(--or-doux);
             text-decoration-color: var(--or-doux);
         }
 
-        .spell-detail {
+        .sort-detail {
             display: none;
             margin-top: 0.5rem;
             background: var(--panneau);
@@ -128,10 +128,10 @@
             font-size: 0.9rem;
         }
 
-        .spell-detail .meta { color: var(--or-doux); font-weight:700; margin-bottom:0.35rem }
+        .sort-detail .meta { color: var(--or-doux); font-weight:700; margin-bottom:0.35rem }
 
         /* Checkbox styled as yellow square */
-        .prepare-checkbox {
+        .case-preparation {
             position: relative;
             display: inline-block;
             width: 14px;
@@ -140,7 +140,7 @@
             vertical-align: middle;
         }
 
-        .prepare-checkbox input[type="checkbox"] {
+        .case-preparation input[type="checkbox"] {
             position: absolute;
             opacity: 0;
             width: 14px;
@@ -149,7 +149,7 @@
             cursor: pointer;
         }
 
-        .prepare-checkbox .box {
+        .case-preparation .boite {
             width: 14px;
             height: 14px;
             border-radius: 3px;
@@ -158,17 +158,17 @@
             display: inline-block;
         }
 
-        .prepare-checkbox input[type="checkbox"]:checked + .box {
+        .case-preparation input[type="checkbox"]:checked + .boite {
             background: var(--or-vif);
             border-color: var(--or-vif);
         }
 
-        .prepare-checkbox input[type="checkbox"]:disabled + .box {
+        .case-preparation input[type="checkbox"]:disabled + .boite {
             opacity: 0.6;
             cursor: not-allowed;
         }
 
-        .bottom-actions {
+        .actions-bas {
             display: flex;
             justify-content: space-between;
             margin-top: 1rem;
@@ -177,56 +177,31 @@
     </style>
 @endpush
 
-@section('content')
-    <div class="sorts-page">
+@section('contenu')
+    <div class="page-sorts">
         <h2 style="text-align:center; margin-bottom: 0.5rem; color: var(--or);">Sorts</h2>
 
-        <div class="maquette-header">
+        <div class="maquette-entete">
             @php
-                // Prefer ability provided by controller (could come from subclass limits)
-                $abiliteMagieNom = $abiliteMagie ?? null;
-
-                $incantationMap = [
-                    'Clerc' => 'sagesse',
-                    'Magicien' => 'intelligence',
-                    'Druide' => 'sagesse',
-                    'Barde' => 'charisme',
-                    'Paladin' => 'charisme',
-                    'Rôdeur' => 'sagesse',
-                    'Ensorceleur' => 'charisme',
-                    'Occultiste' => 'charisme',
-                ];
-
-                if (empty($abiliteMagieNom)) {
-                    $nomClasse = $personnage->classe?->nom ?? null;
-                    $abiliteMagieNom = $incantationMap[$nomClasse] ?? null;
-                }
-
-                $abiliteKey = $abiliteMagieNom ? strtolower($abiliteMagieNom) : null;
-                $abiliteLabel = $abiliteMagieNom ? ucfirst($abiliteMagieNom) : null;
-                $abiliteScore = $abiliteKey ? ($personnage->abilites?->{$abiliteKey} ?? null) : null;
-                $modificateur = $abiliteScore !== null ? (int) floor(($abiliteScore - 10) / 2) : 0;
-                $niveauPersonnage = (int) ($personnage->niveau ?? 0);
-                $bonusMaitrise = 2 + intdiv(max(1, $niveauPersonnage) - 1, 4);
+                // Caractéristique, modificateur et limite calculés par SortService.
+                $abiliteScore = $scoreCaracteristique;
+                $modificateur = $modificateurIncantation;
+                $bonusMaitrise = 2 + intdiv(max(1, (int) $personnage->niveau) - 1, 4);
                 $ddSauvegarde = 8 + $bonusMaitrise + $modificateur;
-
-                // Modificateur sort = modificateur d'abilité + bonus de maîtrise
                 $modificateurSort = $modificateur + $bonusMaitrise;
-
-                // Limite sort : utiliser $limiteSort si présent, sinon niveau + modificateur d'abilité
-                $limiteSortAffichee = isset($limiteSort) && $limiteSort !== null ? (int) $limiteSort : ($niveauPersonnage + $modificateur);
+                $limiteSortAffichee = $limiteSortsPrepares;
             @endphp
-            @php $isMagicien = ($personnage->classe?->nom ?? '') === 'Magicien'; @endphp
+            @php $estMagicien = ($personnage->classe?->nom ?? '') === 'Magicien'; @endphp
 
-                <div class="spell-slots">
+                <div class="emplacements-sorts">
                 @php
-                    $displayAbility = $abiliteMagie ?? $abiliteLabel ?? '—';
+                    $caracteristiqueAffichee = $abiliteMagie ?? ($caracteristique ? ucfirst($caracteristique) : '—');
                 @endphp
-                <div class="slot-box">Abilité sort: <strong>{{ $displayAbility }}</strong>
+                <div class="boite-emplacement">Abilité sort: <strong>{{ $caracteristiqueAffichee }}</strong>
                     @if($abiliteScore !== null) <span>({{ $abiliteScore }})</span>@endif
                 </div>
-                <div class="slot-box">Sauvegarde sort: <strong>{{ $ddSauvegarde }}</strong></div>
-                <div class="slot-box">Modificateur sort: <strong>{{ $modificateurSort >= 0 ? '+' . $modificateurSort : $modificateurSort }}</strong></div>
+                <div class="boite-emplacement">Sauvegarde sort: <strong>{{ $ddSauvegarde }}</strong></div>
+                <div class="boite-emplacement">Modificateur sort: <strong>{{ $modificateurSort >= 0 ? '+' . $modificateurSort : $modificateurSort }}</strong></div>
             </div>
             <div style="font-weight:700; color:var(--or-doux);">
                 Limite tour de magie : {{ $limiteTour ?? '—' }}
@@ -234,48 +209,48 @@
                 Limite sort : {{ $limiteSortAffichee }}
             </div>
             {{-- Tooltip placé ici entre la boite des bonus et le tour de magie --}}
-            <div id="spell-tooltip" class="spell-tooltip" aria-hidden="true"></div>
+            <div id="infobulle-sort" class="infobulle-sort" aria-hidden="true"></div>
         </div>
 
-        <div class="cast-bar">
+        <div class="barre-lancement">
             <div style="text-align:center; font-weight:700; margin-bottom:0.6rem; color:var(--or)">Tour magie</div>
-            <div class="cast-grid">
-                @php $cantrips = $level0 ?? collect(); @endphp
-                @if($cantrips->isEmpty())
+            <div class="grille-lancement">
+                @php $toursDeMagie = $niveau0 ?? collect(); @endphp
+                @if($toursDeMagie->isEmpty())
                     @for($i=0;$i<6;$i++)
-                        <div class="cast-item">
-                            <div class="checkbox-square"></div>
+                        <div class="element-lancement">
+                            <div class="case-carree"></div>
                             <div>—</div>
                         </div>
                     @endfor
                 @else
-                    @foreach($cantrips as $c)
-                        <div class="cast-item">
-                            <label class="prepare-checkbox">
-                                    @php $p = (int) ($c->prepare ?? 0); $psId = $c->personnage_sort_id ?? null; @endphp
+                    @foreach($toursDeMagie as $c)
+                        <div class="element-lancement">
+                            <label class="case-preparation">
+                                    @php $p = (int) ($c->prepare ?? 0); $idLienSort = $c->personnage_sort_id ?? null; @endphp
                                         <input type="checkbox"
-                                            class="prepare-toggle"
-                                            data-personnage-sort-id="{{ $psId }}"
+                                            class="bascule-preparation"
+                                            data-personnage-sort-id="{{ $idLienSort }}"
                                             data-sort-level="{{ $c->niveau ?? 0 }}"
                                             value="1"
                                             @if($p === 1) checked @endif
                                             @if($p === 2) checked disabled data-fixed="1" @endif
                                             data-sort-id="{{ $c->sort->id ?? '' }}">
-                                <span class="box"></span>
+                                <span class="boite"></span>
                             </label>
                             <div style="display:flex; flex-direction:column;">
-                                  <span class="spell-hover"
-                                      data-name="{{ $c->sort->Nom ?? 'Sort' }}"
-                                      data-niveau="{{ $c->sort->Niveau ?? '' }}"
-                                      data-ecole="{{ $c->sort->Ecole ?? '' }}"
-                                      data-description="{{ e($c->sort->Description ?? '') }}"
-                                      data-temps="{{ $c->sort->TempsActivation ?? '' }}"
-                                      data-duree="{{ $c->sort->Duree ?? '' }}"
-                                      data-distance="{{ $c->sort->Distance ?? '' }}"
-                                      data-composants="{{ $c->sort->Composants ?? '' }}"
-                                      data-att-sauv="{{ $c->sort->AttaqueSauvegarde ?? '' }}"
-                                  >{{ $c->sort->Nom ?? 'Sort' }}</span>
-                                  <div class="spell-detail" aria-hidden="true"></div>
+                                  <span class="sort-survol"
+                                      data-name="{{ $c->sort->nom ?? 'Sort' }}"
+                                      data-niveau="{{ $c->sort->niveau ?? '' }}"
+                                      data-ecole="{{ $c->sort->ecole ?? '' }}"
+                                      data-description="{{ e($c->sort->description ?? '') }}"
+                                      data-temps="{{ $c->sort->temps_activation ?? '' }}"
+                                      data-duree="{{ $c->sort->duree ?? '' }}"
+                                      data-distance="{{ $c->sort->distance ?? '' }}"
+                                      data-composants="{{ $c->sort->composants ?? '' }}"
+                                      data-att-sauv="{{ $c->sort->attaque_sauvegarde ?? '' }}"
+                                  >{{ $c->sort->nom ?? 'Sort' }}</span>
+                                  <div class="sort-detail" aria-hidden="true"></div>
                             </div>
                         </div>
                     @endforeach
@@ -283,69 +258,69 @@
             </div>
         </div>
 
-        <div class="levels">
-            @foreach($levels as $niveau)
-                @php $slotCount = (int) ($slots['Niveau' . $niveau] ?? 0); @endphp
-                @if($slotCount > 0)
-                <div class="level-card">
+        <div class="niveaux">
+            @foreach($niveaux as $niveau)
+                @php $nombreEmplacements = (int) ($emplacements['emplacements_niveau_' . $niveau] ?? 0); @endphp
+                @if($nombreEmplacements > 0)
+                <div class="carte-niveau">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
                         <div style="font-weight:800;">Niveau {{ $niveau }}</div>
-                        <div class="slots">Emplacement: {{ $slotCount }}</div>
+                        <div class="emplacements">Emplacement: {{ $nombreEmplacements }}</div>
                     </div>
 
-                    <ul class="spell-list">
-                        <li class="spell-list-header" aria-hidden="true">
-                            @if($isMagicien)
-                                <span class="col-label" title="Grimoire">G</span>
+                    <ul class="liste-sorts">
+                        <li class="liste-sorts-entete" aria-hidden="true">
+                            @if($estMagicien)
+                                <span class="etiquette-colonne" title="Grimoire">G</span>
                             @endif
-                            <span class="col-label" title="Préparé">P</span>
+                            <span class="etiquette-colonne" title="Préparé">P</span>
                         </li>
-                        @foreach(($available ?? collect())->filter(fn($s) => (int) ($s->niveau ?? 1) === (int) $niveau) as $item)
+                        @foreach(($disponibles ?? collect())->filter(fn($s) => (int) ($s->niveau ?? 1) === (int) $niveau) as $element)
                             <li>
-                                        @php $p = (int) ($item->prepare ?? 0); $psId = $item->personnage_sort_id ?? null; $inBook = in_array($p, [1, 2], true); @endphp
-                                        @if($isMagicien)
-                                            <label class="prepare-checkbox" title="Inscrit dans le grimoire">
+                                        @php $p = (int) ($element->prepare ?? 0); $idLienSort = $element->personnage_sort_id ?? null; $dansGrimoire = in_array($p, [1, 2], true); @endphp
+                                        @if($estMagicien)
+                                            <label class="case-preparation" title="Inscrit dans le grimoire">
                                                 <input type="checkbox"
-                                                    class="spellbook-toggle"
-                                                    data-personnage-sort-id="{{ $psId }}"
-                                                    data-sort-level="{{ $item->niveau ?? 1 }}"
-                                                    data-sort-id="{{ $item->sort->id ?? '' }}"
+                                                    class="bascule-grimoire"
+                                                    data-personnage-sort-id="{{ $idLienSort }}"
+                                                    data-sort-level="{{ $element->niveau ?? 1 }}"
+                                                    data-sort-id="{{ $element->sort->id ?? '' }}"
                                                     value="2"
-                                                    @if($inBook) checked @endif>
-                                                <span class="box"></span>
+                                                    @if($dansGrimoire) checked @endif>
+                                                <span class="boite"></span>
                                             </label>
                                         @endif
 
-                                        <label class="prepare-checkbox">
+                                        <label class="case-preparation">
                                          <input type="checkbox"
-                                             class="prepare-toggle"
-                                             data-personnage-sort-id="{{ $psId }}"
-                                             data-sort-level="{{ $item->niveau ?? 1 }}"
+                                             class="bascule-preparation"
+                                             data-personnage-sort-id="{{ $idLienSort }}"
+                                             data-sort-level="{{ $element->niveau ?? 1 }}"
                                              value="1"
-                                             @if($isMagicien)
+                                             @if($estMagicien)
                                                  @if($p === 1) checked @endif
-                                                 @if(! $inBook) disabled @endif
+                                                 @if(! $dansGrimoire) disabled @endif
                                              @else
                                                  @if($p === 1) checked @endif
                                                  @if($p === 2) checked disabled data-fixed="1" @endif
                                              @endif
-                                             data-sort-id="{{ $item->sort->id ?? '' }}">
-                                            <span class="box"></span>
+                                             data-sort-id="{{ $element->sort->id ?? '' }}">
+                                            <span class="boite"></span>
                                         </label>
 
                                 <div style="color:var(--or); display:flex; gap:0.5rem; align-items:center;">
-                                    <span class="spell-hover"
-                                          data-name="{{ $item->sort->Nom ?? 'Sort' }}"
-                                          data-niveau="{{ $item->sort->Niveau ?? '' }}"
-                                          data-ecole="{{ $item->sort->Ecole ?? '' }}"
-                                          data-description="{{ e($item->sort->Description ?? '') }}"
-                                          data-temps="{{ $item->sort->TempsActivation ?? '' }}"
-                                          data-duree="{{ $item->sort->Duree ?? '' }}"
-                                          data-distance="{{ $item->sort->Distance ?? '' }}"
-                                          data-composants="{{ $item->sort->Composants ?? '' }}"
-                                          data-att-sauv="{{ $item->sort->AttaqueSauvegarde ?? '' }}"
-                                    >{{ $item->sort->Nom ?? 'Sort' }}</span>
-                                    <div class="spell-detail" aria-hidden="true"></div>
+                                    <span class="sort-survol"
+                                          data-name="{{ $element->sort->nom ?? 'Sort' }}"
+                                          data-niveau="{{ $element->sort->niveau ?? '' }}"
+                                          data-ecole="{{ $element->sort->ecole ?? '' }}"
+                                          data-description="{{ e($element->sort->description ?? '') }}"
+                                          data-temps="{{ $element->sort->temps_activation ?? '' }}"
+                                          data-duree="{{ $element->sort->duree ?? '' }}"
+                                          data-distance="{{ $element->sort->distance ?? '' }}"
+                                          data-composants="{{ $element->sort->composants ?? '' }}"
+                                          data-att-sauv="{{ $element->sort->attaque_sauvegarde ?? '' }}"
+                                    >{{ $element->sort->nom ?? 'Sort' }}</span>
+                                    <div class="sort-detail" aria-hidden="true"></div>
                                 </div>
                             </li>
                         @endforeach
@@ -355,8 +330,8 @@
             @endforeach
         </div>
 
-        <div class="bottom-actions">
-            <a href="{{ route('personnages.show', $personnage) }}" class="btn btn-secondary btn-small">← Retour à la fiche</a>
+        <div class="actions-bas">
+            <a href="{{ route('personnages.show', $personnage) }}" class="bouton bouton-secondaire bouton-petit">← Retour à la fiche</a>
         </div>
     </div>
 @endsection
@@ -364,8 +339,8 @@
 @push('scripts')
     <script>
         (function(){
-            function savePrepare(personnageId, personnageSortId, sortId, value) {
-                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            function enregistrerPreparation(personnageId, personnageSortId, sortId, valeur) {
+                const jeton = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
                 if (personnageSortId) {
                     const url = '/personnages/' + personnageId + '/sorts/' + personnageSortId;
@@ -373,9 +348,9 @@
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': token
+                            'X-CSRF-TOKEN': jeton
                         },
-                        body: JSON.stringify({ prepare: value })
+                        body: JSON.stringify({ prepare: valeur })
                     }).then(r => r.json().then(json => { if (!r.ok) throw json; return json; }));
                 }
 
@@ -385,32 +360,32 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': token
+                        'X-CSRF-TOKEN': jeton
                     },
-                    body: JSON.stringify({ sort_id: sortId, prepare: value })
+                    body: JSON.stringify({ sort_id: sortId, prepare: valeur })
                 }).then(r => r.json().then(json => { if (!r.ok) throw json; return json; }));
             }
 
                 const personnageId = '{{ $personnage->id }}';
-                const isMagicien = {{ $isMagicien ? 'true' : 'false' }};
+                const estMagicien = {{ $estMagicien ? 'true' : 'false' }};
                 const limiteSort = {{ $limiteSort ?? 'null' }};
                 const limiteTour = {{ $limiteTour ?? 'null' }};
 
-            let saving = false;
+            let enregistrementEnCours = false;
             document.addEventListener('change', function(e) {
                 const el = e.target;
                 // Spellbook toggle (magician only)
-                if (el.classList.contains('spellbook-toggle')) {
-                    if (el.disabled || saving) return;
-                    const psId = el.dataset.personnageSortId;
+                if (el.classList.contains('bascule-grimoire')) {
+                    if (el.disabled || enregistrementEnCours) return;
+                    const idLienSort = el.dataset.personnageSortId;
                     const sortId = el.dataset.sortId;
-                    const level = parseInt(el.dataset.sortLevel || '0', 10);
+                    const niveauSort = parseInt(el.dataset.sortLevel || '0', 10);
                     // do not show spellbook for cantrips (level 0) — view ensures this
-                    const value = el.checked ? 2 : 0;
+                    const valeur = el.checked ? 2 : 0;
 
-                    saving = true;
+                    enregistrementEnCours = true;
                     el.disabled = true;
-                    savePrepare(personnageId, psId, sortId, value)
+                    enregistrerPreparation(personnageId, idLienSort, sortId, valeur)
                         .then((json) => {
                             if (json && json.personnage_sort_id) {
                                 // attach id to all related toggles for this sort
@@ -418,71 +393,71 @@
                             }
 
                             // grimoire coché => préparation possible ; décoché => préparation retirée
-                            let container = el.closest('li') || el.parentElement;
-                            const prepare = container && container.querySelector('.prepare-toggle');
+                            let conteneur = el.closest('li') || el.parentElement;
+                            const prepare = conteneur && conteneur.querySelector('.bascule-preparation');
                             if (prepare) {
                                 prepare.checked = false;
-                                prepare.disabled = value !== 2;
+                                prepare.disabled = valeur !== 2;
                             }
                             el.disabled = false;
-                            saving = false;
+                            enregistrementEnCours = false;
                         })
-                        .catch((err) => {
+                        .catch((erreur) => {
                             el.checked = !el.checked;
                             el.disabled = false;
-                            saving = false;
-                            const msg = err && err.message ? err.message : 'Erreur lors de la sauvegarde';
+                            enregistrementEnCours = false;
+                            const msg = erreur && erreur.message ? erreur.message : 'Erreur lors de la sauvegarde';
                             alert(msg);
                         });
                     return;
                 }
 
-                if (!el.classList.contains('prepare-toggle')) return;
-                if (el.disabled || saving) return;
+                if (!el.classList.contains('bascule-preparation')) return;
+                if (el.disabled || enregistrementEnCours) return;
 
-                const psId = el.dataset.personnageSortId;
+                const idLienSort = el.dataset.personnageSortId;
                 const sortId = el.dataset.sortId;
-                const level = parseInt(el.dataset.sortLevel || '0', 10);
-                const isChecked = el.checked ? 1 : 0;
-                let saveValue = isChecked;
+                const niveauSort = parseInt(el.dataset.sortLevel || '0', 10);
+                const estCoche = el.checked ? 1 : 0;
+                let enregistrerValeur = estCoche;
 
                 // Magicien : le sort doit être dans le grimoire ; décocher la préparation le laisse dans le grimoire (2)
-                let book = null;
-                if (isMagicien && level > 0) {
-                    const container = el.closest('li') || el.parentElement;
-                    book = container && container.querySelector('.spellbook-toggle');
-                    if (book && !book.checked) {
+                let grimoire = null;
+                if (estMagicien && niveauSort > 0) {
+                    const conteneur = el.closest('li') || el.parentElement;
+                    grimoire = conteneur && conteneur.querySelector('.bascule-grimoire');
+                    if (grimoire && !grimoire.checked) {
                         alert('Ce sort doit être inscrit dans le grimoire pour être préparé.');
                         el.checked = false;
                         return;
                     }
-                    if (book && isChecked === 0) {
-                        saveValue = 2;
+                    if (grimoire && estCoche === 0) {
+                        enregistrerValeur = 2;
                     }
                 }
 
                 // Client-side quick check: enforce limiteTour for level 0, and combined limiteSort for levels 1-3
-                if (isChecked === 1) {
-                    if (level === 0 && limiteTour !== null) {
-                        const current = Array.from(document.querySelectorAll('.prepare-toggle'))
+                if (estCoche === 1) {
+                    if (niveauSort === 0 && limiteTour !== null) {
+                        const courant = Array.from(document.querySelectorAll('.bascule-preparation'))
                             .filter(i => !i.disabled)
                             .filter(i => parseInt(i.dataset.sortLevel||'0',10) === 0)
                             .filter(i => i.checked)
                             .length;
-                        if (current > limiteTour) {
+                        if (courant > limiteTour) {
                             alert('Limite de sorts cantrips préparés atteinte (client).');
                             el.checked = false;
                             return;
                         }
                     }
 
-                    if ([1,2,3].includes(level) && limiteSort !== null) {
-                        const current = Array.from(document.querySelectorAll('.prepare-toggle'))
+                    if ([1,2,3].includes(niveauSort) && limiteSort !== null) {
+                        const courant = Array.from(document.querySelectorAll('.bascule-preparation'))
                             .filter(i => !i.disabled)
                             .filter(i => [1,2,3].includes(parseInt(i.dataset.sortLevel||'0',10)))
                             .filter(i => i.checked)
                             .length;
-                        if (current > limiteSort) {
+                        if (courant > limiteSort) {
                             alert('Limite de sorts préparés (niveaux 1-3) atteinte (client).');
                             el.checked = false;
                             return;
@@ -491,42 +466,42 @@
                 }
 
                 // Optimistic: disable while saving
-                saving = true;
+                enregistrementEnCours = true;
                 el.disabled = true;
-                if (book) book.disabled = true;
+                if (grimoire) grimoire.disabled = true;
 
-                savePrepare(personnageId, psId, sortId, saveValue)
+                enregistrerPreparation(personnageId, idLienSort, sortId, enregistrerValeur)
                     .then((json) => {
                                 // If a new record was created, store its id on the element
                                 if (json && json.personnage_sort_id) {
                                     el.dataset.personnageSortId = json.personnage_sort_id;
-                                    if (book) book.dataset.personnageSortId = json.personnage_sort_id;
+                                    if (grimoire) grimoire.dataset.personnageSortId = json.personnage_sort_id;
                                 }
-                                if (book) book.disabled = false;
+                                if (grimoire) grimoire.disabled = false;
                         el.disabled = false;
-                        saving = false;
+                        enregistrementEnCours = false;
                     })
-                    .catch((err) => {
+                    .catch((erreur) => {
                         // revert on error
                         el.checked = !el.checked;
                         el.disabled = false;
-                        if (book) book.disabled = false;
-                        saving = false;
-                        const msg = err && err.message ? err.message : 'Erreur lors de la sauvegarde';
+                        if (grimoire) grimoire.disabled = false;
+                        enregistrementEnCours = false;
+                        const msg = erreur && erreur.message ? erreur.message : 'Erreur lors de la sauvegarde';
                         alert(msg);
                     });
             });
 
             // Tooltip handlers
-            const tooltip = document.getElementById('spell-tooltip');
+            const infobulle = document.getElementById('infobulle-sort');
 
             function esc(s) {
                 return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
             }
 
-            function onSpellHover(e) {
+            function survolerSort(e) {
                 const t = e.currentTarget || e.target;
-                const name = esc(t.dataset.name || '');
+                const nomSort = esc(t.dataset.name || '');
                 const niveau = (esc(t.dataset.niveau || '') === "0") ? "Tour de magie" : esc(t.dataset.niveau || '');
                 const ecole = esc(t.dataset.ecole || '');
                 const temps = esc(t.dataset.temps || '');
@@ -536,7 +511,7 @@
                 desc = desc.replace(/\\n+/g, ' ').trim();
 
 
-                tooltip.innerHTML = '<div class="title">' + name + '</div>' +
+                infobulle.innerHTML = '<div class="titre">' + nomSort + '</div>' +
                     '<div class="meta">Niveau: ' + niveau + (ecole ? ' • ' + ecole : '') + '</div>' +
                     '<div class="meta">Temps: ' + (temps || '') + '</div>' +
                     '<div class="meta">Durée: ' + (duree || '') + '</div>' +
@@ -544,39 +519,39 @@
                     '<div class="desc">' + (desc || '') + '</div>';
 
                 // show tooltip and position it centered under the hovered name
-                tooltip.classList.add('visible');
+                infobulle.classList.add('visible');
                 setTimeout(() => {
-                    const tipRect = tooltip.getBoundingClientRect();
+                    const rectInfobulle = infobulle.getBoundingClientRect();
                     const rect = t.getBoundingClientRect();
                     // center horizontally relative to hovered element
-                    let left = rect.left + (rect.width - tipRect.width) / 2 + window.scrollX;
-                    left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
+                    let gauche = rect.left + (rect.width - rectInfobulle.width) / 2 + window.scrollX;
+                    gauche = Math.max(8, Math.min(gauche, window.innerWidth - rectInfobulle.width - 8));
                     // position just below the hovered element
-                    let top = rect.bottom + 8 + window.scrollY;
+                    let haut = rect.bottom + 8 + window.scrollY;
                     // if not enough space below, place above
-                    if (top + tipRect.height > window.innerHeight + window.scrollY - 8) {
-                        top = rect.top - tipRect.height - 8 + window.scrollY;
+                    if (haut + rectInfobulle.height > window.innerHeight + window.scrollY - 8) {
+                        haut = rect.top - rectInfobulle.height - 8 + window.scrollY;
                     }
-                    tooltip.style.left = left + 'px';
-                    tooltip.style.top = top + 'px';
+                    infobulle.style.left = gauche + 'px';
+                    infobulle.style.top = haut + 'px';
                 }, 0);
             }
 
-            function onSpellLeave() {
-                tooltip.classList.remove('visible');
+            function quitterSort() {
+                infobulle.classList.remove('visible');
                 // clear after animation
-                setTimeout(() => { tooltip.innerHTML = ''; }, 180);
+                setTimeout(() => { infobulle.innerHTML = ''; }, 180);
             }
 
-            document.querySelectorAll('.spell-hover').forEach(function(s){
-                s.addEventListener('mouseenter', onSpellHover);
-                s.addEventListener('mouseleave', onSpellLeave);
+            document.querySelectorAll('.sort-survol').forEach(function(s){
+                s.addEventListener('mouseenter', survolerSort);
+                s.addEventListener('mouseleave', quitterSort);
             });
         })();
     </script>
     <style>
         /* Tooltip styled like other page boxes (maquette-header / level-card) */
-        .spell-tooltip {
+        .infobulle-sort {
             position: absolute;
             background: var(--panneau-opaque);
             border: 1px solid var(--or-bordure);
@@ -593,25 +568,25 @@
             pointer-events: none;
         }
 
-        .spell-tooltip.visible {
+        .infobulle-sort.visible {
             opacity: 1;
             transform: translateY(0);
             pointer-events: auto;
         }
 
-        .spell-tooltip .title {
+        .infobulle-sort .titre {
             font-weight: 800;
             margin-bottom: 0.35rem;
             color: var(--or);
         }
 
-        .spell-tooltip .meta {
+        .infobulle-sort .meta {
             font-size: 0.85rem;
             color: var(--or-doux);
             margin-bottom: 0.5rem;
         }
 
-        .spell-tooltip .desc {
+        .infobulle-sort .desc {
             color: var(--or);
             max-height: none; /* remove scroll */
             overflow: visible;

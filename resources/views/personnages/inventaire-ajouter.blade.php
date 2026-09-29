@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Ajouter un objet - ' . $personnage->nom)
+@section('titre', 'Ajouter un objet - ' . $personnage->nom)
 
 @push('styles')
     <style>
@@ -12,7 +12,7 @@
             margin-bottom: 1rem;
         }
 
-        .toolbar {
+        .barre-outils {
             display: flex;
             flex-direction: row;
             flex-wrap: wrap;
@@ -21,24 +21,24 @@
             margin-bottom: 1rem;
         }
 
-        .toolbar-field {
+        .barre-outils-champ {
             display: flex;
             flex-direction: column;
             gap: 0.3rem;
         }
 
-        .toolbar-field label {
+        .barre-outils-champ label {
             font-size: 0.75rem;
             color: var(--or);
             font-weight: 600;
         }
 
-        .toolbar-field.recherche {
+        .barre-outils-champ.recherche {
             flex: 1;
             min-width: 220px;
         }
 
-        .form-input-small, .form-select-small {
+        .formulaire-saisie-petit, .formulaire-liste-petit {
             padding: 0.5rem 0.7rem;
             background: var(--panneau);
             border: 1px solid var(--or-bordure);
@@ -48,7 +48,7 @@
             outline: none;
         }
 
-        .form-select-small { cursor: pointer; }
+        .formulaire-liste-petit { cursor: pointer; }
 
         .grille-objets {
             display: grid;
@@ -119,13 +119,13 @@
     </style>
 @endpush
 
-@section('content')
-    <div class="sheet-container" style="max-width: 1100px;">
+@section('contenu')
+    <div class="fiche-conteneur" style="max-width: 1100px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
-            <div class="text-gold" style="font-size: 1.3rem; font-weight: 700;">Ajouter un objet à l'inventaire de {{ $personnage->nom }}</div>
+            <div class="texte-or" style="font-size: 1.3rem; font-weight: 700;">Ajouter un objet à l'inventaire de {{ $personnage->nom }}</div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <a href="{{ route('personnages.inventaire.ajouter-custom-page', $personnage) }}" class="btn btn-primary btn-small">+ Objet custom</a>
-                <a href="{{ route('personnages.inventaire.index', $personnage) }}" class="btn btn-secondary btn-small">← Retour à l'inventaire</a>
+                <a href="{{ route('personnages.inventaire.ajouter-personnalise-page', $personnage) }}" class="bouton bouton-principal bouton-petit">+ Objet custom</a>
+                <a href="{{ route('personnages.inventaire.index', $personnage) }}" class="bouton bouton-secondaire bouton-petit">← Retour à l'inventaire</a>
             </div>
         </div>
 
@@ -138,23 +138,23 @@
         @endif
 
         <div class="inventaire-section">
-            <div class="toolbar">
-                <div class="toolbar-field recherche">
+            <div class="barre-outils">
+                <div class="barre-outils-champ recherche">
                     <label for="rechercheObjet">Recherche</label>
-                    <input type="search" id="rechercheObjet" class="form-input-small" placeholder="Nom de l'objet..." oninput="filtrerCatalogue()">
+                    <input type="search" id="rechercheObjet" class="formulaire-saisie-petit" placeholder="Nom de l'objet..." oninput="filtrerCatalogue()">
                 </div>
-                <div class="toolbar-field">
+                <div class="barre-outils-champ">
                     <label for="filtreType">Type</label>
-                    <select id="filtreType" class="form-select-small" onchange="filtrerCatalogue()">
+                    <select id="filtreType" class="formulaire-liste-petit" onchange="filtrerCatalogue()">
                         <option value="">Tous</option>
                         @foreach(\App\Models\Objet::TYPES as $type)
                             <option value="{{ $type }}">{{ ucfirst($type) }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="toolbar-field">
+                <div class="barre-outils-champ">
                     <label for="filtreMagique">Magie</label>
-                    <select id="filtreMagique" class="form-select-small" onchange="filtrerCatalogue()">
+                    <select id="filtreMagique" class="formulaire-liste-petit" onchange="filtrerCatalogue()">
                         <option value="">Tous</option>
                         <option value="1">Magique</option>
                         <option value="0">Non magique</option>
@@ -181,7 +181,7 @@
                             @csrf
                             <input type="hidden" name="objet_id" value="{{ $objetCatalogue->id }}">
                             <input type="hidden" name="quantite" value="1">
-                            <button type="submit" class="btn btn-primary btn-small" style="width: 100%;">Ajouter</button>
+                            <button type="submit" class="bouton bouton-principal bouton-petit" style="width: 100%;">Ajouter</button>
                         </form>
                     </div>
                 @endforeach

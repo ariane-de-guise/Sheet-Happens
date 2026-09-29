@@ -10,8 +10,8 @@
    Toutes les couleurs de l'interface sont définies comme des
    variables CSS ici. Le thème sombre (historique) reste la
    valeur par défaut de :root ; le thème clair est fourni par le
-   bloc [data-theme="light"] ci-dessous, activé en posant
-   data-theme="light" sur <html> (voir public/js/theme.js et le
+   bloc [data-theme="clair"] ci-dessous, activé en posant
+   data-theme="clair" sur <html> (voir public/js/theme.js et le
    script inline dans layouts/app.blade.php, qui choisit le
    thème avant l'affichage pour éviter tout flash).
    ============================================================ */
@@ -133,7 +133,7 @@
     --rayon: 10px;
 }
 
-[data-theme="light"] {
+[data-theme="clair"] {
     /* Palette claire reprise des maquettes Figma : fond beige,
        boutons/pastilles mauves, accents dorés, texte foncé. */
     --fond: #e8dcc4;
@@ -247,14 +247,14 @@ body {
    plus visibles pour éviter un changement trop brutal, sans animer
    l'ensemble des éléments (coût de perf inutile). */
 main,
-.card,
-.card-choice,
+.carte,
+.carte-choix,
 input,
-.form-input,
-.form-select,
+.formulaire-saisie,
+.formulaire-liste,
 button,
-.btn,
-.modal-box,
+.bouton,
+.modale-boite,
 .auth-badge {
     transition:
         background-color 0.2s ease,
@@ -264,7 +264,7 @@ button,
         transform 0.05s ease;
 }
 
-.container {
+.conteneur {
     /* `width: 100%` is required here: body is a flex container, and a flex
        item with only `max-width` shrinks to fit its content instead of
        stretching to that max-width. Without it, any CSS grid inside using
@@ -289,36 +289,31 @@ main {
         0 0 40px -10px var(--primaire-halo-faible);
 }
 
-.card {
+.carte {
     background: var(--panneau-carte);
     border: 1px solid var(--or-bordure);
     border-radius: 16px;
     padding: 2rem;
 }
 
-.text-center {
+.texte-centre {
     text-align: center;
 }
 
-.text-gold {
+.texte-or {
     color: var(--or);
 }
 
-.text-white {
-    color: var(--texte);
-}
-
-.text-muted {
+.texte-attenue {
     color: var(--texte-secondaire);
 }
 
-.mb-1 { margin-bottom: 0.5rem; }
-.mb-2 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 1.5rem; }
-.mb-4 { margin-bottom: 2rem; }
+.marge-bas-1 { margin-bottom: 0.5rem; }
+.marge-bas-2 { margin-bottom: 1rem; }
+.marge-bas-3 { margin-bottom: 1.5rem; }
+.marge-bas-4 { margin-bottom: 2rem; }
 
-.mt-2 { margin-top: 1rem; }
-.mt-3 { margin-top: 1.5rem; }
+.marge-haut-2 { margin-top: 1rem; }
 
 h1,
 h2,
@@ -330,21 +325,21 @@ h3 {
     letter-spacing: -0.025em;
 }
 
-.title-main {
+.titre-principal {
     font-size: 2.5rem;
     font-weight: 700;
     color: var(--or);
     margin-bottom: 1rem;
 }
 
-.title-section {
+.titre-section {
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--or);
     margin-bottom: 1.5rem;
 }
 
-.subtitle {
+.sous-titre {
     font-size: 1.1rem;
     color: var(--texte);
     margin-bottom: 2rem;
@@ -401,18 +396,18 @@ input:focus {
     box-shadow: 0 0 0 3px var(--primaire-halo);
 }
 
-.form-group {
+.formulaire-groupe {
     margin-bottom: 1rem;
 }
 
-.form-label {
+.formulaire-etiquette {
     display: block;
     font-size: 0.9rem;
     color: var(--or);
     margin-bottom: 0.35rem;
 }
 
-.form-input {
+.formulaire-saisie {
     width: 100%;
     padding: 0.6rem 0.9rem;
     background: var(--panneau);
@@ -425,11 +420,11 @@ input:focus {
     transition: border-color 0.2s;
 }
 
-.form-input:focus {
+.formulaire-saisie:focus {
     border-color: var(--or);
 }
 
-.form-select {
+.formulaire-liste {
     width: 100%;
     padding: 0.6rem 0.9rem;
     background: var(--panneau);
@@ -441,7 +436,7 @@ input:focus {
     cursor: pointer;
 }
 
-.form-select:focus {
+.formulaire-liste:focus {
     border-color: var(--or);
 }
 
@@ -472,7 +467,7 @@ button:active {
     transform: scale(0.99);
 }
 
-.btn {
+.bouton {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -486,45 +481,45 @@ button:active {
     text-decoration: none;
 }
 
-.btn:disabled {
+.bouton:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
 }
 
-.btn-primary {
+.bouton-principal {
     background: var(--or-vif);
     color: var(--texte-inverse);
     border-color: var(--or-vif);
 }
 
-.btn-primary:hover {
+.bouton-principal:hover {
     background: var(--or-vif-clair);
     transform: translateY(-1px);
 }
 
-.btn-secondary {
+.bouton-secondaire {
     background: var(--panneau-secondaire);
     color: var(--or-doux);
     border-color: var(--or-bordure);
 }
 
-.btn-secondary:hover {
+.bouton-secondaire:hover {
     background: var(--panneau-secondaire-survol);
 }
 
-.btn-danger {
+.bouton-danger {
     background: var(--danger-fond);
     color: var(--danger-texte);
     border-color: var(--danger-bordure);
 }
 
-.btn-danger:hover {
+.bouton-danger:hover {
     background: var(--danger-fond-survol);
     color: var(--danger-texte-survol);
 }
 
-.modal-overlay {
+.modale-voile {
     display: none;
     position: fixed;
     inset: 0;
@@ -535,11 +530,11 @@ button:active {
     padding: 1rem;
 }
 
-.modal-overlay.active {
+.modale-voile.active {
     display: flex;
 }
 
-.modal-box {
+.modale-boite {
     background: var(--panneau-carte);
     border: 1px solid var(--or-bordure);
     border-radius: 16px;
@@ -550,25 +545,25 @@ button:active {
     box-shadow: 0 20px 40px -10px var(--ombre-modal);
 }
 
-.modal-box h2 {
+.modale-boite h2 {
     color: var(--or);
     font-size: 1.15rem;
     margin-bottom: 0.75rem;
 }
 
-.modal-box p {
+.modale-boite p {
     color: var(--texte-secondaire);
     font-size: 0.9rem;
     margin-bottom: 1.5rem;
 }
 
-.modal-actions {
+.modale-actions {
     display: flex;
     gap: 0.75rem;
     justify-content: center;
 }
 
-.btn-option {
+.bouton-option {
     background: var(--panneau-vif);
     color: var(--or);
     border-color: var(--or-bordure);
@@ -577,18 +572,18 @@ button:active {
     flex: 1;
 }
 
-.btn-option:hover {
+.bouton-option:hover {
     background: var(--panneau-vif-survol);
     border-color: var(--or);
 }
 
-.btn-small {
+.bouton-petit {
     padding: 0.35rem 0.75rem;
     font-size: 0.85rem;
     border-radius: 6px;
 }
 
-.btn-icon {
+.bouton-icone {
     width: 40px;
     height: 40px;
     margin-top: 0;
@@ -616,13 +611,13 @@ a:hover {
 
 /* Cartes */
 
-.grid-cards {
+.grille-cartes {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1rem;
 }
 
-.card-choice {
+.carte-choix {
     background: var(--panneau);
     border: 1px solid var(--or-bordure);
     border-radius: 12px;
@@ -637,26 +632,26 @@ a:hover {
     min-height: 110px;
 }
 
-.card-choice:hover {
+.carte-choix:hover {
     border-color: var(--or);
     transform: translateY(-2px);
     box-shadow: 0 4px 15px var(--or-halo-moyen);
 }
 
-.card-choice.selected {
+.carte-choix.selectionne {
     border-color: var(--or);
     border-width: 2px;
     background: var(--panneau-survol);
     box-shadow: 0 0 12px var(--or-halo-fort);
 }
 
-.card-choice .card-title {
+.carte-choix .carte-titre {
     font-size: 1rem;
     font-weight: 600;
     color: var(--or);
 }
 
-.card-choice .card-desc {
+.carte-choix .carte-desc {
     font-size: 0.8rem;
     color: var(--texte-secondaire);
     margin-top: 0.35rem;
@@ -664,7 +659,7 @@ a:hover {
 
 /* Barre de progression */
 
-.progress-bar {
+.barre-progression {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -673,7 +668,7 @@ a:hover {
     position: relative;
 }
 
-.progress-line {
+.ligne-progression {
     position: absolute;
     top: 50%;
     left: 2.5rem;
@@ -684,7 +679,7 @@ a:hover {
     z-index: 0;
 }
 
-.progress-fill {
+.remplissage-progression {
     position: absolute;
     top: 0;
     left: 0;
@@ -694,7 +689,7 @@ a:hover {
     transition: width 0.3s ease;
 }
 
-.progress-step {
+.etape-progression {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -715,13 +710,13 @@ a:hover {
     transition: all 0.3s ease;
 }
 
-.progress-step.active {
+.etape-progression.active {
     background: var(--or-vif);
     border-color: var(--or-vif);
     color: var(--texte-inverse);
 }
 
-.progress-step.completed {
+.etape-progression.terminee {
     background: var(--or-halo-actif-opaque);
     border-color: var(--or);
     color: var(--or);
@@ -729,7 +724,7 @@ a:hover {
 
 /* Statistiques */
 
-.stats-container {
+.stats-conteneur {
     /* 2 colonnes comme dans la maquette : stats-list à gauche, aide/pool à
        droite. Les lignes ne montrent plus qu'icône + nom + valeur +
        contrôles (les bonus ne sont plus affichés par ligne, voir
@@ -741,7 +736,7 @@ a:hover {
     min-width: 0;
 }
 
-.stats-list {
+.stats-liste {
     background: var(--panneau);
     border: 1px solid var(--or-bordure);
     border-radius: 12px;
@@ -749,7 +744,7 @@ a:hover {
     min-width: 0;
 }
 
-.stat-row {
+.stat-ligne {
     display: grid;
     grid-template-columns: 32px minmax(90px, 1fr) 32px 70px auto;
     column-gap: 0.4rem;
@@ -759,11 +754,11 @@ a:hover {
     min-width: 0;
 }
 
-.stat-row:last-child {
+.stat-ligne:last-child {
     border-bottom: none;
 }
 
-.stat-icon {
+.stat-icone {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -772,7 +767,7 @@ a:hover {
     flex-shrink: 0;
 }
 
-.stat-name {
+.stat-nom {
     grid-column: 2;
     font-size: 0.85rem;
     color: var(--or);
@@ -799,7 +794,7 @@ a:hover {
     color: var(--texte-positif);
 }
 
-.stat-value {
+.stat-valeur {
     width: 70px;
     height: 40px;
     box-sizing: border-box;
@@ -818,7 +813,7 @@ a:hover {
     transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 
-.stat-base-value {
+.stat-valeur-base {
     grid-column: 4;
     width: 70px;
     height: 40px;
@@ -838,7 +833,7 @@ a:hover {
     grid-column: 4;
 }
 
-.stat-controls {
+.stat-controles {
     grid-column: 5;
     display: flex;
     align-items: center;
@@ -862,7 +857,7 @@ a:hover {
     color: var(--or);
 }
 
-.bonus-choix-row {
+.bonus-choix-ligne {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -870,7 +865,7 @@ a:hover {
     flex-wrap: wrap;
 }
 
-.bonus-choix-row select {
+.bonus-choix-ligne select {
     background: var(--panneau-vif);
     border: 1px solid var(--or-bordure);
     border-radius: 6px;
@@ -885,40 +880,40 @@ a:hover {
    same way as the rest of the field, throwing off the vertical alignment
    with the +/- buttons next to it. Remove it entirely since we already
    provide dedicated +/- buttons. */
-input.stat-base-value::-webkit-outer-spin-button,
-input.stat-base-value::-webkit-inner-spin-button {
+input.stat-valeur-base::-webkit-outer-spin-button,
+input.stat-valeur-base::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-input.stat-base-value[type="number"] {
+input.stat-valeur-base[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
 }
 
-.stat-controls {
+.stat-controles {
     display: flex;
     align-items: center;
     gap: 0.35rem;
 }
 
-.stat-value.drop-target {
+.stat-valeur.cible-depot {
     cursor: pointer;
 }
 
-.stat-value.drop-target.drag-over {
+.stat-valeur.cible-depot.survol-glisser {
     border-color: var(--or);
     background: var(--or-halo-fort);
     transform: scale(1.05);
 }
 
-.stat-value.drop-target.filled {
+.stat-valeur.cible-depot.remplie {
     border-color: var(--or);
 }
 
 /* Répartition standard / Lancer de dés : pool de valeurs à glisser */
 
-.value-pool {
+.reserve-valeurs {
     display: flex;
     flex-wrap: wrap;
     align-content: flex-start;
@@ -928,21 +923,21 @@ input.stat-base-value[type="number"] {
     transition: outline-color 0.15s ease, background 0.15s ease;
 }
 
-.value-pool.drag-over {
+.reserve-valeurs.survol-glisser {
     outline: 2px dashed var(--or);
     outline-offset: 6px;
     background: var(--or-halo-faible);
 }
 
-.stat-value.drop-target[draggable="true"] {
+.stat-valeur.cible-depot[draggable="true"] {
     cursor: grab;
 }
 
-.stat-value.drop-target.dragging {
+.stat-valeur.cible-depot.en-glissement {
     opacity: 0.4;
 }
 
-.value-chip {
+.jeton-valeur {
     min-width: 64px;
     padding: 0.55rem 0.9rem;
     background: var(--panneau);
@@ -957,40 +952,40 @@ input.stat-base-value[type="number"] {
     user-select: none;
 }
 
-.value-chip:hover {
+.jeton-valeur:hover {
     border-color: var(--or);
     background: var(--panneau-survol);
 }
 
-.value-chip:active {
+.jeton-valeur:active {
     cursor: grabbing;
 }
 
-.value-chip.dragging {
+.jeton-valeur.en-glissement {
     opacity: 0.4;
 }
 
-.value-chip:disabled,
-.value-chip.is-used {
+.jeton-valeur:disabled,
+.jeton-valeur.est-utilise {
     opacity: 0.35;
     cursor: not-allowed;
 }
 
-/* Colonne de droite de .stats-container / .standard-points-container (pool
+/* Colonne de droite de .stats-conteneur / .conteneur-points-standard (pool
    de résultats/valeurs). Les items d'une grille sont étirés par défaut
    (align-items: stretch) pour occuper toute la hauteur de la rangée, donc
    cette colonne est déjà aussi haute que la boîte de caractéristiques à
    gauche : on la rend flex pour pouvoir pousser .stats-actions tout en bas
    (margin-top: auto), alignée avec le bas de cette boîte au lieu de flotter
    juste sous le pool. */
-.stats-side {
+.stats-cote {
     display: flex;
     flex-direction: column;
     min-height: 0;
 }
 
 /* Boutons d'action à côté de la boîte de caractéristiques (pas en dessous),
-   collés au bas de la colonne grâce à margin-top: auto sur .stats-side.
+   collés au bas de la colonne grâce à margin-top: auto sur .stats-cote.
    Empilés verticalement, pleine largeur de cette colonne. Utilisée pour
    "Lancer/Relancer + Réinitialiser les choix" (dés, 2 boutons) et
    "Réinitialiser" seul (standard, 1 bouton). */
@@ -1003,16 +998,16 @@ input.stat-base-value[type="number"] {
     padding-top: 1rem;
 }
 
-.stats-actions .btn {
+.stats-actions .bouton {
     width: 100%;
 }
 
-.drag-hint {
+.indice-glisser {
     font-size: 0.8rem;
     color: var(--texte-secondaire);
 }
 
-.points-box {
+.points-boite {
     background: var(--panneau);
     border: 1px solid var(--or-bordure);
     border-radius: 12px;
@@ -1020,13 +1015,13 @@ input.stat-base-value[type="number"] {
     text-align: center;
 }
 
-.points-box .label {
+.points-boite .etiquette {
     font-size: 0.9rem;
     color: var(--or);
     margin-bottom: 0.5rem;
 }
 
-.points-box .value {
+.points-boite .valeur-affichee {
     font-size: 2.5rem;
     font-weight: 700;
     color: var(--or);
@@ -1034,7 +1029,7 @@ input.stat-base-value[type="number"] {
 
 /* Aide */
 
-.help-box {
+.boite-aide {
     background: var(--panneau);
     border: 1px solid var(--or-bordure);
     border-radius: 12px;
@@ -1042,13 +1037,13 @@ input.stat-base-value[type="number"] {
     margin-top: 1rem;
 }
 
-.help-box .title {
+.boite-aide .titre {
     font-size: 0.95rem;
     color: var(--or);
     margin-bottom: 0.5rem;
 }
 
-.help-box .content {
+.boite-aide .contenu {
     font-size: 0.8rem;
     color: var(--texte-secondaire);
     line-height: 1.5;
@@ -1056,7 +1051,7 @@ input.stat-base-value[type="number"] {
 
 /* Contexte */
 
-.context-section {
+.section-contexte {
     background: var(--panneau);
     border: 1px solid var(--or-bordure);
     border-radius: 12px;
@@ -1064,37 +1059,37 @@ input.stat-base-value[type="number"] {
     margin-bottom: 1rem;
 }
 
-.context-section .header {
+.section-contexte .entete {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
 }
 
-.context-section .title {
+.section-contexte .titre {
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--or);
 }
 
-.context-section .items {
+.section-contexte .elements {
     font-size: 0.85rem;
     color: var(--or);
     list-style: disc;
     padding-left: 1.25rem;
 }
 
-.context-section .items li {
+.section-contexte .elements li {
     margin-bottom: 0.2rem;
 }
 
-.context-section .hint {
+.section-contexte .indice {
     font-size: 0.8rem;
     color: var(--texte-secondaire);
 }
 
 /* Groupes */
 
-.btn-group-row {
+.bouton-groupe-ligne {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -1103,13 +1098,13 @@ input.stat-base-value[type="number"] {
     gap: 1rem;
 }
 
-.btn-group-row > div {
+.bouton-groupe-ligne > div {
     display: flex;
     flex-direction: row;
     gap: 0.75rem;
 }
 
-.standard-points-container {
+.conteneur-points-standard {
     /* Même raison que .stats-container ci-dessus. */
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1117,60 +1112,9 @@ input.stat-base-value[type="number"] {
     min-width: 0;
 }
 
-.available-points {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.point-option {
-    padding: 0.6rem 1rem;
-    background: var(--panneau);
-    border: 1px solid var(--or-bordure);
-    border-radius: 10px;
-    color: var(--or);
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-}
-
-.point-option:hover {
-    border-color: var(--or);
-    background: var(--panneau-survol);
-}
-
-.point-option:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.dice-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.dice-btn {
-    padding: 0.6rem 1rem;
-    background: var(--panneau);
-    border: 1px solid var(--or-bordure);
-    border-radius: 10px;
-    color: var(--or);
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-}
-
-.dice-btn:hover {
-    border-color: var(--or);
-    background: var(--panneau-survol);
-}
-
 /* Résumé */
 
-.summary-card {
+.carte-resume {
     background: var(--panneau);
     border: 1px solid var(--or-bordure);
     border-radius: 12px;
@@ -1178,14 +1122,14 @@ input.stat-base-value[type="number"] {
     margin-bottom: 1rem;
 }
 
-.summary-card .title {
+.carte-resume .titre {
     font-size: 1rem;
     font-weight: 600;
     color: var(--or);
     margin-bottom: 0.5rem;
 }
 
-.summary-card .value {
+.carte-resume .valeur-affichee {
     font-size: 0.9rem;
     color: var(--or-doux);
     overflow-wrap: anywhere;
@@ -1193,43 +1137,37 @@ input.stat-base-value[type="number"] {
 
 /* Alertes */
 
-.alert {
+.alerte {
     padding: 0.75rem 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
     font-size: 0.9rem;
 }
 
-.alert-error {
+.alerte-erreur {
     background: var(--alerte-erreur-fond);
     border: 1px solid var(--alerte-erreur-bordure);
     color: var(--alerte-erreur-texte);
 }
 
-.alert-success {
-    background: var(--alerte-succes-fond);
-    border: 1px solid var(--alerte-succes-bordure);
-    color: var(--alerte-succes-texte);
-}
-
 /* Profil utilisateur */
 
-.profile-page {
+.profil-page {
     min-height: calc(100vh - 4rem);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.profile-card {
+.profil-carte {
     width: min(100%, 680px);
 }
 
-.profile-header {
+.profil-entete {
     margin-bottom: 2rem;
 }
 
-.profile-eyebrow {
+.profil-surtitre {
     color: var(--texte-secondaire);
     font-size: 0.85rem;
     text-transform: uppercase;
@@ -1237,13 +1175,13 @@ input.stat-base-value[type="number"] {
     margin-bottom: 0.5rem;
 }
 
-.profile-information {
+.profil-information {
     display: grid;
     gap: 1rem;
     margin-bottom: 2rem;
 }
 
-.profile-field {
+.profil-champ {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
@@ -1253,18 +1191,18 @@ input.stat-base-value[type="number"] {
     border-radius: 10px;
 }
 
-.profile-label {
+.profil-etiquette {
     color: var(--texte-secondaire);
     font-size: 0.85rem;
 }
 
-.profile-value {
+.profil-valeur {
     color: var(--texte);
     font-size: 1rem;
     overflow-wrap: anywhere;
 }
 
-.profile-actions {
+.profil-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
@@ -1273,11 +1211,11 @@ input.stat-base-value[type="number"] {
 /* Responsive */
 
 @media (max-width: 768px) {
-    .grid-cards {
+    .grille-cartes {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     }
 
-    .title-main {
+    .titre-principal {
         font-size: 2rem;
     }
 }
@@ -1288,40 +1226,40 @@ input.stat-base-value[type="number"] {
         align-items: flex-start;
     }
 
-    .container {
+    .conteneur {
         padding: 0.75rem 0;
     }
 
-    .card {
+    .carte {
         padding: 1rem;
         border-radius: 12px;
     }
 
-    .title-section {
+    .titre-section {
         font-size: 1.25rem;
         margin-bottom: 1rem;
     }
 
-    .progress-bar {
+    .barre-progression {
         margin-bottom: 1.25rem;
         transform: scale(0.9);
         transform-origin: center;
     }
 
-    .stat-row {
+    .stat-ligne {
         grid-template-columns: 28px minmax(0, 1fr) 26px 44px auto;
         column-gap: 0.25rem;
         padding-left: 0.55rem;
         padding-right: 0.55rem;
     }
 
-    .stat-icon {
+    .stat-icone {
         width: 28px;
         height: 28px;
         margin-right: 0;
     }
 
-    .stat-name {
+    .stat-nom {
         font-size: 0.75rem;
     }
 
@@ -1329,48 +1267,39 @@ input.stat-base-value[type="number"] {
         font-size: 0.75rem;
     }
 
-    .stat-value,
-    .stat-base-value {
+    .stat-valeur,
+    .stat-valeur-base {
         width: 100%;
         height: 34px;
         padding: 0 0.25rem;
         font-size: 0.9rem;
     }
 
-    .stat-controls {
+    .stat-controles {
         gap: 0.15rem;
     }
 
-    .btn-icon {
+    .bouton-icone {
         width: 28px;
         height: 32px;
         font-size: 0.95rem;
     }
 
-    .btn-group-row {
+    .bouton-groupe-ligne {
         flex-wrap: wrap;
         margin-top: 1.25rem;
     }
 
-    .btn-group-row > div {
+    .bouton-groupe-ligne > div {
         width: 100%;
         justify-content: space-between;
     }
 
-    .btn-group-row > .btn,
-    .btn-group-row > div .btn {
+    .bouton-groupe-ligne > .bouton,
+    .bouton-groupe-ligne > div .bouton {
         flex: 1 1 0;
         padding-left: 0.75rem;
         padding-right: 0.75rem;
-    }
-
-    .roll-actions {
-        flex-direction: column;
-    }
-
-    .roll-actions .btn {
-        flex-basis: auto;
-        width: 100%;
     }
 }
 
@@ -1385,7 +1314,7 @@ input.stat-base-value[type="number"] {
    public/js/theme.js) : elle est donc toujours correcte dès le
    premier rendu, sans attendre le JavaScript différé. */
 
-.theme-toggle-switch {
+.theme-bascule-interrupteur {
     position: fixed;
     bottom: 18px;
     left: 50%;
@@ -1405,7 +1334,7 @@ input.stat-base-value[type="number"] {
     transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.theme-toggle-thumb {
+.theme-bascule-curseur {
     position: absolute;
     top: 3px;
     left: 3px;
@@ -1420,11 +1349,11 @@ input.stat-base-value[type="number"] {
 }
 
 /* Le curseur glisse vers la lune dès que le thème sombre est actif. */
-[data-theme="dark"] .theme-toggle-thumb {
+[data-theme="sombre"] .theme-bascule-curseur {
     transform: translateX(36px);
 }
 
-.theme-toggle-icon {
+.theme-bascule-icone {
     position: relative;
     z-index: 1;
     width: 24px;
@@ -1441,47 +1370,909 @@ input.stat-base-value[type="number"] {
     border-radius: 50%;
 }
 
-.theme-toggle-icon svg {
+.theme-bascule-icone svg {
     width: 16px;
     height: 16px;
     display: block;
     pointer-events: none;
 }
 
-.theme-toggle-icon-sun {
+.theme-bascule-icone-soleil {
     color: var(--or);
 }
 
-.theme-toggle-icon-moon {
+.theme-bascule-icone-lune {
     color: var(--texte-secondaire);
 }
 
 /* L'icône du thème déjà actif se pose directement sur le curseur :
    elle passe donc dans une teinte lisible sur l'or plutôt que dans
    sa couleur "au repos". */
-[data-theme="light"] .theme-toggle-icon-sun {
+[data-theme="clair"] .theme-bascule-icone-soleil {
     color: var(--texte-inverse);
 }
 
-[data-theme="dark"] .theme-toggle-icon-moon {
+[data-theme="sombre"] .theme-bascule-icone-lune {
     color: var(--texte-inverse);
 }
 
-.theme-toggle-icon:hover {
+.theme-bascule-icone:hover {
     filter: brightness(1.15);
 }
 
-.theme-toggle-icon:focus-visible {
+.theme-bascule-icone:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px var(--primaire-halo);
 }
 
-.theme-toggle-icon:active {
+.theme-bascule-icone:active {
     filter: brightness(0.92);
 }
 
 @media (max-width: 480px) {
-    .theme-toggle-switch {
+    .theme-bascule-interrupteur {
         bottom: 12px;
     }
+}
+
+/* ==========================================
+   Info-bulle au survol (dons, capacités…)
+   Voir resources/views/partials/info-bulle.blade.php
+   ========================================== */
+.info-bulle {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    cursor: help;
+    outline: none;
+}
+
+.info-bulle-cible {
+    border-bottom: 1px dashed var(--or-bordure);
+}
+
+.info-bulle:hover .info-bulle-cible,
+.info-bulle:focus .info-bulle-cible {
+    color: var(--or);
+}
+
+.info-bulle-contenu {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 6px);
+    z-index: 50;
+    width: max-content;
+    max-width: min(340px, 80vw);
+    padding: 0.7rem 0.8rem;
+    background: var(--panneau-opaque);
+    border: 1px solid var(--or-bordure);
+    border-radius: 8px;
+    box-shadow: 0 4px 14px var(--ombre-sombre);
+    font-size: 0.82rem;
+    line-height: 1.4;
+    text-align: left;
+    white-space: normal;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px);
+    transition: opacity 150ms ease, transform 150ms ease, visibility 150ms;
+    pointer-events: none;
+}
+
+.info-bulle:hover .info-bulle-contenu,
+.info-bulle:focus .info-bulle-contenu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.info-bulle-titre {
+    display: block;
+    font-weight: 700;
+    color: var(--or);
+    margin-bottom: 0.2rem;
+}
+
+.info-bulle-meta {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--or-doux);
+    margin-bottom: 0.35rem;
+}
+
+.info-bulle-desc {
+    display: block;
+    color: var(--texte);
+}
+
+/* ==========================================
+   Page des traits (resources/views/personnages/traits/index.blade.php)
+   ========================================== */
+.traits-entete {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.traits-titre {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.traits-sous-titre {
+    font-size: 0.85rem;
+}
+
+.traits-section {
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.traits-section-titre {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.traits-texte {
+    font-size: 0.9rem;
+}
+
+.traits-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.traits-ligne {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.traits-nom {
+    font-weight: 600;
+}
+
+.traits-niveau {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.traits-section-finale {
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.traits-nom-don {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+/* ==========================================
+   Fiche du personnage : mise en page (anciennement dans show.blade.php)
+   ========================================== */
+.fiche-disposition {
+    max-width: 1100px;
+}
+
+.fiche-grille {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .fiche-grille {
+        grid-template-columns: 1fr;
+    }
+}
+
+.fiche-boite {
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.fiche-boite-titre {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--or);
+    margin-bottom: 0.5rem;
+}
+
+.fiche-ligne {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--texte-secondaire);
+    padding: 0.2rem 0;
+}
+
+.fiche-ligne > span:first-child {
+    flex-shrink: 0;
+}
+
+/* Lignes à colonne unique (capacités, dons...) : pas de valeur à
+   droite à préserver, donc le texte doit pouvoir rétrécir et
+   passer à la ligne plutôt que déborder de la carte. */
+.fiche-ligne > span:first-child:only-child {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+.fiche-ligne .maitrise-point {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.4rem;
+    background: var(--point-inactif);
+    vertical-align: middle;
+}
+
+.fiche-ligne .maitrise-point.actif {
+    background: var(--or-vif);
+}
+
+.fiche-ligne .valeur {
+    color: var(--or-doux);
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+}
+
+.avatar-etiquette {
+    cursor: pointer;
+    display: block;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--panneau-carte);
+    border: 2px solid var(--or-bordure);
+    position: relative;
+}
+
+.avatar-etiquette img {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Le logo par défaut contient déjà son propre médaillon circulaire :
+   le recadrer en "cover" le décentrait (marges transparentes
+   asymétriques dans le fichier source), il est donc affiché en
+   entier ("contain") plutôt que rogné. Une vraie photo de
+   personnage, elle, n'a pas ce médaillon et gagne à remplir tout
+   le cercle. */
+.avatar-etiquette img.avatar-photo {
+    object-fit: cover;
+}
+
+.avatar-etiquette img.avatar-logo-defaut {
+    object-fit: contain;
+}
+
+.avatar-voile {
+    position: absolute;
+    inset: 0;
+    background: var(--avatar-overlay-fond);
+    color: var(--or);
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.avatar-etiquette:hover .avatar-voile {
+    opacity: 1;
+}
+
+.pv-formulaire {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    margin: 0.3rem 0 0.5rem;
+}
+
+.pv-formulaire input {
+    flex: 1;
+    min-width: 0;
+}
+
+.badge-ca {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: var(--texte-inverse);
+    border: 2px solid var(--or);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--or);
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+/* ==========================================
+   Fiche du personnage (resources/views/personnages/show.blade.php)
+   ========================================== */
+.fiche-disposition {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 1.5rem;
+}
+
+.carte-ajustee {
+    height: fit-content;
+}
+
+.fiche-marque {
+    font-size: 1.1rem;
+}
+
+.fiche-navigation {
+    border-top: 1px solid var(--or-bordure);
+    padding-top: 1rem;
+}
+
+.fiche-lien-retour {
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.fiche-entete-principal {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+}
+
+.fiche-avatar {
+    position: relative;
+}
+
+.formulaire-sans-marge {
+    margin: 0;
+}
+
+.champ-masque {
+    display: none;
+}
+
+.fiche-badge-niveau {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: var(--or-vif);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--texte-inverse);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.fiche-identite {
+    flex: 1;
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.fiche-identite-ligne {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.fiche-nom {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--or);
+    margin-bottom: 0.5rem;
+}
+
+.fiche-sous-titre {
+    font-size: 0.9rem;
+    color: var(--texte-secondaire);
+    margin-bottom: 0.25rem;
+}
+
+.fiche-alignement {
+    font-size: 0.9rem;
+    color: var(--texte-secondaire);
+    margin-bottom: 0.75rem;
+}
+
+.fiche-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.badge-niveau-max {
+    background: var(--niveau-max-fond);
+    color: var(--niveau-max-texte);
+    cursor: default;
+}
+
+.bouton-centre {
+    text-align: center;
+}
+
+.fiche-xp-entete {
+    font-size: 0.75rem;
+    color: var(--texte-secondaire);
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+}
+
+.fiche-xp-barre {
+    height: 6px;
+    background: var(--panneau);
+    border-radius: 3px;
+    margin-top: 0.25rem;
+    overflow: hidden;
+}
+
+.fiche-xp-lien-montee {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--or);
+    text-decoration: none;
+}
+
+.fiche-xp-formulaire {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.fiche-xp-champ {
+    flex: 1;
+    min-width: 0;
+    background: var(--panneau-carte);
+    border: 1px solid var(--or-bordure);
+    border-radius: 6px;
+    color: var(--or-doux);
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.bouton-mise-en-avant {
+    background: var(--or-vif);
+    color: var(--texte-inverse);
+    font-weight: 800;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.message-erreur-champ {
+    color: var(--texte-negatif);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.fiche-competences-colonnes {
+    columns: 2;
+    column-gap: 1.5rem;
+}
+
+.fiche-ligne-insecable {
+    break-inside: avoid;
+}
+
+.fiche-langues {
+    border-top: 1px solid var(--or-ligne-forte);
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+}
+
+.fiche-langues-titre {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--or);
+    margin-bottom: 0.35rem;
+}
+
+.fiche-boite-entete {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.sans-marge-bas {
+    margin-bottom: 0;
+}
+
+.fiche-boite-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.fiche-grille-capacites {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.texte-petit {
+    font-size: 0.8rem;
+}
+
+.texte-moyen {
+    font-size: 0.85rem;
+}
+
+.fiche-boite-historique {
+    background: var(--panneau);
+    border: 1px solid var(--or-bordure);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.fiche-boite-historique-titre {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--or);
+    margin-bottom: 0.5rem;
+}
+
+.fiche-detail {
+    font-size: 0.8rem;
+    color: var(--texte-secondaire);
+}
+
+.fiche-xp-remplissage {
+    height: 100%;
+    background: var(--or-vif);
+    border-radius: 3px;
+}
+
+/* ==========================================
+   Montée de niveau (resources/views/personnages/montee-niveau.blade.php)
+   ========================================== */
+.montee-page {
+    max-width: 1050px;
+    margin: 0 auto;
+}
+
+.montee-carte {
+    border: 1px solid var(--or-bordure);
+    overflow: hidden;
+}
+
+.montee-entete {
+    text-align:center;
+    padding: 1rem 0 1.5rem;
+    border-bottom:1px solid var(--or-ligne-forte);
+}
+
+.montee-surtitre {
+    color: var(--texte-secondaire);
+    text-transform:uppercase;
+    letter-spacing:.25rem;
+    font-size:.72rem;
+}
+
+.montee-titre {
+    color: var(--or);
+    margin:.35rem 0;
+    font-size:2rem;
+}
+
+.texte-secondaire {
+    color: var(--texte-secondaire);
+}
+
+.montee-erreurs {
+    margin:1rem 0;
+    padding:1rem;
+    border: 1px solid var(--alerte-erreur-bordure);
+    border-radius:10px;
+    background:var(--alerte-erreur-fond);
+    color:var(--alerte-erreur-texte);
+}
+
+.montee-grille {
+    display:grid;
+    grid-template-columns: 1fr 1.45fr;
+    gap:1.25rem;
+    margin-top:1.5rem;
+}
+
+.montee-boite-resume {
+    background:var(--panneau);
+    border: 1px solid var(--or-bordure);
+    border-radius:12px;
+    padding:1.1rem;
+    margin-bottom:1rem;
+}
+
+.montee-boite-titre {
+    color: var(--or);
+    font-weight:700;
+    margin-bottom:.75rem;
+}
+
+.montee-resume {
+    display:grid;
+    gap:.55rem;
+    color: var(--texte-secondaire);
+    font-size:.9rem;
+}
+
+.montee-resume-ligne {
+    display:flex;
+    justify-content:space-between;
+}
+
+.texte-principal {
+    color:var(--texte);
+}
+
+.montee-boite {
+    background:var(--panneau);
+    border: 1px solid var(--or-bordure);
+    border-radius:12px;
+    padding:1.1rem;
+}
+
+.montee-nouveaute {
+    padding:.65rem 0;
+    border-bottom:1px solid var(--or-ligne-faible);
+    color: var(--texte);
+}
+
+.montee-boite-choix {
+    background:var(--panneau);
+    border: 1px solid var(--or-bordure);
+    border-radius:12px;
+    padding:1.25rem;
+}
+
+.montee-choix-titre {
+    color: var(--or);
+    font-size:1.1rem;
+    font-weight:700;
+    margin-bottom:1rem;
+}
+
+.montee-bloc {
+    margin-bottom:1.5rem;
+}
+
+.montee-libelle {
+    color:var(--texte);
+    font-weight:600;
+    margin-bottom:.35rem;
+}
+
+.montee-aide {
+    color: var(--texte-secondaire);
+    font-size:.85rem;
+    margin-bottom:.75rem;
+}
+
+.montee-grille-pv {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:.75rem;
+}
+
+.montee-option-pv {
+    padding:.85rem;
+    border:1px solid var(--bordure-option);
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.montee-option-nom {
+    color: var(--or);
+    margin-left:.35rem;
+}
+
+.montee-option-detail {
+    color: var(--texte-secondaire);
+    font-size:.82rem;
+    margin:.35rem 0 0 1.4rem;
+}
+
+.montee-option-de {
+    padding:.85rem;
+    border:1px solid var(--bordure-option);
+    border-radius:10px;
+}
+
+.curseur-main {
+    cursor:pointer;
+}
+
+.montee-option-detail-de {
+    color: var(--texte-secondaire);
+    font-size:.82rem;
+    margin:.35rem 0 .65rem 1.4rem;
+}
+
+.bouton-pleine-largeur {
+    width:100%;
+}
+
+.montee-jet-valeur {
+    color: var(--or);
+    font-size:1.35rem;
+}
+
+.montee-jet-total {
+    color: var(--texte-secondaire);
+    font-size:.8rem;
+    margin-top:.2rem;
+}
+
+.montee-libelle-choix {
+    color:var(--texte);
+    font-weight:600;
+    margin-bottom:.7rem;
+}
+
+.montee-liste-sous-classes {
+    display:grid;
+    gap:.7rem;
+}
+
+.montee-option-sous-classe {
+    display:block;
+    padding:.85rem;
+    border:1px solid var(--bordure-option);
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.montee-types-amelioration {
+    display:flex;
+    gap:.75rem;
+    margin-bottom:1rem;
+}
+
+.montee-option-amelioration {
+    flex:1;
+    padding:.8rem;
+    border:1px solid var(--bordure-option);
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.montee-option-libelle {
+    color: var(--or);
+}
+
+.montee-panneau {
+    padding:1rem;
+    background:var(--panneau-vif);
+    border-radius:10px;
+}
+
+.montee-aide-repartition {
+    color: var(--texte-secondaire);
+    font-size:.85rem;
+    margin-bottom:.8rem;
+}
+
+.montee-grille-caracteristiques {
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:.65rem;
+}
+
+.montee-libelle-caracteristique {
+    color: var(--texte);
+    font-size:.85rem;
+}
+
+.montee-liste-petite {
+    width:100%;
+    margin-top:.25rem;
+    padding:.45rem;
+    border-radius:7px;
+    background:var(--champ-fond);
+    color:var(--texte);
+    border:1px solid var(--bordure-option);
+}
+
+.montee-panneau-masque {
+    display:none;
+    padding:1rem;
+    background:var(--panneau-vif);
+    border-radius:10px;
+}
+
+.montee-libelle-don {
+    color: var(--texte);
+}
+
+.montee-liste {
+    width:100%;
+    margin-top:.35rem;
+    padding:.55rem;
+    border-radius:7px;
+    background:var(--champ-fond);
+    color:var(--texte);
+    border:1px solid var(--bordure-option);
+}
+
+.montee-description-don {
+    display:none;
+    margin-top:.8rem;
+    padding:.7rem .8rem;
+    border:1px solid var(--or-bordure);
+    border-radius:8px;
+    background:var(--panneau);
+    color:var(--texte-secondaire);
+    font-size:.85rem;
+    line-height:1.4;
+}
+
+.montee-conteneur-masque {
+    display:none;
+    margin-top:.8rem;
+}
+
+.montee-pied {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:1.25rem;
+}
+
+.bouton-confirmer {
+    background:var(--or-vif);
+    color:var(--texte-inverse);
+    font-weight:800;
+    padding:.8rem 1.5rem;
+}
+
+.montee-jet-resultat {
+    margin-top:.7rem;
+    text-align:center;
+    padding:.65rem;
+    border-radius:8px;
+    background:var(--or-halo-faible);
+    color:var(--texte);
 }

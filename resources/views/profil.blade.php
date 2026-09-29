@@ -1,36 +1,36 @@
 @extends('layouts.app')
 
-@section('title', 'Mon profil')
+@section('titre', 'Mon profil')
 
-@section('content')
-    <div class="profile-page">
-        <section class="card profile-card">
-            <div class="profile-header">
+@section('contenu')
+    <div class="profil-page">
+        <section class="carte profil-carte">
+            <div class="profil-entete">
                 <div>
-                    <p class="profile-eyebrow">Mon compte</p>
-                    <h1 class="title-main mb-1">Mon profil</h1>
-                    <p class="text-muted">Consultez les informations associées à votre compte.</p>
+                    <p class="profil-surtitre">Mon compte</p>
+                    <h1 class="titre-principal marge-bas-1">Mon profil</h1>
+                    <p class="texte-attenue">Consultez les informations associées à votre compte.</p>
                 </div>
             </div>
 
-            <div class="profile-information">
-                <div class="profile-field">
-                    <span class="profile-label">Adresse courriel</span>
-                    <span class="profile-value">{{ $utilisateur->courriel }}</span>
+            <div class="profil-information">
+                <div class="profil-champ">
+                    <span class="profil-etiquette">Adresse courriel</span>
+                    <span class="profil-valeur">{{ $utilisateur->courriel }}</span>
                 </div>
 
-                <div class="profile-field">
-                    <span class="profile-label">Membre depuis</span>
-                    <span class="profile-value">{{ $utilisateur->created_at?->format('d/m/Y') ?? 'Non disponible' }}</span>
+                <div class="profil-champ">
+                    <span class="profil-etiquette">Membre depuis</span>
+                    <span class="profil-valeur">{{ $utilisateur->created_at?->format('d/m/Y') ?? 'Non disponible' }}</span>
                 </div>
             </div>
 
-            <div class="profile-actions">
-                <a href="{{ route('personnages.index') }}" class="btn btn-primary">Mes personnages</a>
+            <div class="profil-actions">
+                <a href="{{ route('personnages.index') }}" class="bouton bouton-principal">Mes personnages</a>
 
-                <form method="POST" action="{{ route('deconnexion') }}" class="logout-form">
+                <form method="POST" action="{{ route('deconnexion') }}" class="formulaire-deconnexion">
                     @csrf
-                    <button type="submit" class="btn btn-danger">Se déconnecter</button>
+                    <button type="submit" class="bouton bouton-danger">Se déconnecter</button>
                 </form>
             </div>
         </section>

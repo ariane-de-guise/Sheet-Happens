@@ -10,11 +10,11 @@ class Degat extends Model
     protected $table = 'degats';
 
     protected $fillable = [
-        'Nom',
+        'nom',
     ];
 
     public function sorts(): HasMany
     {
-        return $this->hasMany(Sort::class, 'id_Degat');
+        return $this->hasMany(Sort::class, 'degat_id');
     }
 }

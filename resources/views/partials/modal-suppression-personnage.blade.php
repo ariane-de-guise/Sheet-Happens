@@ -1,10 +1,10 @@
-<div id="modal-suppression" class="modal-overlay">
-    <div class="modal-box">
+<div id="modale-suppression" class="modale-voile">
+    <div class="modale-boite">
         <h2>Supprimer ce personnage ?</h2>
-        <p id="modal-suppression-texte">Cette action est irréversible.</p>
-        <div class="modal-actions">
-            <button type="button" class="btn btn-secondary btn-small" style="flex: 1;" onclick="fermerModalSuppression()">Annuler</button>
-            <button type="button" class="btn btn-danger btn-small" style="flex: 1;" onclick="confirmerSuppressionPersonnage()">Supprimer</button>
+        <p id="modale-suppression-texte">Cette action est irréversible.</p>
+        <div class="modale-actions">
+            <button type="button" class="bouton bouton-secondaire bouton-petit" style="flex: 1;" onclick="fermerModalSuppression()">Annuler</button>
+            <button type="button" class="bouton bouton-danger bouton-petit" style="flex: 1;" onclick="confirmerSuppressionPersonnage()">Supprimer</button>
         </div>
     </div>
 </div>
@@ -15,14 +15,14 @@
 
     function ouvrirModalSuppression(idFormulaire, nomPersonnage) {
         formulairePersonnageASupprimer = document.getElementById(idFormulaire);
-        document.getElementById('modal-suppression-texte').textContent =
+        document.getElementById('modale-suppression-texte').textContent =
             'Voulez-vous vraiment supprimer "' + nomPersonnage + '" ? Cette action est irréversible.';
-        document.getElementById('modal-suppression').classList.add('active');
+        document.getElementById('modale-suppression').classList.add('active');
     }
 
     function fermerModalSuppression() {
         formulairePersonnageASupprimer = null;
-        document.getElementById('modal-suppression').classList.remove('active');
+        document.getElementById('modale-suppression').classList.remove('active');
     }
 
     function confirmerSuppressionPersonnage() {

@@ -1,178 +1,178 @@
 // Étape "Caractéristiques" (méthode "points par défaut" / tableau
 // standard) de la création de personnage. Les données
-// (window.CaracteristiquesStandardData) sont injectées par
+// (window.DonneesCaracteristiquesStandard) sont injectées par
 // _caracteristiques_standard.blade.php.
-const statsOrder = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'];
-let currentAbilites = window.CaracteristiquesStandardData.abilites;
-let draggedValue = null;
+const ordreCaracteristiques = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'];
+let abilitesCourantes = window.DonneesCaracteristiquesStandard.abilites;
+let valeurGlissee = null;
 
-function chipEl(value) {
-    return document.getElementById('chip-' + value);
+function elementJeton(valeur) {
+    return document.getElementById('jeton-' + valeur);
 }
 
-function slotEl(key) {
-    return document.getElementById('stat-' + key);
+function elementEmplacement(cle) {
+    return document.getElementById('stat-' + cle);
 }
 
-function setChipUsed(value, used) {
-    const chip = chipEl(value);
-    if (!chip) return;
-    chip.classList.toggle('is-used', used);
-    chip.draggable = !used;
+function marquerJetonUtilise(valeur, utilise) {
+    const jeton = elementJeton(valeur);
+    if (!jeton) return;
+    jeton.classList.toggle('est-utilise', utilise);
+    jeton.draggable = !utilise;
 }
 
-function updateSlotDisplay(key) {
-    const value = currentAbilites[key];
-    const slot = slotEl(key);
-    const input = document.getElementById('input-' + key);
+function majAffichageEmplacement(cle) {
+    const valeur = abilitesCourantes[cle];
+    const emplacement = elementEmplacement(cle);
+    const champ = document.getElementById('champ-' + cle);
 
-    if (!value || value <= 0) {
-        slot.textContent = 'X';
-        slot.classList.remove('filled');
-        slot.draggable = false;
-        input.value = 0;
+    if (!valeur || valeur <= 0) {
+        emplacement.textContent = 'X';
+        emplacement.classList.remove('remplie');
+        emplacement.draggable = false;
+        champ.value = 0;
         return;
     }
 
-    slot.textContent = value;
-    slot.classList.add('filled');
-    slot.draggable = true;
-    input.value = value;
+    emplacement.textContent = valeur;
+    emplacement.classList.add('remplie');
+    emplacement.draggable = true;
+    champ.value = valeur;
 }
 
-function assignValue(key, value) {
+function attribuerValeur(cle, valeur) {
     // Si la case contenait déjà une valeur, on la remet dans le lot.
-    const previous = currentAbilites[key];
-    if (previous && previous > 0) {
-        setChipUsed(previous, false);
+    const precedent = abilitesCourantes[cle];
+    if (precedent && precedent > 0) {
+        marquerJetonUtilise(precedent, false);
     }
 
-    currentAbilites[key] = value;
-    updateSlotDisplay(key);
-    setChipUsed(value, true);
+    abilitesCourantes[cle] = valeur;
+    majAffichageEmplacement(cle);
+    marquerJetonUtilise(valeur, true);
 
-    checkComplete();
+    verifierCompletude();
 }
 
-function clearSlot(key) {
-    const previous = currentAbilites[key];
-    if (!previous || previous <= 0) return;
+function viderEmplacement(cle) {
+    const precedent = abilitesCourantes[cle];
+    if (!precedent || precedent <= 0) return;
 
-    setChipUsed(previous, false);
-    currentAbilites[key] = 0;
-    updateSlotDisplay(key);
+    marquerJetonUtilise(precedent, false);
+    abilitesCourantes[cle] = 0;
+    majAffichageEmplacement(cle);
 
-    checkComplete();
+    verifierCompletude();
 }
 
-function swapSlots(keyA, keyB) {
-    if (keyA === keyB) return;
-    const valueA = currentAbilites[keyA];
-    const valueB = currentAbilites[keyB];
+function echangerEmplacements(cleA, cleB) {
+    if (cleA === cleB) return;
+    const valeurA = abilitesCourantes[cleA];
+    const valeurB = abilitesCourantes[cleB];
 
-    currentAbilites[keyA] = valueB;
-    currentAbilites[keyB] = valueA;
+    abilitesCourantes[cleA] = valeurB;
+    abilitesCourantes[cleB] = valeurA;
 
-    updateSlotDisplay(keyA);
-    updateSlotDisplay(keyB);
-    checkComplete();
+    majAffichageEmplacement(cleA);
+    majAffichageEmplacement(cleB);
+    verifierCompletude();
 }
 
-function assignToNextEmpty(value) {
-    if (chipEl(value).classList.contains('is-used')) return;
-    const nextKey = statsOrder.find(s => !currentAbilites[s] || currentAbilites[s] === 0);
-    if (!nextKey) return;
-    assignValue(nextKey, value);
+function attribuerEmplacementLibreSuivant(valeur) {
+    if (elementJeton(valeur).classList.contains('est-utilise')) return;
+    const cleSuivante = ordreCaracteristiques.find(s => !abilitesCourantes[s] || abilitesCourantes[s] === 0);
+    if (!cleSuivante) return;
+    attribuerValeur(cleSuivante, valeur);
 }
 
-function onChipDragStart(event, value) {
-    if (chipEl(value).classList.contains('is-used')) {
-        event.preventDefault();
+function debutGlisserJeton(evenement, valeur) {
+    if (elementJeton(valeur).classList.contains('est-utilise')) {
+        evenement.preventDefault();
         return;
     }
-    draggedValue = value;
-    event.dataTransfer.setData('text/plain', String(value));
-    event.dataTransfer.effectAllowed = 'move';
-    chipEl(value).classList.add('dragging');
+    valeurGlissee = valeur;
+    evenement.dataTransfer.setData('text/plain', String(valeur));
+    evenement.dataTransfer.effectAllowed = 'move';
+    elementJeton(valeur).classList.add('en-glissement');
 }
 
-function onChipDragEnd(event) {
-    if (draggedValue !== null) {
-        chipEl(draggedValue).classList.remove('dragging');
+function finGlisserJeton(evenement) {
+    if (valeurGlissee !== null) {
+        elementJeton(valeurGlissee).classList.remove('en-glissement');
     }
-    draggedValue = null;
+    valeurGlissee = null;
 }
 
-function onSlotDragOver(event, slot) {
-    event.preventDefault();
-    slot.classList.add('drag-over');
+function survolerEmplacement(evenement, emplacement) {
+    evenement.preventDefault();
+    emplacement.classList.add('survol-glisser');
 }
 
-function onSlotDragLeave(event, slot) {
-    slot.classList.remove('drag-over');
+function quitterEmplacement(evenement, emplacement) {
+    emplacement.classList.remove('survol-glisser');
 }
 
-function onSlotDrop(event, slot) {
-    event.preventDefault();
-    slot.classList.remove('drag-over');
-    const raw = event.dataTransfer.getData('text/plain');
+function deposerSurEmplacement(evenement, emplacement) {
+    evenement.preventDefault();
+    emplacement.classList.remove('survol-glisser');
+    const brut = evenement.dataTransfer.getData('text/plain');
 
-    if (raw.startsWith('stat:')) {
-        swapSlots(raw.slice(5), slot.dataset.key);
+    if (brut.startsWith('stat:')) {
+        echangerEmplacements(brut.slice(5), emplacement.dataset.key);
         return;
     }
 
-    const value = parseInt(raw, 10);
-    if (!value) return;
-    assignValue(slot.dataset.key, value);
+    const valeur = parseInt(brut, 10);
+    if (!valeur) return;
+    attribuerValeur(emplacement.dataset.key, valeur);
 }
 
-function onStatDragStart(event, key) {
-    if (!currentAbilites[key] || currentAbilites[key] <= 0) {
-        event.preventDefault();
+function debutGlisserCaracteristique(evenement, cle) {
+    if (!abilitesCourantes[cle] || abilitesCourantes[cle] <= 0) {
+        evenement.preventDefault();
         return;
     }
-    event.dataTransfer.setData('text/plain', 'stat:' + key);
-    event.dataTransfer.effectAllowed = 'move';
-    slotEl(key).classList.add('dragging');
+    evenement.dataTransfer.setData('text/plain', 'stat:' + cle);
+    evenement.dataTransfer.effectAllowed = 'move';
+    elementEmplacement(cle).classList.add('en-glissement');
 }
 
-function onStatDragEnd(key) {
-    const slot = slotEl(key);
-    if (slot) slot.classList.remove('dragging');
+function finGlisserCaracteristique(cle) {
+    const emplacement = elementEmplacement(cle);
+    if (emplacement) emplacement.classList.remove('en-glissement');
 }
 
-function onPoolDragOver(event) {
-    event.preventDefault();
-    document.getElementById('valuePool').classList.add('drag-over');
+function survolerReserve(evenement) {
+    evenement.preventDefault();
+    document.getElementById('reserveValeurs').classList.add('survol-glisser');
 }
 
-function onPoolDragLeave() {
-    document.getElementById('valuePool').classList.remove('drag-over');
+function quitterReserve() {
+    document.getElementById('reserveValeurs').classList.remove('survol-glisser');
 }
 
-function onPoolDrop(event) {
-    event.preventDefault();
-    document.getElementById('valuePool').classList.remove('drag-over');
-    const raw = event.dataTransfer.getData('text/plain');
-    if (raw.startsWith('stat:')) {
-        clearSlot(raw.slice(5));
+function deposerSurReserve(evenement) {
+    evenement.preventDefault();
+    document.getElementById('reserveValeurs').classList.remove('survol-glisser');
+    const brut = evenement.dataTransfer.getData('text/plain');
+    if (brut.startsWith('stat:')) {
+        viderEmplacement(brut.slice(5));
     }
 }
 
-function resetStandard() {
-    statsOrder.forEach(s => clearSlot(s));
+function reinitialiserStandard() {
+    ordreCaracteristiques.forEach(s => viderEmplacement(s));
 }
 
-function checkComplete() {
-    const allAssigned = statsOrder.every(s => currentAbilites[s] > 0);
-    document.getElementById('btnSuivant').disabled = !allAssigned;
-    document.getElementById('pointsDisponibles').value = allAssigned ? '1' : '0';
+function verifierCompletude() {
+    const toutAttribue = ordreCaracteristiques.every(s => abilitesCourantes[s] > 0);
+    document.getElementById('boutonSuivant').disabled = !toutAttribue;
+    document.getElementById('pointsDisponibles').value = toutAttribue ? '1' : '0';
 }
 
 // Initialise l'état "utilisée" des jetons déjà attribués (retour en arrière).
-statsOrder.forEach(s => {
-    if (currentAbilites[s] > 0) setChipUsed(currentAbilites[s], true);
+ordreCaracteristiques.forEach(s => {
+    if (abilitesCourantes[s] > 0) marquerJetonUtilise(abilitesCourantes[s], true);
 });
 
-checkComplete();
+verifierCompletude();

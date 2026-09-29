@@ -7,6 +7,7 @@ use App\Models\Objet;
 use App\Models\Personnage;
 use App\Models\PersonnageObjet;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -177,27 +178,31 @@ class InventaireService
             ]);
         }
 
-        $effet = $objet->effet_utilisation ?? [];
+        // Soin, effet temporaire et consommation forment un tout : soit tout
+        // est enregistré, soit rien (pas de potion consommée sans effet).
+        DB::transaction(function () use ($personnage, $objet, $ligne): void {
+            $effet = $objet->effet_utilisation ?? [];
 
-        if (! empty($effet['pv'])) {
-            $personnage->update(['point_de_vie' => max(0, $personnage->point_de_vie + (int) $effet['pv'])]);
-        }
+            if (! empty($effet['pv'])) {
+                $personnage->modifierPointsDeVieActuels((int) $effet['pv']);
+            }
 
-        if (! empty($effet['bonus']) && ! empty($effet['duree_valeur'])) {
-            $enTours = ($effet['duree_unite'] ?? 'tours') === 'tours';
+            if (! empty($effet['bonus']) && ! empty($effet['duree_valeur'])) {
+                $enTours = ($effet['duree_unite'] ?? 'tours') === 'tours';
 
-            EffetActif::create([
-                'personnage_id' => $personnage->id,
-                'objet_id' => $objet->id,
-                'nom' => $objet->nom,
-                'bonus' => $effet['bonus'],
-                'unite' => $enTours ? 'tours' : 'minutes',
-                'tours_restants' => $enTours ? (int) $effet['duree_valeur'] : null,
-                'expire_a' => $enTours ? null : now()->addSeconds((int) $effet['duree_secondes']),
-            ]);
-        }
+                EffetActif::create([
+                    'personnage_id' => $personnage->id,
+                    'objet_id' => $objet->id,
+                    'nom' => $objet->nom,
+                    'bonus' => $effet['bonus'],
+                    'unite' => $enTours ? 'tours' : 'minutes',
+                    'tours_restants' => $enTours ? (int) $effet['duree_valeur'] : null,
+                    'expire_a' => $enTours ? null : now()->addSeconds((int) $effet['duree_secondes']),
+                ]);
+            }
 
-        $this->ajusterQuantite($ligne, -1);
+            $this->ajusterQuantite($ligne, -1);
+        });
     }
 
     /**
